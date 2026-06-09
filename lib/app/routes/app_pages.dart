@@ -8,6 +8,11 @@ import 'package:jkworlds/modules/auth/signup_view.dart';
 import 'package:jkworlds/modules/auth/forgot_password_view.dart';
 import 'package:jkworlds/modules/auth/auth_binding.dart';
 
+import 'package:jkworlds/modules/preferences/preferences_view.dart';
+import 'package:jkworlds/modules/notifications/notification_settings_view.dart';
+import 'package:jkworlds/modules/contact/contact_us_view.dart';
+import 'package:jkworlds/modules/promo/promo_codes_view.dart';
+
 import 'app_routes.dart';
 
 /// All route → page mappings for GetX navigation.
@@ -34,6 +39,22 @@ class AppPages {
       name: AppRoutes.forgotPassword,
       page: () => const ForgotPasswordView(),
       binding: AuthBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.preferences,
+      page: () => const PreferencesView(),
+    ),
+    GetPage(
+      name: AppRoutes.notificationSettings,
+      page: () => const NotificationSettingsView(),
+    ),
+    GetPage(
+      name: AppRoutes.contactUs,
+      page: () => const ContactUsView(),
+    ),
+    GetPage(
+      name: AppRoutes.promoCodes,
+      page: () => const PromoCodesView(),
     ),
   ];
 }

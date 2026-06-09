@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'auth_controller.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
 
 class LoginView extends GetView<AuthController> {
   const LoginView({super.key});
@@ -142,6 +143,71 @@ class LoginView extends GetView<AuthController> {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // ── OR Divider ───────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(color: cs.outlineVariant),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or_divider'.tr,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(color: cs.outlineVariant),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // ── Google Sign-In ────────────────────────────────
+                Obx(
+                  () => OutlinedButton.icon(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.signInWithGoogle,
+                    icon: Get.find<AuthService>().isSocialLoading.value
+                        ? SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.primary,
+                            ),
+                          )
+                        : Icon(
+                            Icons.g_mobiledata_rounded,
+                            size: 28,
+                            color: cs.primary,
+                          ),
+                    label: Text(
+                      'continue_with_google'.tr,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      side: BorderSide(
+                        color: cs.outlineVariant,
+                      ),
                     ),
                   ),
                 ),

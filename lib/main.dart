@@ -41,7 +41,9 @@ class JKWorldsApp extends StatelessWidget {
       // ── Theme ──────────────────────────────────────────────────
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.light,
+      themeMode: (prefs.getBool('dark_mode') ?? false)
+          ? ThemeMode.dark
+          : ThemeMode.light,
 
       // ── Translations ───────────────────────────────────────────
       translations: AppTranslations(),

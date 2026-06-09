@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
+import 'package:jkworlds/core/utils/logger.dart';
 
 /// Centralized Dio HTTP client with interceptors.
 class ApiProvider {
@@ -76,7 +77,10 @@ class ApiProvider {
   // ── Logger ──────────────────────────────────────────────────────
 
   void _log(String tag, String message) {
-    // ignore: avoid_print
-    print('[$tag] $message');
+    if (tag == 'ERROR') {
+      logger.e('[$tag] $message');
+    } else {
+      logger.i('[$tag] $message');
+    }
   }
 }

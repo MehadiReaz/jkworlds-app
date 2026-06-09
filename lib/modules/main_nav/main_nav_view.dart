@@ -24,10 +24,7 @@ class MainNavView extends GetView<MainNavController> {
 
     return Obx(
       () => Scaffold(
-        body: IndexedStack(
-          index: ctrl.currentIndex.value,
-          children: pages,
-        ),
+        body: IndexedStack(index: ctrl.currentIndex.value, children: pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: ctrl.currentIndex.value,
           onTap: ctrl.changePage,

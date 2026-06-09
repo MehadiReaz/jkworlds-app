@@ -10,4 +10,8 @@ abstract class AppRoutes {
   static const login           = '/login';
   static const signup          = '/signup';
   static const forgotPassword  = '/forgot-password';
+  static const preferences     = '/preferences';
+  static const notificationSettings = '/notification-settings';
+  static const contactUs       = '/contact-us';
+  static const promoCodes      = '/promo-codes';
 }

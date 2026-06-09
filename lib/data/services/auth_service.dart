@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jkworlds/core/utils/logger.dart';
 
 /// Global auth service — single source of truth for authentication state.
 ///
@@ -16,6 +17,10 @@ class AuthService extends GetxService {
   final isLoggedIn = false.obs;
   final userName = ''.obs;
   final userEmail = ''.obs;
+  final userPhotoUrl = ''.obs;
+
+  // ── Social Auth State ────────────────────────────────────────
+  final isSocialLoading = false.obs;
 
   SharedPreferences get _prefs => Get.find<SharedPreferences>();
 
@@ -86,6 +91,60 @@ class AuthService extends GetxService {
     return true;
   }
 
+  /// Sign in with Google.
+  ///
+  /// Currently mocks the flow. When the Google Sign-In API is ready,
+  /// replace the TODO-marked section with the real implementation.
+  /// Returns `true` on success.
+  Future<bool> signInWithGoogle() async {
+    isSocialLoading.value = true;
+
+    try {
+      // TODO: Replace with real Google Sign-In flow:
+      //
+      //   final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      //   final googleUser = await googleSignIn.signIn();
+      //   if (googleUser == null) { isSocialLoading.value = false; return false; }
+      //
+      //   final googleAuth = await googleUser.authentication;
+      //   final credential = GoogleAuthProvider.credential(
+      //     accessToken: googleAuth.accessToken,
+      //     idToken: googleAuth.idToken,
+      //   );
+      //
+      //   // Send credential/token to your backend for verification:
+      //   // final response = await _api.socialLogin('google', googleAuth.idToken);
+      //
+      //   final name = googleUser.displayName ?? '';
+      //   final email = googleUser.email;
+      //   final photoUrl = googleUser.photoUrl ?? '';
+
+      // ── Mock implementation ──────────────────────────────────
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      const name = 'John Doe';
+      const email = 'john.doe@gmail.com';
+      const photoUrl = '';
+
+      final mockToken = 'google_token_${DateTime.now().millisecondsSinceEpoch}';
+      await _prefs.setString(_tokenKey, mockToken);
+      await _prefs.setString(_nameKey, name);
+      await _prefs.setString(_emailKey, email);
+
+      userName.value = name;
+      userEmail.value = email;
+      userPhotoUrl.value = photoUrl;
+      isLoggedIn.value = true;
+
+      isSocialLoading.value = false;
+      return true;
+    } catch (e) {
+      isSocialLoading.value = false;
+      logger.e('[AuthService] Google Sign-In error: $e');
+      return false;
+    }
+  }
+
   /// Simulate forgot-password request.
   Future<void> forgotPassword(String email) async {
     await Future.delayed(const Duration(milliseconds: 600));
@@ -104,6 +163,9 @@ class AuthService extends GetxService {
 
   /// Clear all auth data and log out.
   Future<void> logout() async {
+    // TODO: If signed in via Google, also sign out:
+    //   await GoogleSignIn().signOut();
+
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_nameKey);
     await _prefs.remove(_emailKey);
@@ -111,5 +173,6 @@ class AuthService extends GetxService {
     isLoggedIn.value = false;
     userName.value = '';
     userEmail.value = '';
+    userPhotoUrl.value = '';
   }
 }

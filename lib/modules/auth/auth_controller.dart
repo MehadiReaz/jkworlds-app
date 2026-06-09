@@ -113,6 +113,25 @@ class AuthController extends GetxController {
     Get.back();
   }
 
+  // ── Social Auth ────────────────────────────────────────────────
+
+  Future<void> signInWithGoogle() async {
+    final success = await _auth.signInWithGoogle();
+    if (success) {
+      _clearFields();
+      Get.snackbar(
+        'login_success'.tr,
+        '',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primaryContainer,
+        colorText: Get.theme.colorScheme.onPrimaryContainer,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      Get.back();
+    }
+  }
+
   // ── Navigation ────────────────────────────────────────────────
 
   void goToSignup() {

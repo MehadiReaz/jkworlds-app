@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'profile_controller.dart';
-import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 
@@ -12,74 +11,234 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profileCtrl = Get.find<ProfileController>();
-    final currencyService = Get.find<CurrencyService>();
     final auth = Get.find<AuthService>();
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('profile'.tr),
-      ),
+      appBar: AppBar(title: Text('profile'.tr)),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
-          // ── Auth Section ─────────────────────────────────────
-          Obx(() => auth.isLoggedIn.value
-              ? _buildLoggedInCard(context, auth, theme)
-              : _buildLoginPromptCard(context, theme)),
+          // ── Account Card ──────────────────────────────────────
+          Obx(
+            () => auth.isLoggedIn.value
+                ? _buildLoggedInCard(context, auth, theme)
+                : _buildLoginPromptCard(context, theme),
+          ),
+          const SizedBox(height: 28),
+
+          // ── General Section ───────────────────────────────────
+          _buildSectionHeader(context, 'general'.tr),
+          const SizedBox(height: 8),
+          _buildMenuCard(context, [
+            _MenuItem(
+              icon: Icons.receipt_long_rounded,
+              iconBg: cs.primaryContainer,
+              iconColor: cs.onPrimaryContainer,
+              title: 'my_bookings_menu'.tr,
+              onTap: () {
+                // Navigate to bookings - switch to orders tab
+              },
+            ),
+            _MenuItem(
+              icon: Icons.local_offer_rounded,
+              iconBg: cs.tertiaryContainer,
+              iconColor: cs.onTertiaryContainer,
+              title: 'promo_codes'.tr,
+              onTap: () => Get.toNamed(AppRoutes.promoCodes),
+            ),
+            _MenuItem(
+              icon: Icons.notifications_outlined,
+              iconBg: cs.secondaryContainer,
+              iconColor: cs.onSecondaryContainer,
+              title: 'notification_settings'.tr,
+              onTap: () => Get.toNamed(AppRoutes.notificationSettings),
+            ),
+          ]),
+
           const SizedBox(height: 24),
 
-          // ── Language Section ─────────────────────────────────────
-          _sectionTitle(context, 'language'.tr, Icons.language),
+          // ── Preferences Section ───────────────────────────────
+          _buildSectionHeader(context, 'preferences'.tr),
           const SizedBox(height: 8),
-          ...profileCtrl.locales.map((item) {
-            final locale = item['locale'] as Locale;
-            final name = item['name'] as String;
-            return ListTile(
-              title: Text(name),
-              trailing: Get.locale?.languageCode == locale.languageCode
-                  ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-                  : null,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              onTap: () => profileCtrl.changeLocale(locale),
-            );
-          }),
+          _buildMenuCard(context, [
+            _MenuItem(
+              icon: Icons.tune_rounded,
+              iconBg: cs.primaryContainer,
+              iconColor: cs.onPrimaryContainer,
+              title: 'language_currency'.tr,
+              onTap: () => Get.toNamed(AppRoutes.preferences),
+            ),
+            _MenuToggleItem(
+              icon: Icons.dark_mode_rounded,
+              iconBg: const Color(0xFF2D2D3A),
+              iconColor: const Color(0xFFE8DEF8),
+              title: 'dark_mode'.tr,
+              value: profileCtrl.isDarkMode,
+              onChanged: profileCtrl.toggleDarkMode,
+            ),
+          ]),
 
-          const Divider(height: 40),
+          const SizedBox(height: 24),
 
-          // ── Currency Section ────────────────────────────────────
-          _sectionTitle(context, 'currency'.tr, Icons.attach_money),
+          // ── Support Section ───────────────────────────────────
+          _buildSectionHeader(context, 'support'.tr),
           const SizedBox(height: 8),
-          Obx(() {
-            return Column(
-              children: currencyService.currencies.map((cur) {
-                final isSelected =
-                    currencyService.selectedCurrency.value.code == cur.code;
-                return ListTile(
-                  title: Text('${cur.symbol}  ${cur.name}'),
-                  subtitle: Text(cur.code),
-                  trailing: isSelected
-                      ? Icon(Icons.check_circle,
-                          color: theme.colorScheme.primary)
-                      : null,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onTap: () => currencyService.changeCurrency(cur.code),
+          _buildMenuCard(context, [
+            _MenuItem(
+              icon: Icons.help_outline_rounded,
+              iconBg: cs.secondaryContainer,
+              iconColor: cs.onSecondaryContainer,
+              title: 'help_support'.tr,
+              onTap: () {
+                Get.snackbar(
+                  'coming_soon'.tr,
+                  'help_support'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: const EdgeInsets.all(16),
+                  borderRadius: 12,
                 );
-              }).toList(),
-            );
-          }),
+              },
+            ),
+            _MenuItem(
+              icon: Icons.mail_outline_rounded,
+              iconBg: cs.primaryContainer,
+              iconColor: cs.onPrimaryContainer,
+              title: 'contact_us'.tr,
+              onTap: () => Get.toNamed(AppRoutes.contactUs),
+            ),
+          ]),
+
+          const SizedBox(height: 24),
+
+          // ── Legal Section ─────────────────────────────────────
+          _buildSectionHeader(context, 'legal'.tr),
+          const SizedBox(height: 8),
+          _buildMenuCard(context, [
+            _MenuItem(
+              icon: Icons.description_outlined,
+              iconBg: cs.surfaceContainerHighest,
+              iconColor: cs.onSurfaceVariant,
+              title: 'terms_of_service'.tr,
+              onTap: () {
+                Get.snackbar(
+                  'coming_soon'.tr,
+                  'terms_of_service'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: const EdgeInsets.all(16),
+                  borderRadius: 12,
+                );
+              },
+            ),
+            _MenuItem(
+              icon: Icons.privacy_tip_outlined,
+              iconBg: cs.surfaceContainerHighest,
+              iconColor: cs.onSurfaceVariant,
+              title: 'privacy_policy'.tr,
+              onTap: () {
+                Get.snackbar(
+                  'coming_soon'.tr,
+                  'privacy_policy'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: const EdgeInsets.all(16),
+                  borderRadius: 12,
+                );
+              },
+            ),
+          ]),
+
+          const SizedBox(height: 24),
+
+          // ── Logout Button ────────────────────────────────────
+          Obx(
+            () => auth.isLoggedIn.value
+                ? Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: OutlinedButton.icon(
+                      onPressed: () => auth.logout(),
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: Text('logout'.tr),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: cs.error,
+                        side: BorderSide(
+                          color: cs.error.withValues(alpha: 0.4),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── App Version ──────────────────────────────────────
+          Center(
+            child: Text(
+              '${'app_name'.tr} v1.0.0',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  // ── Logged-in card: shows user info + logout ──────────────────
+  // ── Section Header ──────────────────────────────────────────────
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+      ),
+    );
+  }
+
+  // ── Menu Card ───────────────────────────────────────────────────
+  Widget _buildMenuCard(BuildContext context, List<_MenuItemBase> items) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < items.length; i++) ...[
+            items[i].build(context),
+            if (i < items.length - 1)
+              Divider(
+                height: 1,
+                indent: 56,
+                endIndent: 16,
+                color: cs.outlineVariant.withValues(alpha: 0.2),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Logged-in card ──────────────────────────────────────────────
   Widget _buildLoggedInCard(
-      BuildContext context, AuthService auth, ThemeData theme) {
+    BuildContext context,
+    AuthService auth,
+    ThemeData theme,
+  ) {
     final cs = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -94,51 +253,63 @@ class ProfileView extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
+      child: Row(
         children: [
           CircleAvatar(
-            radius: 36,
+            radius: 30,
             backgroundColor: cs.primary,
             child: Text(
               auth.userName.value.isNotEmpty
                   ? auth.userName.value[0].toUpperCase()
                   : '?',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: cs.onPrimary,
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            auth.userName.value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: cs.onPrimaryContainer,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            auth.userEmail.value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: cs.onPrimaryContainer.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => auth.logout(),
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: Text('logout'.tr),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: cs.error,
-                side: BorderSide(color: cs.error.withValues(alpha: 0.5)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  auth.userName.value,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer,
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                const SizedBox(height: 2),
+                Text(
+                  auth.userEmail.value,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onPrimaryContainer.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              Get.snackbar(
+                'coming_soon'.tr,
+                'edit_profile'.tr,
+                snackPosition: SnackPosition.BOTTOM,
+                margin: const EdgeInsets.all(16),
+                borderRadius: 12,
+              );
+            },
+            icon: Icon(
+              Icons.edit_outlined,
+              color: cs.onPrimaryContainer.withValues(alpha: 0.7),
+              size: 20,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: cs.onPrimaryContainer.withValues(alpha: 0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
@@ -147,7 +318,7 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  // ── Login prompt card ─────────────────────────────────────────
+  // ── Login prompt card ───────────────────────────────────────────
   Widget _buildLoginPromptCard(BuildContext context, ThemeData theme) {
     final cs = theme.colorScheme;
     return Container(
@@ -211,19 +382,116 @@ class ProfileView extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _sectionTitle(BuildContext context, String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+// ── Menu Item Models ──────────────────────────────────────────────
+
+abstract class _MenuItemBase {
+  Widget build(BuildContext context);
+}
+
+class _MenuItem extends _MenuItemBase {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final VoidCallback onTap;
+
+  _MenuItem({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(icon, size: 20, color: iconColor),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _MenuToggleItem extends _MenuItemBase {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final RxBool value;
+  final ValueChanged<bool> onChanged;
+
+  _MenuToggleItem({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ),
+          Obx(
+            () => Switch.adaptive(
+              value: value.value,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

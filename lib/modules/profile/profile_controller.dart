@@ -4,6 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileController extends GetxController {
   static const _localeKey = 'locale';
+  static const _darkModeKey = 'dark_mode';
+
+  // ── Dark Mode ──────────────────────────────────────────────────
+  final isDarkMode = false.obs;
 
   // ── Supported Locales ─────────────────────────────────────────
   final locales = const [
@@ -13,11 +17,37 @@ class ProfileController extends GetxController {
     {'name': 'Igbo', 'locale': Locale('ig', 'NG')},
   ];
 
+  SharedPreferences get _prefs => Get.find<SharedPreferences>();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _restoreDarkMode();
+  }
+
+  // ── Dark Mode ────────────────────────────────────────────────
+  void _restoreDarkMode() {
+    final saved = _prefs.getBool(_darkModeKey) ?? false;
+    isDarkMode.value = saved;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.changeThemeMode(saved ? ThemeMode.dark : ThemeMode.light);
+    });
+  }
+
+  void toggleDarkMode(bool value) {
+    isDarkMode.value = value;
+    _prefs.setBool(_darkModeKey, value);
+    Get.changeThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+  }
+
+  // ── Locale ───────────────────────────────────────────────────
   /// Change the app locale and persist the choice.
   void changeLocale(Locale locale) {
     Get.updateLocale(locale);
-    Get.find<SharedPreferences>()
-        .setString(_localeKey, '${locale.languageCode}_${locale.countryCode}');
+    Get.find<SharedPreferences>().setString(
+      _localeKey,
+      '${locale.languageCode}_${locale.countryCode}',
+    );
   }
 
   /// Read saved locale from storage; returns null if none saved.
