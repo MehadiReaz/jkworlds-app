@@ -116,6 +116,8 @@ const Map<String, String> yo = {
   'active': 'Ṣíṣẹ́',
   'past': 'Ti Kọjá',
   'cancelled': 'Tí Fagílée',
+  'confirmed': 'Ti Fidi Mulẹ',
+  'completed': 'Ti Parí',
   'no_upcoming': 'Kò sí ìpèsè tí ń bọ̀',
   'no_active': 'Kò sí ìpèsè tí ń ṣiṣẹ́',
   'no_past': 'Kò sí ìpèsè tí kọjá',
@@ -193,6 +195,21 @@ const Map<String, String> yo = {
   'continue_with_apple': 'Tẹ̀síwájú pẹ̀lú Apple',
   'continue_with_facebook': 'Tẹ̀síwájú pẹ̀lú Facebook',
   'or_divider': 'TÀBÍ',
+  'email_address_label': 'ÍMEÈLÌ *',
+  'password_label': 'Ọ̀RỌ̀ AṢÍNÀ *',
+  'or_use': 'Tàbí lò',
+  'enter_email': 'Tẹ ímeèlì rẹ',
+  'enter_password': 'Tẹ ọ̀rọ̀ aṣínà rẹ',
+  'create_account': 'ṢẸ̀DÁ ÀKỌỌ́LẸ̀',
+  'signup_subtitle': 'Forúkọ sílẹ̀ fún ìrírí ìpèsè tó dára.',
+  'full_name_label': 'ORÚKỌ KÍKÚN *',
+  'confirm_password_label': 'JẸ́RÌÍSÍ Ọ̀RỌ̀ AṢÍNÀ *',
+  'enter_name': 'Tẹ orúkọ rẹ',
+  'confirm_your_password': 'Jẹ́rìísí ọ̀rọ̀ aṣínà rẹ',
+  'forgot_password_title': 'GBÀGBÉ Ọ̀RỌ̀ AṢÍNÀ',
+  'forgot_password_subtitle': 'Tẹ ímeèlì rẹ sí, àwa yóò fi ìjápọ̀ ránṣẹ́ fún ìtúnṣe.',
+  'send_password_reset_link': 'Fi Ìjápọ̀ Ìtúnṣe Ránṣẹ́',
+  'back_to_log_in': 'Padà sí Ìwọlé',
 
   // ── Settings ────────────────────────────────────────────────
   'settings': 'Ètò',
@@ -260,4 +277,10 @@ const Map<String, String> yo = {
   'promo_already_used': 'A ti lo koodu ìdín owó yí tẹ́lẹ̀.',
   'promo_expired': 'Koodu ìdín owó yí ti parí.',
   'promo_invalid': 'Koodu ìdín owó yí kò tọ́. Jọ̀wọ́ yẹ̀ ẹ́ wò kí o sì gbìyànjú padà.',
+
+  // ── Image Picker ─────────────────────────────────────────────
+  'select_image_source': 'Yan Orisun Aworan',
+  'camera': 'Kamẹra',
+  'gallery': 'Àwòrán',
+  'failed_to_pick_image': 'Kuna lati yan aworan',
 };

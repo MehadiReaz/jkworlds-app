@@ -55,10 +55,7 @@ class AuthController extends GetxController {
     if (!loginFormKey.currentState!.validate()) return;
 
     isLoading.value = true;
-    final success = await _auth.login(
-      emailCtrl.text.trim(),
-      passwordCtrl.text,
-    );
+    final success = await _auth.login(emailCtrl.text.trim(), passwordCtrl.text);
     isLoading.value = false;
 
     if (success) {
@@ -132,6 +129,23 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<void> signInWithApple() async {
+    final success = await _auth.signInWithApple();
+    if (success) {
+      _clearFields();
+      Get.snackbar(
+        'login_success'.tr,
+        '',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primaryContainer,
+        colorText: Get.theme.colorScheme.onPrimaryContainer,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      Get.back();
+    }
+  }
+
   // ── Navigation ────────────────────────────────────────────────
 
   void goToSignup() {
@@ -154,21 +168,10 @@ class AuthController extends GetxController {
     Get.back();
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
-
   void _clearFields() {
     nameCtrl.clear();
     emailCtrl.clear();
     passwordCtrl.clear();
     confirmPasswordCtrl.clear();
-  }
-
-  @override
-  void onClose() {
-    nameCtrl.dispose();
-    emailCtrl.dispose();
-    passwordCtrl.dispose();
-    confirmPasswordCtrl.dispose();
-    super.onClose();
   }
 }

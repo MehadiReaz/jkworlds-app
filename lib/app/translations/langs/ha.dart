@@ -116,6 +116,8 @@ const Map<String, String> ha = {
   'active': 'Mai Aiki',
   'past': 'Da ya wuce',
   'cancelled': 'An Soke',
+  'confirmed': 'Tabbatar',
+  'completed': 'Kammala',
   'no_upcoming': 'Babu ajiya mai zuwa',
   'no_active': 'Babu ajiya mai aiki',
   'no_past': 'Babu ajiya da ta wuce',
@@ -193,6 +195,21 @@ const Map<String, String> ha = {
   'continue_with_apple': 'Ci gaba da Apple',
   'continue_with_facebook': 'Ci gaba da Facebook',
   'or_divider': 'KO',
+  'email_address_label': 'IMEL *',
+  'password_label': 'KALMAR SIRRI *',
+  'or_use': 'Ko yi amfani da',
+  'enter_email': 'Shigar da imel ɗin ku',
+  'enter_password': 'Shigar da kalmar sirrin ku',
+  'create_account': 'ƘIRƘIRI ASUSU',
+  'signup_subtitle': 'Yi rajista don samun sauƙin yin ajiya.',
+  'full_name_label': 'CIKAKKEN SUNA *',
+  'confirm_password_label': 'TABBATAR DA KALMAR SIRRI *',
+  'enter_name': 'Shigar da sunan ku',
+  'confirm_your_password': 'Tabbatar da kalmar sirrin ku',
+  'forgot_password_title': 'AN MANTA KALMAR SIRRI',
+  'forgot_password_subtitle': 'Shigar da imel ɗin ku, za mu aiko muku da hanyar saita sabuwar kalmar sirri.',
+  'send_password_reset_link': 'Aika Hanyar Sake Saita Kalmar Sirri',
+  'back_to_log_in': 'Koma Shiga',
 
   // ── Settings ────────────────────────────────────────────────
   'settings': 'Saituna',
@@ -260,4 +277,10 @@ const Map<String, String> ha = {
   'promo_already_used': 'An riga an yi amfani da wannan lambar rangwame.',
   'promo_expired': 'Wannan lambar rangwame ta ƙare.',
   'promo_invalid': 'Lambar rangwame mara aiki. Da fatan za a bincika kuma a sake gwadawa.',
+
+  // ── Image Picker ─────────────────────────────────────────────
+  'select_image_source': 'Zaɓi Tushen Hoto',
+  'camera': 'Kamara',
+  'gallery': 'Hotuna',
+  'failed_to_pick_image': 'Kasa zaɓar hoto',
 };

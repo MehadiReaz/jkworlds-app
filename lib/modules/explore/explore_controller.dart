@@ -1,18 +1,32 @@
 import 'package:get/get.dart';
-
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 
 class ExploreController extends GetxController {
-  final searchQuery = ''.obs;
-  final selectedType = 'All'.obs;
-  final selectedTransmission = 'All'.obs;
-  final sortOption = 'sort_rating'.obs;
-  final hasChauffeurFilter = false.obs;
+  // ── Search Form States ──────────────────────────────────────────
+  final pickupLocation = ''.obs;
+  final isDifferentDropoff = false.obs;
+  final dropoffLocation = ''.obs;
+  final pickupDateTime = Rxn<DateTime>();
+  final dropoffDateTime = Rxn<DateTime>();
+  final isChauffeurRequired = false.obs;
+
+  // ── Filter & Sort States ────────────────────────────────────────
+  final selectedServiceType = 'All'.obs;      // All, Self-Drive, Chauffeur
+  final selectedCategory = 'All'.obs;         // All, Sedan, SUV, Luxury, Van
+  final selectedTransmission = 'All'.obs;     // All, Automatic, Manual
+  final selectedFuelType = 'All'.obs;         // All, Petrol, Diesel, Hybrid, Electric
+  final selectedSortType = 'Top Rated'.obs;   // Top Rated, Price: Low to High, Price: High to Low
+
+  // ── Results State ───────────────────────────────────────────────
   final filteredVehicles = <VehicleModel>[].obs;
 
-  final types = const ['All', 'Sedan', 'SUV', 'Luxury', 'Van'];
+  // ── Filter Lists ────────────────────────────────────────────────
+  final serviceTypes = const ['All', 'Self-Drive', 'Chauffeur'];
+  final categories = const ['All', 'Sedan', 'SUV', 'Luxury', 'Van'];
   final transmissions = const ['All', 'Automatic', 'Manual'];
+  final fuelTypes = const ['All', 'Petrol', 'Diesel', 'Hybrid', 'Electric'];
+  final sortTypes = const ['Top Rated', 'Price: Low to High', 'Price: High to Low'];
 
   @override
   void onInit() {
@@ -20,81 +34,73 @@ class ExploreController extends GetxController {
     applyFilters();
   }
 
-  void updateSearch(String query) {
-    searchQuery.value = query;
-    applyFilters();
-  }
-
-  void selectType(String type) {
-    selectedType.value = type;
-    applyFilters();
-  }
-
-  void selectTransmission(String transmission) {
-    selectedTransmission.value = transmission;
-    applyFilters();
-  }
-
-  void toggleChauffeurFilter() {
-    hasChauffeurFilter.value = !hasChauffeurFilter.value;
-    applyFilters();
-  }
-
-  void changeSortOption(String option) {
-    sortOption.value = option;
-    applyFilters();
-  }
-
+  /// Reset all search inputs, date-times, filters, and sorting choices.
   void clearFilters() {
-    searchQuery.value = '';
-    selectedType.value = 'All';
+    pickupLocation.value = '';
+    isDifferentDropoff.value = false;
+    dropoffLocation.value = '';
+    pickupDateTime.value = null;
+    dropoffDateTime.value = null;
+    isChauffeurRequired.value = false;
+
+    selectedServiceType.value = 'All';
+    selectedCategory.value = 'All';
     selectedTransmission.value = 'All';
-    hasChauffeurFilter.value = false;
-    sortOption.value = 'sort_rating';
+    selectedFuelType.value = 'All';
+    selectedSortType.value = 'Top Rated';
+
     applyFilters();
   }
 
+  /// Trigger the filtering rules based on active user configurations.
   void applyFilters() {
     var results = List<VehicleModel>.from(mockVehicles);
 
-    // Search
-    if (searchQuery.value.isNotEmpty) {
-      final q = searchQuery.value.toLowerCase();
+    // 1. Pick-up Location Filter (fuzzy matches location or brand/name)
+    if (pickupLocation.value.isNotEmpty) {
+      final loc = pickupLocation.value.toLowerCase();
       results = results.where((v) =>
-          v.name.toLowerCase().contains(q) ||
-          v.brand.toLowerCase().contains(q) ||
-          v.type.toLowerCase().contains(q) ||
-          v.location.toLowerCase().contains(q)).toList();
+          v.location.toLowerCase().contains(loc) ||
+          v.brand.toLowerCase().contains(loc) ||
+          v.name.toLowerCase().contains(loc)).toList();
     }
 
-    // Type filter
-    if (selectedType.value != 'All') {
-      results = results.where((v) => v.type == selectedType.value).toList();
+    // 2. Chauffeur Availability Check
+    if (isChauffeurRequired.value) {
+      results = results.where((v) => v.hasChauffeur).toList();
     }
 
-    // Transmission filter
+    // 3. Service Type Filter
+    if (selectedServiceType.value == 'Chauffeur') {
+      results = results.where((v) => v.hasChauffeur).toList();
+    }
+
+    // 4. Category (Type) Filter
+    if (selectedCategory.value != 'All') {
+      results = results.where((v) => v.type == selectedCategory.value).toList();
+    }
+
+    // 5. Transmission Filter
     if (selectedTransmission.value != 'All') {
       results = results.where((v) => v.transmission == selectedTransmission.value).toList();
     }
 
-    // Chauffeur filter
-    if (hasChauffeurFilter.value) {
-      results = results.where((v) => v.hasChauffeur).toList();
+    // 6. Fuel Type Filter
+    if (selectedFuelType.value != 'All') {
+      results = results.where((v) => v.fuelType == selectedFuelType.value).toList();
     }
 
-    // Sort
-    switch (sortOption.value) {
-      case 'sort_rating':
-        results.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
-      case 'sort_newest':
-        results.sort((a, b) => b.year.compareTo(a.year));
-        break;
-      case 'sort_price_low':
+    // 7. Sort Order
+    switch (selectedSortType.value) {
+      case 'Price: Low to High':
         results.sort((a, b) => a.pricePerDay.compareTo(b.pricePerDay));
         break;
-      case 'sort_price_high':
+      case 'Price: High to Low':
         results.sort((a, b) => b.pricePerDay.compareTo(a.pricePerDay));
+        break;
+      case 'Top Rated':
+      default:
+        results.sort((a, b) => b.rating.compareTo(a.rating));
         break;
     }
 

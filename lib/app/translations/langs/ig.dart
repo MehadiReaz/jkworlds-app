@@ -116,6 +116,8 @@ const Map<String, String> ig = {
   'active': 'Na-arụ ọrụ',
   'past': 'Gara aga',
   'cancelled': 'Akagburu',
+  'confirmed': 'Ekwenyere',
+  'completed': 'Meezuola',
   'no_upcoming': 'Enweghị ndekọ na-abịa',
   'no_active': 'Enweghị ndekọ na-arụ ọrụ',
   'no_past': 'Enweghị ndekọ gara aga',
@@ -193,6 +195,21 @@ const Map<String, String> ig = {
   'continue_with_apple': 'Gaa na Apple',
   'continue_with_facebook': 'Gaa na Facebook',
   'or_divider': 'MA Ọ BỤ',
+  'email_address_label': 'EMAIL *',
+  'password_label': 'OKWUNTỤGHE *',
+  'or_use': 'Ma ọ bụ jiri',
+  'enter_email': 'Tinye email gị',
+  'enter_password': 'Tinye okwuntụghe gị',
+  'create_account': 'MEPỤTA AKAỤNTỤ',
+  'signup_subtitle': 'Debanye aha iji nwee ndekọ dị mfe.',
+  'full_name_label': 'AHA ZURU EZU *',
+  'confirm_password_label': 'KWA DOO OKWUNTỤGHE *',
+  'enter_name': 'Tinye aha gị',
+  'confirm_your_password': 'Kwado okwuntụghe gị',
+  'forgot_password_title': 'CHEFURU OKWUNTỤGHE',
+  'forgot_password_subtitle': 'Tinye email gị, anyị ga-ezitere gị njikọ iji tọgharia okwuntụghe gị.',
+  'send_password_reset_link': 'Ziga Njikọ Ntọgharia Okwuntụghe',
+  'back_to_log_in': 'Laghachi na Ịbanye',
 
   // ── Settings ────────────────────────────────────────────────
   'settings': 'Ntọala',
@@ -260,4 +277,10 @@ const Map<String, String> ig = {
   'promo_already_used': 'Ejirila koodu mbelata a mee ihe mbụ.',
   'promo_expired': 'Koodu mbelata a agafela oge.',
   'promo_invalid': 'Koodu mbelata adịghị mma. Biko lelee ma nwaa ọzọ.',
+
+  // ── Image Picker ─────────────────────────────────────────────
+  'select_image_source': 'Họrọ Ebe Hoto Si',
+  'camera': 'Igwe Foto',
+  'gallery': 'Ebe Ndị Hoto',
+  'failed_to_pick_image': 'Kụrụ afọ n\'ala ịhọrọ foto',
 };

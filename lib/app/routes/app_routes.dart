@@ -14,4 +14,7 @@ abstract class AppRoutes {
   static const notificationSettings = '/notification-settings';
   static const contactUs       = '/contact-us';
   static const promoCodes      = '/promo-codes';
+  static const editProfile     = '/edit-profile';
+  static const vehicleDetail   = '/vehicle-detail';
+  static const checkout        = '/checkout';
 }

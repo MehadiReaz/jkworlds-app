@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'auth_controller.dart';
-import 'package:jkworlds/data/services/auth_service.dart';
+import 'widgets/shared_auth_widgets.dart';
 
 class SignupView extends GetView<AuthController> {
   const SignupView({super.key});
@@ -13,299 +13,287 @@ class SignupView extends GetView<AuthController> {
     final cs = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Form(
-            key: controller.signupFormKey,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 48),
-
-                // ── Branding ──────────────────────────────────────
-                _buildHeader(cs),
-                const SizedBox(height: 48),
-
-                // ── Title ─────────────────────────────────────────
-                Text(
-                  'signup'.tr,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'signup_prompt'.tr,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // ── Name ──────────────────────────────────────────
-                TextFormField(
-                  controller: controller.nameCtrl,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: controller.validateName,
-                  decoration: _inputDecoration(
-                    label: 'name'.tr,
-                    icon: Icons.person_outline,
-                    cs: cs,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Email ─────────────────────────────────────────
-                TextFormField(
-                  controller: controller.emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  validator: controller.validateEmail,
-                  decoration: _inputDecoration(
-                    label: 'email'.tr,
-                    icon: Icons.email_outlined,
-                    cs: cs,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Password ──────────────────────────────────────
-                Obx(
-                  () => TextFormField(
-                    controller: controller.passwordCtrl,
-                    obscureText: controller.obscurePassword.value,
-                    textInputAction: TextInputAction.next,
-                    validator: controller.validatePassword,
-                    decoration: _inputDecoration(
-                      label: 'password'.tr,
-                      icon: Icons.lock_outline,
-                      cs: cs,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          controller.obscurePassword.value
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: cs.onSurfaceVariant,
-                        ),
-                        onPressed: () => controller.obscurePassword.toggle(),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Confirm Password ──────────────────────────────
-                Obx(
-                  () => TextFormField(
-                    controller: controller.confirmPasswordCtrl,
-                    obscureText: controller.obscureConfirmPassword.value,
-                    textInputAction: TextInputAction.done,
-                    validator: controller.validateConfirmPassword,
-                    decoration: _inputDecoration(
-                      label: 'confirm_password'.tr,
-                      icon: Icons.lock_outline,
-                      cs: cs,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          controller.obscureConfirmPassword.value
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: cs.onSurfaceVariant,
-                        ),
-                        onPressed: () =>
-                            controller.obscureConfirmPassword.toggle(),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // ── Signup Button ─────────────────────────────────
-                Obx(
-                  () => FilledButton(
-                    onPressed:
-                        controller.isLoading.value ? null : controller.signup,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: controller.isLoading.value
-                        ? SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: cs.onPrimary,
-                            ),
-                          )
-                        : Text(
-                            'signup'.tr,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // ── OR Divider ───────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Divider(color: cs.outlineVariant),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'or_divider'.tr,
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(color: cs.outlineVariant),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 24),
-
-                // ── Google Sign-In ────────────────────────────────
-                Obx(
-                  () => OutlinedButton.icon(
-                    onPressed: controller.isLoading.value
-                        ? null
-                        : controller.signInWithGoogle,
-                    icon: Get.find<AuthService>().isSocialLoading.value
-                        ? SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: cs.primary,
-                            ),
-                          )
-                        : Icon(
-                            Icons.g_mobiledata_rounded,
-                            size: 28,
-                            color: cs.primary,
+                // ── Signup Card Container ─────────────────────────
+                AuthCard(
+                  child: Form(
+                    key: controller.signupFormKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ── Header Title ─────────────────────────────────
+                        Text(
+                          'create_account'.tr,
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: cs.onSurface,
+                            letterSpacing: 0.5,
                           ),
-                    label: Text(
-                      'continue_with_google'.tr,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      side: BorderSide(
-                        color: cs.outlineVariant,
-                      ),
+                          textAlign: TextAlign.left,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'signup_subtitle'.tr,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.left,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // ── Full Name Input Label ────────────────────────
+                        Text(
+                          'full_name_label'.tr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurfaceVariant,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // ── Full Name TextFormField ──────────────────────
+                        TextFormField(
+                          controller: controller.nameCtrl,
+                          textInputAction: TextInputAction.next,
+                          textCapitalization: TextCapitalization.words,
+                          validator: controller.validateName,
+                          decoration: buildAuthInputDecoration(
+                            hintText: 'enter_name'.tr,
+                            cs: cs,
+                            theme: theme,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── Email Input Label ────────────────────────────
+                        Text(
+                          'email_address_label'.tr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurfaceVariant,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // ── Email TextFormField ──────────────────────────
+                        TextFormField(
+                          controller: controller.emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          validator: controller.validateEmail,
+                          decoration: buildAuthInputDecoration(
+                            hintText: 'enter_email'.tr,
+                            cs: cs,
+                            theme: theme,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── Password Input Label ─────────────────────────
+                        Text(
+                          'password_label'.tr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurfaceVariant,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // ── Password TextFormField ───────────────────────
+                        Obx(
+                          () => TextFormField(
+                            controller: controller.passwordCtrl,
+                            obscureText: controller.obscurePassword.value,
+                            textInputAction: TextInputAction.next,
+                            validator: controller.validatePassword,
+                            decoration: buildAuthInputDecoration(
+                              hintText: 'enter_password'.tr,
+                              cs: cs,
+                              theme: theme,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  controller.obscurePassword.value
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: cs.onSurfaceVariant.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                                onPressed: () =>
+                                    controller.obscurePassword.toggle(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── Confirm Password Input Label ─────────────────
+                        Text(
+                          'confirm_password_label'.tr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurfaceVariant,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // ── Confirm Password TextFormField ───────────────
+                        Obx(
+                          () => TextFormField(
+                            controller: controller.confirmPasswordCtrl,
+                            obscureText:
+                                controller.obscureConfirmPassword.value,
+                            textInputAction: TextInputAction.done,
+                            validator: controller.validateConfirmPassword,
+                            decoration: buildAuthInputDecoration(
+                              hintText: 'confirm_your_password'.tr,
+                              cs: cs,
+                              theme: theme,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  controller.obscureConfirmPassword.value
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: cs.onSurfaceVariant.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                                onPressed: () =>
+                                    controller.obscureConfirmPassword.toggle(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // ── Signup Submit Button ─────────────────────────
+                        Obx(
+                          () => FilledButton(
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : controller.signup,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: cs.primary,
+                              foregroundColor: cs.onPrimary,
+                              disabledBackgroundColor: cs.primary.withValues(
+                                alpha: 0.6,
+                              ),
+                              minimumSize: const Size.fromHeight(54),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: controller.isLoading.value
+                                ? SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: cs.onPrimary,
+                                    ),
+                                  )
+                                : Text(
+                                    'signup'.tr,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── Already have an account? Log In ──────────────
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "already_have_account".tr + " ",
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 14,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: controller.goToLogin,
+                              child: Text(
+                                'login'.tr,
+                                style: TextStyle(
+                                  color: cs.primary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+
+                        // ── Divider ──────────────────────────────────────
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: cs.outlineVariant.withValues(alpha: 0.5),
+                                thickness: 1.5,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Text(
+                                'or_use'.tr,
+                                style: TextStyle(
+                                  color: cs.onSurface,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: cs.outlineVariant.withValues(alpha: 0.5),
+                                thickness: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── Social Sign-In Section ───────────────────────
+                        Obx(
+                          () => SocialSignInSection(
+                            isLoading: controller.isLoading.value,
+                            onGooglePressed: controller.signInWithGoogle,
+                            onApplePressed: controller.signInWithApple,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-
-                // ── Login Link ────────────────────────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'already_have_account'.tr,
-                      style: TextStyle(color: cs.onSurfaceVariant),
-                    ),
-                    TextButton(
-                      onPressed: controller.goToLogin,
-                      child: Text(
-                        'login'.tr,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: cs.primary,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: 24),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // ── Header with gradient icon ─────────────────────────────────
-  Widget _buildHeader(ColorScheme cs) {
-    return Center(
-      child: Container(
-        width: 88,
-        height: 88,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [cs.primary, cs.tertiary],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: cs.primary.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.storefront_rounded,
-          size: 44,
-          color: cs.onPrimary,
-        ),
-      ),
-    );
-  }
-
-  // ── Reusable input decoration ─────────────────────────────────
-  InputDecoration _inputDecoration({
-    required String label,
-    required IconData icon,
-    required ColorScheme cs,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, color: cs.onSurfaceVariant),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: cs.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: cs.error, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: cs.error, width: 1.5),
       ),
     );
   }

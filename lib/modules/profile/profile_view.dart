@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'profile_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -38,7 +39,7 @@ class ProfileView extends StatelessWidget {
               iconColor: cs.onPrimaryContainer,
               title: 'my_bookings_menu'.tr,
               onTap: () {
-                // Navigate to bookings - switch to orders tab
+                Get.find<MainNavController>().changePage(2);
               },
             ),
             _MenuItem(
@@ -292,15 +293,7 @@ class ProfileView extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {
-              Get.snackbar(
-                'coming_soon'.tr,
-                'edit_profile'.tr,
-                snackPosition: SnackPosition.BOTTOM,
-                margin: const EdgeInsets.all(16),
-                borderRadius: 12,
-              );
-            },
+            onPressed: () => Get.toNamed(AppRoutes.editProfile),
             icon: Icon(
               Icons.edit_outlined,
               color: cs.onPrimaryContainer.withValues(alpha: 0.7),

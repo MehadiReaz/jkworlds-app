@@ -115,6 +115,8 @@ const Map<String, String> en = {
   'active': 'Active',
   'past': 'Past',
   'cancelled': 'Cancelled',
+  'confirmed': 'Confirmed',
+  'completed': 'Completed',
   'no_upcoming': 'No upcoming bookings',
   'no_active': 'No active bookings',
   'no_past': 'No past bookings',
@@ -192,6 +194,21 @@ const Map<String, String> en = {
   'continue_with_apple': 'Continue with Apple',
   'continue_with_facebook': 'Continue with Facebook',
   'or_divider': 'OR',
+  'email_address_label': 'EMAIL ADDRESS *',
+  'password_label': 'PASSWORD *',
+  'or_use': 'Or use',
+  'enter_email': 'Enter your email',
+  'enter_password': 'Enter your password',
+  'create_account': 'CREATE ACCOUNT',
+  'signup_subtitle': 'Sign up to enjoy a seamless booking experience.',
+  'full_name_label': 'FULL NAME *',
+  'confirm_password_label': 'CONFIRM PASSWORD *',
+  'enter_name': 'Enter your name',
+  'confirm_your_password': 'Confirm your password',
+  'forgot_password_title': 'FORGOT PASSWORD',
+  'forgot_password_subtitle': 'Enter your email address and we\'ll send you a link to reset your password.',
+  'send_password_reset_link': 'Send Password Reset Link',
+  'back_to_log_in': 'Back to Log In',
 
   // ── Settings ────────────────────────────────────────────────
   'settings': 'Settings',
@@ -259,4 +276,10 @@ const Map<String, String> en = {
   'promo_already_used': 'This promo code has already been redeemed.',
   'promo_expired': 'This promo code is expired.',
   'promo_invalid': 'Invalid promo code. Please check and try again.',
+
+  // ── Image Picker ─────────────────────────────────────────────
+  'select_image_source': 'Select Image Source',
+  'camera': 'Camera',
+  'gallery': 'Gallery',
+  'failed_to_pick_image': 'Failed to pick image',
 };

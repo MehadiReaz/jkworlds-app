@@ -12,11 +12,16 @@ class AuthService extends GetxService {
   static const _tokenKey = 'auth_token';
   static const _nameKey = 'auth_user_name';
   static const _emailKey = 'auth_user_email';
+  static const _phoneKey = 'auth_user_phone';
+  static const _addressKey = 'auth_user_address';
+  static const _photoKey = 'auth_user_photo';
 
   // ── Reactive State ────────────────────────────────────────────
   final isLoggedIn = false.obs;
   final userName = ''.obs;
   final userEmail = ''.obs;
+  final userPhone = ''.obs;
+  final userAddress = ''.obs;
   final userPhotoUrl = ''.obs;
 
   // ── Social Auth State ────────────────────────────────────────
@@ -39,6 +44,9 @@ class AuthService extends GetxService {
       isLoggedIn.value = true;
       userName.value = _prefs.getString(_nameKey) ?? '';
       userEmail.value = _prefs.getString(_emailKey) ?? '';
+      userPhone.value = _prefs.getString(_phoneKey) ?? '';
+      userAddress.value = _prefs.getString(_addressKey) ?? '';
+      userPhotoUrl.value = _prefs.getString(_photoKey) ?? '';
     }
   }
 
@@ -145,6 +153,39 @@ class AuthService extends GetxService {
     }
   }
 
+  /// Sign in with Apple.
+  ///
+  /// Currently mocks the flow.
+  /// Returns `true` on success.
+  Future<bool> signInWithApple() async {
+    isSocialLoading.value = true;
+    try {
+      // Simulate network delay
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      const name = 'John Doe (Apple)';
+      const email = 'john.doe@apple.com';
+      const photoUrl = '';
+
+      final mockToken = 'apple_token_${DateTime.now().millisecondsSinceEpoch}';
+      await _prefs.setString(_tokenKey, mockToken);
+      await _prefs.setString(_nameKey, name);
+      await _prefs.setString(_emailKey, email);
+
+      userName.value = name;
+      userEmail.value = email;
+      userPhotoUrl.value = photoUrl;
+      isLoggedIn.value = true;
+
+      isSocialLoading.value = false;
+      return true;
+    } catch (e) {
+      isSocialLoading.value = false;
+      logger.e('[AuthService] Apple Sign-In error: $e');
+      return false;
+    }
+  }
+
   /// Simulate forgot-password request.
   Future<void> forgotPassword(String email) async {
     await Future.delayed(const Duration(milliseconds: 600));
@@ -169,10 +210,51 @@ class AuthService extends GetxService {
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_nameKey);
     await _prefs.remove(_emailKey);
+    await _prefs.remove(_phoneKey);
+    await _prefs.remove(_addressKey);
+    await _prefs.remove(_photoKey);
 
     isLoggedIn.value = false;
     userName.value = '';
     userEmail.value = '';
+    userPhone.value = '';
+    userAddress.value = '';
     userPhotoUrl.value = '';
+  }
+
+  /// Update personal profile information.
+  Future<bool> updateProfile({
+    required String name,
+    required String email,
+    required String phone,
+    required String address,
+    required String imagePath,
+  }) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (name.isEmpty || email.isEmpty) return false;
+
+    await _prefs.setString(_nameKey, name);
+    await _prefs.setString(_emailKey, email);
+    await _prefs.setString(_phoneKey, phone);
+    await _prefs.setString(_addressKey, address);
+    if (imagePath.isNotEmpty) {
+      await _prefs.setString(_photoKey, imagePath);
+      userPhotoUrl.value = imagePath;
+    }
+
+    userName.value = name;
+    userEmail.value = email;
+    userPhone.value = phone;
+    userAddress.value = address;
+    return true;
+  }
+
+  /// Update password mock method.
+  Future<bool> updatePassword(String newPassword) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 800));
+    return newPassword.length >= 6;
   }
 }
