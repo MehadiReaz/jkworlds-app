@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'edit_profile_controller.dart';
 import 'package:jkworlds/modules/auth/widgets/shared_auth_widgets.dart';
+import 'package:jkworlds/core/constants/api_constants.dart';
 
 class EditProfileView extends GetView<EditProfileController> {
   const EditProfileView({super.key});
@@ -78,6 +79,38 @@ class EditProfileView extends GetView<EditProfileController> {
                               } else if (path.startsWith('assets/')) {
                                 imageWidget = Image.asset(
                                   path,
+                                  fit: BoxFit.cover,
+                                  width: 120,
+                                  height: 120,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.person_rounded,
+                                      size: 60,
+                                      color: cs.onSurfaceVariant,
+                                    );
+                                  },
+                                );
+                              } else if (path.startsWith('http://') || path.startsWith('https://')) {
+                                imageWidget = Image.network(
+                                  path,
+                                  fit: BoxFit.cover,
+                                  width: 120,
+                                  height: 120,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.person_rounded,
+                                      size: 60,
+                                      color: cs.onSurfaceVariant,
+                                    );
+                                  },
+                                );
+                              } else if (path.contains('backend/image') ||
+                                  (!path.startsWith('/') && !path.contains(':/') && !path.startsWith('content:'))) {
+                                final fullUrl = path.startsWith('/')
+                                    ? '${ApiConstants.baseUrl}$path'
+                                    : '${ApiConstants.baseUrl}/$path';
+                                imageWidget = Image.network(
+                                  fullUrl,
                                   fit: BoxFit.cover,
                                   width: 120,
                                   height: 120,

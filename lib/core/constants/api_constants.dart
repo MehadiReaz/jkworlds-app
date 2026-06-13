@@ -2,7 +2,7 @@ class ApiConstants {
   ApiConstants._();
 
   // ── Base URL ──────────────────────────────────────────────────
-  static const String baseUrl = 'https://api.example.com/v1';
+  static const String baseUrl = 'https://jkworldsserviceslimited.nexcoreit4u.com';
 
   // ── Timeouts (milliseconds) ───────────────────────────────────
   static const int connectTimeout = 15000;

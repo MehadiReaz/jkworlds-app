@@ -302,4 +302,12 @@ const Map<String, String> yo = {
   'camera': 'Kamẹra',
   'gallery': 'Àwòrán',
   'failed_to_pick_image': 'Kuna lati yan aworan',
+
+  // ── Dialogs ──────────────────────────────────────────────────
+  'logout_confirm_title': 'Jáde',
+  'logout_confirm_message': 'Ṣé o dájú pé o fẹ́ jáde kúrò ní àkántì rẹ?',
+  'exit_confirm_title': 'Jáde ní Búlọ́gì',
+  'exit_confirm_message': 'Ṣé o dájú pé o fẹ́ jáde kúrò ní ìfilọ́lẹ̀ yí?',
+  'yes': 'Bẹ́ẹ̀ ni',
+  'no': 'Rárá',
 };

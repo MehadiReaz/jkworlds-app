@@ -7,6 +7,7 @@ import 'home_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/core/constants/api_constants.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -148,27 +149,47 @@ class HomeView extends StatelessWidget {
                   color: cs.primaryContainer,
                 ),
                 child: ClipOval(
-                  child: photoUrl.isNotEmpty
-                      ? Image.file(
-                          File(photoUrl),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.person_rounded,
-                            color: cs.primary,
-                            size: 22,
-                          ),
-                        )
-                      : Icon(
-                          Icons.person_rounded,
-                          color: cs.primary,
-                          size: 22,
-                        ),
+                  child: _buildAvatarImage(photoUrl, cs),
                 ),
               ),
             );
           }),
         ],
       ),
+    );
+  }
+
+  Widget _buildAvatarImage(String path, ColorScheme cs) {
+    if (path.isEmpty) {
+      return Icon(Icons.person_rounded, color: cs.primary, size: 22);
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(Icons.person_rounded, color: cs.primary, size: 22),
+      );
+    }
+
+    final isNetworkPath = path.contains('backend/image') ||
+        (!path.startsWith('/') && !path.contains(':/') && !path.startsWith('content:'));
+
+    if (isNetworkPath) {
+      final fullUrl = path.startsWith('/')
+          ? '${ApiConstants.baseUrl}$path'
+          : '${ApiConstants.baseUrl}/$path';
+      return Image.network(
+        fullUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(Icons.person_rounded, color: cs.primary, size: 22),
+      );
+    }
+
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Icon(Icons.person_rounded, color: cs.primary, size: 22),
     );
   }
 
@@ -282,7 +303,7 @@ class HomeView extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 150,
+          height: 160,
           child: PageView.builder(
             controller: pageController,
             itemCount: promos.length,
@@ -336,7 +357,10 @@ class HomeView extends StatelessWidget {
                     ),
                     // Content
                     Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       child: Row(
                         children: [
                           Expanded(
@@ -346,23 +370,27 @@ class HomeView extends StatelessWidget {
                               children: [
                                 Text(
                                   promo.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: -0.3,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 4),
                                 Text(
                                   promo.subtitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.85),
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 14,

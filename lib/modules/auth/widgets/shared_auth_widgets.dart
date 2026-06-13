@@ -143,6 +143,7 @@ InputDecoration buildAuthInputDecoration({
   required String hintText,
   required ColorScheme cs,
   required ThemeData theme,
+  Widget? prefixIcon,
   Widget? suffixIcon,
 }) {
   return InputDecoration(
@@ -151,6 +152,7 @@ InputDecoration buildAuthInputDecoration({
       color: cs.onSurfaceVariant.withValues(alpha: 0.5),
       fontSize: 15,
     ),
+    prefixIcon: prefixIcon,
     suffixIcon: suffixIcon,
     filled: true,
     fillColor: theme.brightness == Brightness.light

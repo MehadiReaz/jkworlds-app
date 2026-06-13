@@ -301,4 +301,12 @@ const Map<String, String> en = {
   'camera': 'Camera',
   'gallery': 'Gallery',
   'failed_to_pick_image': 'Failed to pick image',
+
+  // ── Dialogs ──────────────────────────────────────────────────
+  'logout_confirm_title': 'Logout',
+  'logout_confirm_message': 'Are you sure you want to log out of your account?',
+  'exit_confirm_title': 'Exit App',
+  'exit_confirm_message': 'Are you sure you want to exit the application?',
+  'yes': 'Yes',
+  'no': 'No',
 };

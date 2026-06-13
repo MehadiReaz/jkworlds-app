@@ -1,0 +1,384 @@
+{
+  "info": {
+    "_postman_id": "f6aba70d-33c1-4553-984c-86b4c466075f",
+    "name": "Authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "21280841"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "email",
+              "value": "rabin@gmail.com",
+              "type": "text",
+              "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+            },
+            {
+              "key": "password",
+              "value": "123456789",
+              "type": "text",
+              "uuid": "c4ecd95c-f16f-4efd-91b7-0b40137ad007"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "login"
+          ]
+        }
+      },
+      "response": [
+        {
+          "status": true,
+          "message": "Login successful.",
+          "data": {
+            "token": "13|2MsMAV2LGk6h9jLLd35mcBCpJV2DXEPKLbrNdb519edb7ab7",
+            "user": {
+              "id": 38,
+              "user_code": 87311,
+              "username": "rabin-844",
+              "name": "rabin",
+              "email": "rabin@gmail.com",
+              "email_verified_at": "2026-06-12T18:57:11.000000Z",
+              "role": "customer",
+              "image": "backend/image/default-user.png",
+              "status": "active",
+              "onboarding_completed": false,
+              "preferred_language": null,
+              "preferred_country": null,
+              "preferred_currency": null,
+              "preferred_timezone": null,
+              "preferred_service": null,
+              "location_latitude": null,
+              "location_longitude": null,
+              "country_code": null,
+              "phone": null,
+              "date_of_birth": null,
+              "address": null,
+              "city": null,
+              "country": null,
+              "license_number": null,
+              "license_expiry": null,
+              "created_at": "2026-06-12T18:57:11.000000Z",
+              "updated_at": "2026-06-12T19:13:57.000000Z",
+              "google_id": null,
+              "apple_id": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Register",
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "name",
+              "value": "rabin",
+              "type": "text",
+              "uuid": "e621ff19-7082-4036-8234-0ccbc324db47"
+            },
+            {
+              "key": "email",
+              "value": "rabin3@gmail.com",
+              "type": "text",
+              "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+            },
+            {
+              "key": "password",
+              "value": "12345678",
+              "type": "text",
+              "uuid": "c4ecd95c-f16f-4efd-91b7-0b40137ad007"
+            },
+            {
+              "key": "password_confirmation",
+              "value": "12345678",
+              "type": "text",
+              "uuid": "b0f25d91-3244-4582-8490-bfbe94b3d1be"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "register"
+          ]
+        }
+      },
+      "response": [
+        {
+          "status": true,
+          "message": "User registered successfully.",
+          "data": {
+            "token": "14|EBVwBit9KOmi9YboP2CI8XG4xUc0LAsVtyMvoMCIc9a52b2a",
+            "user": {
+              "name": "rabin",
+              "email": "rabin43@gmail.com",
+              "user_code": 87313,
+              "username": "rabin-180",
+              "email_verified_at": "2026-06-12T19:41:34.000000Z",
+              "onboarding_completed": false,
+              "status": "active",
+              "updated_at": "2026-06-12T19:41:34.000000Z",
+              "created_at": "2026-06-12T19:41:34.000000Z",
+              "id": 40
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Forgot Password",
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "email",
+              "value": "rabin@gmail.com",
+              "type": "text",
+              "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/forgot-password",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "forgot-password"
+          ]
+        }
+      },
+      "response": [
+        {
+          "status": true,
+          "message": "Password reset OTP sent to your email.",
+          "data": null
+        }
+      ]
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "email",
+              "value": "rabin@gmail.com",
+              "type": "text",
+              "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+            },
+            {
+              "key": "otp",
+              "value": "549241",
+              "type": "text",
+              "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+            },
+            {
+              "key": "password",
+              "value": "123456789",
+              "type": "text",
+              "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+            },
+            {
+              "key": "password_confirmation",
+              "value": "123456789",
+              "type": "text",
+              "uuid": "536cb5a3-5b21-4613-9409-099587218b8f"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/reset-password",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "reset-password"
+          ]
+        }
+      },
+      "response": [
+        {
+          "status": true,
+          "message": "Password reset successfully.",
+          "data": null
+        }
+      ]
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "{{base_url}}/api/logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "logout"
+          ]
+        }
+      },
+      "response": [
+        {
+          "status": true,
+          "message": "Logged out successfully.",
+          "data": null
+        }
+      ]
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "{{base_url}}/api/refresh-token",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "refresh-token"
+          ]
+        }
+      },
+      "response": [
+        {
+          "status": true,
+          "message": "Token refreshed successfully.",
+          "data": {
+            "token": "16|JISwbXzDKg1uBZ8fKHel5jU72yDPdFzqrsiN2iW77e87eb1e"
+          }
+        }
+      ]
+    }
+  ]
+}

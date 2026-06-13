@@ -302,4 +302,12 @@ const Map<String, String> ha = {
   'camera': 'Kamara',
   'gallery': 'Hotuna',
   'failed_to_pick_image': 'Kasa zaɓar hoto',
+
+  // ── Dialogs ──────────────────────────────────────────────────
+  'logout_confirm_title': 'Fita',
+  'logout_confirm_message': 'Shin kun tabbata kuna son fita daga asusunku?',
+  'exit_confirm_title': 'Fita Daga App',
+  'exit_confirm_message': 'Shin kun tabbata kuna son fita daga wannan manhaja?',
+  'yes': 'Ee',
+  'no': 'A\'a',
 };

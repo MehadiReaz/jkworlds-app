@@ -302,4 +302,12 @@ const Map<String, String> ig = {
   'camera': 'Igwe Foto',
   'gallery': 'Ebe Ndị Hoto',
   'failed_to_pick_image': 'Kụrụ afọ n\'ala ịhọrọ foto',
+
+  // ── Dialogs ──────────────────────────────────────────────────
+  'logout_confirm_title': 'Pụọ',
+  'logout_confirm_message': 'Ị nwere nkwenye na ị chọrọ ịpụ n\'akaụntụ gị?',
+  'exit_confirm_title': 'Pụọ na App',
+  'exit_confirm_message': 'Ị nwere nkwenye na ị chọrọ ịpụ na ngwa a?',
+  'yes': 'Ee',
+  'no': 'Mba',
 };

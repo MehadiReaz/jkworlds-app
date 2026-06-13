@@ -5,6 +5,7 @@ import 'profile_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
+import 'package:jkworlds/core/utils/dialog_helper.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -158,7 +159,14 @@ class ProfileView extends StatelessWidget {
                     width: double.infinity,
                     margin: const EdgeInsets.only(bottom: 8),
                     child: OutlinedButton.icon(
-                      onPressed: () => auth.logout(),
+                      onPressed: () {
+                        DialogHelper.showConfirmation(
+                          title: 'logout_confirm_title'.tr,
+                          message: 'logout_confirm_message'.tr,
+                          isDestructive: true,
+                          onConfirm: () => auth.logout(),
+                        );
+                      },
                       icon: const Icon(Icons.logout_rounded, size: 18),
                       label: Text('logout'.tr),
                       style: OutlinedButton.styleFrom(
