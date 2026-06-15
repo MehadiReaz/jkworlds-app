@@ -55,7 +55,7 @@ class ApiProvider {
 
         onResponse: (response, handler) {
           logger.i('RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
-          debugPrint('API RESPONSE BODY: ${response.data}');
+          logger.i('API RESPONSE BODY: ${response.data}');
           handler.next(response);
         },
 
@@ -70,8 +70,10 @@ class ApiProvider {
             final oldToken = prefs.getString('auth_token');
             final isRefreshRequest =
                 error.requestOptions.path.contains('refresh-token');
+            final isLogoutRequest =
+                error.requestOptions.path.contains('logout');
 
-            if (oldToken != null && oldToken.isNotEmpty && !isRefreshRequest) {
+            if (oldToken != null && oldToken.isNotEmpty && !isRefreshRequest && !isLogoutRequest) {
               logger.i('[ApiProvider] 401 detected — attempting token refresh');
 
               try {
