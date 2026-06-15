@@ -19,6 +19,7 @@ dependencies:
   intl: ^0.20.0
   logger: ^2.7.0
   image_picker: ^1.2.2
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:

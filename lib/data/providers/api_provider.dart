@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/data/services/network_service.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 /// Centralized Dio HTTP client with interceptors.
@@ -28,6 +29,19 @@ class ApiProvider {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
+          // Fast-fail requests immediately when offline
+          if (Get.isRegistered<NetworkService>() &&
+              !Get.find<NetworkService>().isOnline.value) {
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.connectionError,
+                message: 'No internet connection',
+              ),
+            );
+            return;
+          }
+
           final prefs = Get.find<SharedPreferences>();
           final token = prefs.getString('auth_token');
           if (token != null && token.isNotEmpty) {

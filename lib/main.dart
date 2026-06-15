@@ -51,7 +51,7 @@ class JKWorldsApp extends StatelessWidget {
       fallbackLocale: const Locale('en', 'US'),
 
       // ── Routing ────────────────────────────────────────────────
-      initialRoute: AppRoutes.main,
+      initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,
 
       // ── Global DI ──────────────────────────────────────────────

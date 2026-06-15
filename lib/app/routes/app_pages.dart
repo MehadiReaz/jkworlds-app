@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import 'package:jkworlds/modules/splash/splash_view.dart';
+import 'package:jkworlds/modules/splash/splash_binding.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_view.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_binding.dart';
 
@@ -25,6 +27,11 @@ import 'app_routes.dart';
 /// All route → page mappings for GetX navigation.
 class AppPages {
   static final pages = <GetPage>[
+    GetPage(
+      name: AppRoutes.splash,
+      page: () => const SplashView(),
+      binding: SplashBinding(),
+    ),
     GetPage(
       name: AppRoutes.main,
       page: () => const MainNavView(),

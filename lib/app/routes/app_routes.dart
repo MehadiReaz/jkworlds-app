@@ -1,5 +1,6 @@
 /// Named route constants.
 abstract class AppRoutes {
+  static const splash          = '/splash';
   static const main            = '/main';
   static const home            = '/home';
   static const explore         = '/explore';
