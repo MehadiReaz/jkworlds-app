@@ -339,7 +339,7 @@ class EditProfileView extends GetView<EditProfileController> {
                             TextFormField(
                               controller: controller.newPasswordCtrl,
                               obscureText: true,
-                              validator: controller.validatePassword,
+                              // validator: controller.,
                               decoration: buildAuthInputDecoration(
                                 hintText: 'Enter new password',
                                 cs: cs,

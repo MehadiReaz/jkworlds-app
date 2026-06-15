@@ -1,34 +1,35 @@
+// lib/data/services/auth_service.dart
+
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/models/user_model.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
-/// Global auth service — single source of truth for authentication state.
 class AuthService extends GetxService {
-  // ── Keys ──────────────────────────────────────────────────────
-  static const _tokenKey = 'auth_token';
-  static const _nameKey = 'auth_user_name';
-  static const _emailKey = 'auth_user_email';
-  static const _phoneKey = 'auth_user_phone';
-  static const _addressKey = 'auth_user_address';
-  static const _photoKey = 'auth_user_photo';
+  // ── Prefs Keys ────────────────────────────────────────────────
+  static const _tokenKey     = 'auth_token';
+  static const _userKey      = 'auth_user';
+  static const _nameKey      = 'auth_user_name';
+  static const _emailKey     = 'auth_user_email';
+  static const _phoneKey     = 'auth_user_phone';
+  static const _addressKey   = 'auth_user_address';
+  static const _photoKey     = 'auth_user_photo';
 
   // ── Reactive State ────────────────────────────────────────────
-  final isLoggedIn = false.obs;
-  final userName = ''.obs;
-  final userEmail = ''.obs;
-  final userPhone = ''.obs;
-  final userAddress = ''.obs;
-  final userPhotoUrl = ''.obs;
-
-  // ── Social Auth State ────────────────────────────────────────
+  final isLoggedIn    = false.obs;
+  final userName      = ''.obs;
+  final userEmail     = ''.obs;
+  final userPhone     = ''.obs;
+  final userAddress   = ''.obs;
+  final userPhotoUrl  = ''.obs;
   final isSocialLoading = false.obs;
 
   SharedPreferences get _prefs => Get.find<SharedPreferences>();
-  ApiProvider get _api => Get.find<ApiProvider>();
+  ApiProvider       get _api   => Get.find<ApiProvider>();
 
   // ── Lifecycle ─────────────────────────────────────────────────
 
@@ -38,362 +39,357 @@ class AuthService extends GetxService {
     _restoreSession();
   }
 
-  /// Restore any persisted session on app start.
   void _restoreSession() {
-    final token = _prefs.getString(_tokenKey);
-    if (token != null && token.isNotEmpty) {
+    try {
+      final token = _prefs.getString(_tokenKey);
+      if (token == null || token.isEmpty) return;
+
       isLoggedIn.value = true;
-      final userJson = _prefs.getString('auth_user');
+
+      final userJson = _prefs.getString(_userKey);
       if (userJson != null && userJson.isNotEmpty) {
-        try {
-          final userMap = Map<String, dynamic>.from(jsonDecode(userJson));
-          final user = UserModel.fromJson(userMap);
-          userName.value = user.name ?? '';
-          userEmail.value = user.email ?? '';
-          userPhone.value = user.phone ?? '';
-          userAddress.value = user.address ?? '';
-          userPhotoUrl.value = user.image ?? '';
-        } catch (e) {
-          logger.e('[AuthService] Error restoring session user: $e');
-        }
+        final user = UserModel.fromJson(
+          Map<String, dynamic>.from(jsonDecode(userJson) as Map),
+        );
+        _hydrateState(user);
       } else {
-        userName.value = _prefs.getString(_nameKey) ?? '';
-        userEmail.value = _prefs.getString(_emailKey) ?? '';
-        userPhone.value = _prefs.getString(_phoneKey) ?? '';
-        userAddress.value = _prefs.getString(_addressKey) ?? '';
-        userPhotoUrl.value = _prefs.getString(_photoKey) ?? '';
+        // Fallback: legacy flat keys
+        userName.value     = _prefs.getString(_nameKey)    ?? '';
+        userEmail.value    = _prefs.getString(_emailKey)   ?? '';
+        userPhone.value    = _prefs.getString(_phoneKey)   ?? '';
+        userAddress.value  = _prefs.getString(_addressKey) ?? '';
+        userPhotoUrl.value = _prefs.getString(_photoKey)   ?? '';
       }
+    } catch (e) {
+      // Corrupt prefs — start clean rather than crashing
+      logger.e('[AuthService] Failed to restore session: $e');
+      _clearPrefs();
     }
   }
 
   // ── Auth Actions ──────────────────────────────────────────────
 
-  /// Login with email & password using real backend API.
-  Future<bool> login(String email, String password) async {
-    try {
-      final response = await _api.post(
-        '/api/login',
-        data: {'email': email, 'password': password},
-      );
+  /// Login with email & password.
+  /// Throws [ServerException] on API-level failures, [AppException] subtypes
+  /// for network/auth errors (propagated from [ApiProvider]).
+  Future<void> login(String email, String password) async {
+    final response = await _api.post(
+      '/api/login',
+      data: {'email': email, 'password': password},
+    );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final success = response.data['status'] as bool? ?? false;
-        if (success && response.data['data'] != null) {
-          final token = response.data['data']['token'] as String?;
-          final userMap =
-              response.data['data']['user'] as Map<String, dynamic>?;
+    final data = _requireSuccess(response, fallbackMessage: 'Login failed');
+    final token   = data['token']  as String?;
+    final userMap = data['user']   as Map<String, dynamic>?;
 
-          if (token != null && userMap != null) {
-            final user = UserModel.fromJson(userMap);
-
-            // Persist locally
-            await _prefs.setString(_tokenKey, token);
-            await _prefs.setString('auth_user', jsonEncode(user.toJson()));
-
-            // Populate reactive state
-            userName.value = user.name ?? '';
-            userEmail.value = user.email ?? '';
-            userPhone.value = user.phone ?? '';
-            userAddress.value = user.address ?? '';
-            userPhotoUrl.value = user.image ?? '';
-            isLoggedIn.value = true;
-
-            return true;
-          }
-        }
-        final message = response.data['message'] as String? ?? 'Login failed';
-        throw message;
-      }
-      throw 'Server error: ${response.statusCode}';
-    } catch (e) {
-      logger.e('[AuthService] Login error: $e');
-      rethrow;
+    if (token == null || userMap == null) {
+      throw const ServerException('Malformed login response from server.');
     }
+
+    final user = UserModel.fromJson(userMap);
+    await _persistSession(token, user);
+    _hydrateState(user);
+    isLoggedIn.value = true;
   }
 
-  /// Signup with name, email, password & confirmation using real backend API.
-  Future<bool> signup(
+  /// Register a new account.
+  Future<void> signup(
     String name,
     String email,
     String password,
     String passwordConfirmation,
   ) async {
-    try {
-      final response = await _api.post(
-        '/api/register',
-        data: {
-          'name': name,
-          'email': email,
-          'password': password,
-          'password_confirmation': passwordConfirmation,
-        },
-      );
+    final response = await _api.post(
+      '/api/register',
+      data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final success = response.data['status'] as bool? ?? false;
-        if (success && response.data['data'] != null) {
-          final token = response.data['data']['token'] as String?;
-          final userMap =
-              response.data['data']['user'] as Map<String, dynamic>?;
+    final data = _requireSuccess(response, fallbackMessage: 'Registration failed');
+    final token   = data['token'] as String?;
+    final userMap = data['user']  as Map<String, dynamic>?;
 
-          if (token != null && userMap != null) {
-            final user = UserModel.fromJson(userMap);
-
-            // Persist locally
-            await _prefs.setString(_tokenKey, token);
-            await _prefs.setString('auth_user', jsonEncode(user.toJson()));
-
-            // Populate reactive state
-            userName.value = user.name ?? '';
-            userEmail.value = user.email ?? '';
-            userPhone.value = user.phone ?? '';
-            userAddress.value = user.address ?? '';
-            userPhotoUrl.value = user.image ?? '';
-            isLoggedIn.value = true;
-
-            return true;
-          }
-        }
-        final message =
-            response.data['message'] as String? ?? 'Registration failed';
-        throw message;
-      }
-      throw 'Server error: ${response.statusCode}';
-    } catch (e) {
-      logger.e('[AuthService] Signup error: $e');
-      rethrow;
+    if (token == null || userMap == null) {
+      throw const ServerException('Malformed registration response from server.');
     }
+
+    final user = UserModel.fromJson(userMap);
+    await _persistSession(token, user);
+    _hydrateState(user);
+    isLoggedIn.value = true;
   }
 
-  /// Sign in with Google (Mocked).
-  Future<bool> signInWithGoogle() async {
-    isSocialLoading.value = true;
-
-    try {
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      const name = 'John Doe';
-      const email = 'john.doe@gmail.com';
-      const photoUrl = '';
-
-      final mockToken = 'google_token_${DateTime.now().millisecondsSinceEpoch}';
-      await _prefs.setString(_tokenKey, mockToken);
-
-      final mockUser = UserModel(
-        name: name,
-        email: email,
-        image: photoUrl,
-        status: 'active',
-      );
-      await _prefs.setString('auth_user', jsonEncode(mockUser.toJson()));
-
-      userName.value = name;
-      userEmail.value = email;
-      userPhotoUrl.value = photoUrl;
-      isLoggedIn.value = true;
-
-      isSocialLoading.value = false;
-      return true;
-    } catch (e) {
-      isSocialLoading.value = false;
-      logger.e('[AuthService] Google Sign-In error: $e');
-      return false;
-    }
-  }
-
-  /// Sign in with Apple (Mocked).
-  Future<bool> signInWithApple() async {
-    isSocialLoading.value = true;
-    try {
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      const name = 'John Doe (Apple)';
-      const email = 'john.doe@apple.com';
-      const photoUrl = '';
-
-      final mockToken = 'apple_token_${DateTime.now().millisecondsSinceEpoch}';
-      await _prefs.setString(_tokenKey, mockToken);
-
-      final mockUser = UserModel(
-        name: name,
-        email: email,
-        image: photoUrl,
-        status: 'active',
-      );
-      await _prefs.setString('auth_user', jsonEncode(mockUser.toJson()));
-
-      userName.value = name;
-      userEmail.value = email;
-      userPhotoUrl.value = photoUrl;
-      isLoggedIn.value = true;
-
-      isSocialLoading.value = false;
-      return true;
-    } catch (e) {
-      isSocialLoading.value = false;
-      logger.e('[AuthService] Apple Sign-In error: $e');
-      return false;
-    }
-  }
-
-  /// Request password reset link/OTP.
+  /// Forgot password — returns the server's success message (e.g. "OTP sent").
   Future<String> forgotPassword(String email) async {
-    try {
-      final response = await _api.post(
-        '/api/forgot-password',
-        data: {'email': email},
-      );
+    final response = await _api.post(
+      '/api/forgot-password',
+      data: {'email': email},
+    );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final success = response.data['status'] as bool? ?? false;
-        final message =
-            response.data['message'] as String? ?? 'OTP sent successfully';
-        if (!success) {
-          throw message;
-        }
-        return message;
-      }
-      throw 'Server error: ${response.statusCode}';
-    } catch (e) {
-      logger.e('[AuthService] Forgot password error: $e');
-      rethrow;
-    }
+    _requireSuccess(response, fallbackMessage: 'Failed to send OTP');
+    return response.data['message'] as String? ?? 'OTP sent successfully';
   }
 
-  /// Reset password using OTP code.
-  Future<bool> resetPassword({
+  /// Reset password with OTP.
+  Future<void> resetPassword({
     required String email,
     required String otp,
     required String password,
     required String passwordConfirmation,
   }) async {
-    try {
-      final response = await _api.post(
-        '/api/reset-password',
-        data: {
-          'email': email,
-          'otp': otp,
-          'password': password,
-          'password_confirmation': passwordConfirmation,
-        },
-      );
+    final response = await _api.post(
+      '/api/reset-password',
+      data: {
+        'email': email,
+        'otp': otp,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final success = response.data['status'] as bool? ?? false;
-        final message =
-            response.data['message'] as String? ?? 'Reset password failed';
-        if (!success) {
-          throw message;
-        }
-        return true;
-      }
-      throw 'Server error: ${response.statusCode}';
-    } catch (e) {
-      logger.e('[AuthService] Reset password error: $e');
-      rethrow;
-    }
+    _requireSuccess(response, fallbackMessage: 'Password reset failed');
   }
 
-  /// Clear all auth data locally and attempt API logout.
-  Future<void> logout() async {
-    try {
-      await _api.post('/api/logout');
-    } catch (e) {
-      logger.e('[AuthService] Logout API request failed: $e');
-    } finally {
-      await _prefs.remove(_tokenKey);
-      await _prefs.remove('auth_user');
-      await _prefs.remove(_nameKey);
-      await _prefs.remove(_emailKey);
-      await _prefs.remove(_phoneKey);
-      await _prefs.remove(_addressKey);
-      await _prefs.remove(_photoKey);
-
-      isLoggedIn.value = false;
-      userName.value = '';
-      userEmail.value = '';
-      userPhone.value = '';
-      userAddress.value = '';
-      userPhotoUrl.value = '';
-
-      Get.offAllNamed(AppRoutes.login);
-    }
-  }
-
-  /// Update personal profile information locally and sync storage.
-  Future<bool> updateProfile({
+  /// Update profile on the server, then sync local state and prefs.
+  Future<void> updateProfile({
     required String name,
     required String email,
     required String phone,
     required String address,
-    required String imagePath,
+    String? imagePath,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    if (name.isEmpty || email.isEmpty) {
+      throw const ServerException('Name and email are required.');
+    }
 
-    if (name.isEmpty || email.isEmpty) return false;
+    final response = await _api.put(
+      '/api/profile',
+      data: {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'address': address,
+        if (imagePath != null && imagePath.isNotEmpty) 'image': imagePath,
+      },
+    );
 
+    _requireSuccess(response, fallbackMessage: 'Profile update failed');
+
+    // Merge into the stored UserModel so nothing is lost
+    await _mergeAndPersistProfileUpdate(
+      name: name,
+      email: email,
+      phone: phone,
+      address: address,
+      imagePath: imagePath,
+    );
+
+    // Sync flat fallback keys
     await _prefs.setString(_nameKey, name);
     await _prefs.setString(_emailKey, email);
     await _prefs.setString(_phoneKey, phone);
     await _prefs.setString(_addressKey, address);
-    if (imagePath.isNotEmpty) {
+    if (imagePath != null && imagePath.isNotEmpty) {
       await _prefs.setString(_photoKey, imagePath);
+    }
+
+    userName.value     = name;
+    userEmail.value    = email;
+    userPhone.value    = phone;
+    userAddress.value  = address;
+    if (imagePath != null && imagePath.isNotEmpty) {
       userPhotoUrl.value = imagePath;
     }
-
-    userName.value = name;
-    userEmail.value = email;
-    userPhone.value = phone;
-    userAddress.value = address;
-
-    final userJson = _prefs.getString('auth_user');
-    if (userJson != null && userJson.isNotEmpty) {
-      try {
-        final userMap = Map<String, dynamic>.from(jsonDecode(userJson));
-        final user = UserModel.fromJson(userMap);
-        final updatedUser = UserModel(
-          id: user.id,
-          userCode: user.userCode,
-          username: user.username,
-          name: name,
-          email: email,
-          emailVerifiedAt: user.emailVerifiedAt,
-          role: user.role,
-          image: imagePath.isNotEmpty ? imagePath : user.image,
-          status: user.status,
-          onboardingCompleted: user.onboardingCompleted,
-          preferredLanguage: user.preferredLanguage,
-          preferredCountry: user.preferredCountry,
-          preferredCurrency: user.preferredCurrency,
-          preferredTimezone: user.preferredTimezone,
-          preferredService: user.preferredService,
-          locationLatitude: user.locationLatitude,
-          locationLongitude: user.locationLongitude,
-          countryCode: user.countryCode,
-          phone: phone,
-          dateOfBirth: user.dateOfBirth,
-          address: address,
-          city: user.city,
-          country: user.country,
-          licenseNumber: user.licenseNumber,
-          licenseExpiry: user.licenseExpiry,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          googleId: user.googleId,
-          appleId: user.appleId,
-        );
-        await _prefs.setString('auth_user', jsonEncode(updatedUser.toJson()));
-      } catch (e) {
-        logger.e('[AuthService] Error updating auth_user JSON: $e');
-      }
-    }
-
-    return true;
   }
 
-  /// Update password mock method.
-  Future<bool> updatePassword(String newPassword) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    return newPassword.length >= 6;
+  /// Change password on the server.
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    final response = await _api.put(
+      '/api/change-password',
+      data: {
+        'current_password': currentPassword,
+        'password': newPassword,
+        'password_confirmation': newPasswordConfirmation,
+      },
+    );
+
+    _requireSuccess(response, fallbackMessage: 'Password change failed');
+  }
+
+  // ── Social Auth (mocked) ──────────────────────────────────────
+
+  Future<bool> signInWithGoogle() => _mockSocialLogin(
+        name: 'John Doe',
+        email: 'john.doe@gmail.com',
+        tokenPrefix: 'google_token',
+      );
+
+  Future<bool> signInWithApple() => _mockSocialLogin(
+        name: 'John Doe (Apple)',
+        email: 'john.doe@apple.com',
+        tokenPrefix: 'apple_token',
+      );
+
+  Future<bool> _mockSocialLogin({
+    required String name,
+    required String email,
+    required String tokenPrefix,
+  }) async {
+    isSocialLoading.value = true;
+    try {
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      final token = '${tokenPrefix}_${DateTime.now().millisecondsSinceEpoch}';
+      final user  = UserModel(name: name, email: email, status: 'active');
+
+      await _persistSession(token, user);
+      _hydrateState(user);
+      isLoggedIn.value = true;
+      return true;
+    } catch (e) {
+      logger.e('[AuthService] Social sign-in error: $e');
+      return false;
+    } finally {
+      isSocialLoading.value = false;
+    }
+  }
+
+  // ── Logout ────────────────────────────────────────────────────
+
+  /// Clears local state and calls the logout endpoint (best-effort).
+  Future<void> logout() async {
+    try {
+      await _api.post('/api/logout');
+    } catch (e) {
+      // Non-fatal: always clear local state even if the server call fails
+      logger.w('[AuthService] Logout API call failed (proceeding anyway): $e');
+    } finally {
+      await _clearPrefs();
+      _clearState();
+      Get.offAllNamed(AppRoutes.login);
+    }
+  }
+
+  // ── Private Helpers ───────────────────────────────────────────
+
+  /// Asserts that the response carries `"status": true` and returns `data`.
+  /// Throws [ServerException] with the server's message on failure.
+  Map<String, dynamic> _requireSuccess(
+    dynamic response, {
+    required String fallbackMessage,
+  }) {
+    final body = response.data;
+    if (body == null) throw ServerException(fallbackMessage);
+
+    final success = body['status'] as bool? ?? false;
+    if (!success) {
+      final msg = body['message'] as String? ?? fallbackMessage;
+      throw ServerException(msg);
+    }
+
+    final data = body['data'];
+    if (data == null) return {};
+    if (data is Map<String, dynamic>) return data;
+
+    // Some endpoints return `data` as a plain bool (true/false) on success
+    return {};
+  }
+
+  /// Writes token + serialised user to SharedPreferences.
+  Future<void> _persistSession(String token, UserModel user) async {
+    await _prefs.setString(_tokenKey, token);
+    await _prefs.setString(_userKey, jsonEncode(user.toJson()));
+  }
+
+  /// Copies [UserModel] fields into the reactive observables.
+  void _hydrateState(UserModel user) {
+    userName.value     = user.name    ?? '';
+    userEmail.value    = user.email   ?? '';
+    userPhone.value    = user.phone   ?? '';
+    userAddress.value  = user.address ?? '';
+    userPhotoUrl.value = user.image   ?? '';
+  }
+
+  /// Reads the stored [UserModel], applies the profile diff, and saves it back.
+  Future<void> _mergeAndPersistProfileUpdate({
+    required String name,
+    required String email,
+    required String phone,
+    required String address,
+    String? imagePath,
+  }) async {
+    final userJson = _prefs.getString(_userKey);
+    if (userJson == null || userJson.isEmpty) return;
+
+    try {
+      final existing = UserModel.fromJson(
+        Map<String, dynamic>.from(jsonDecode(userJson) as Map),
+      );
+      final updated = UserModel(
+        id: existing.id,
+        userCode: existing.userCode,
+        username: existing.username,
+        name: name,
+        email: email,
+        emailVerifiedAt: existing.emailVerifiedAt,
+        role: existing.role,
+        image: (imagePath != null && imagePath.isNotEmpty)
+            ? imagePath
+            : existing.image,
+        status: existing.status,
+        onboardingCompleted: existing.onboardingCompleted,
+        preferredLanguage: existing.preferredLanguage,
+        preferredCountry: existing.preferredCountry,
+        preferredCurrency: existing.preferredCurrency,
+        preferredTimezone: existing.preferredTimezone,
+        preferredService: existing.preferredService,
+        locationLatitude: existing.locationLatitude,
+        locationLongitude: existing.locationLongitude,
+        countryCode: existing.countryCode,
+        phone: phone,
+        dateOfBirth: existing.dateOfBirth,
+        address: address,
+        city: existing.city,
+        country: existing.country,
+        licenseNumber: existing.licenseNumber,
+        licenseExpiry: existing.licenseExpiry,
+        createdAt: existing.createdAt,
+        updatedAt: existing.updatedAt,
+        googleId: existing.googleId,
+        appleId: existing.appleId,
+      );
+      await _prefs.setString(_userKey, jsonEncode(updated.toJson()));
+    } catch (e) {
+      logger.e('[AuthService] Failed to merge profile update: $e');
+    }
+  }
+
+  Future<void> _clearPrefs() async {
+    await Future.wait([
+      _prefs.remove(_tokenKey),
+      _prefs.remove(_userKey),
+      _prefs.remove(_nameKey),
+      _prefs.remove(_emailKey),
+      _prefs.remove(_phoneKey),
+      _prefs.remove(_addressKey),
+      _prefs.remove(_photoKey),
+    ]);
+  }
+
+  void _clearState() {
+    isLoggedIn.value   = false;
+    userName.value     = '';
+    userEmail.value    = '';
+    userPhone.value    = '';
+    userAddress.value  = '';
+    userPhotoUrl.value = '';
   }
 }
