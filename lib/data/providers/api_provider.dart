@@ -1,8 +1,7 @@
 // lib/data/providers/api_provider.dart
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:get/get.dart' hide Response;
+import 'package:get/get.dart' hide Response, FormData;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
@@ -49,20 +48,27 @@ class ApiProvider {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
-          logger.i('REQUEST: ${options.method} ${options.uri}');
+          logger.i('💡 REQUEST: ${options.method} ${options.uri}');
+          if (options.data != null) {
+            final bodyStr = options.data is FormData
+                ? '[FormData fields: ${(options.data as FormData).fields.map((e) => '${e.key}=${e.value}').join(', ')}]'
+                : options.data.toString();
+            logger.i('📤 REQUEST BODY: ${bodyStr.length > 2000 ? '${bodyStr.substring(0, 2000)}…' : bodyStr}');
+          }
           handler.next(options);
         },
 
         onResponse: (response, handler) {
-          logger.i('RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
-          logger.i('API RESPONSE BODY: ${response.data}');
+          logger.i('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
+          final resStr = response.data?.toString() ?? '';
+          logger.i('📥 RESPONSE BODY: ${resStr.length > 2000 ? '${resStr.substring(0, 2000)}…' : resStr}');
           handler.next(response);
         },
 
         onError: (error, handler) async {
-          logger.e('ERROR: ${error.response?.statusCode} ${error.message}');
+          logger.e('⛔ ERROR: ${error.response?.statusCode} ${error.requestOptions.uri}');
           if (error.response?.data != null) {
-            debugPrint('API ERROR RESPONSE BODY: ${error.response?.data}');
+            logger.e('⛔ ERROR BODY: ${error.response?.data}');
           }
 
           if (error.response?.statusCode == 401) {
@@ -141,10 +147,11 @@ class ApiProvider {
     );
 
     try {
-      final response = await tempDio.post('/api/refresh-token');
+      final response = await tempDio.post(ApiConstants.refreshToken);
 
       if (response.statusCode == 200 && response.data != null) {
-        final success = response.data['status'] as bool? ?? false;
+        // API returns "success": true/false (not "status")
+        final success = response.data['success'] as bool? ?? response.data['status'] as bool? ?? false;
         if (success && response.data['data'] != null) {
           return response.data['data']['token'] as String?;
         }
@@ -170,19 +177,51 @@ class ApiProvider {
     if (e.error is AppException) return e.error as AppException;
 
     switch (e.type) {
-      case DioExceptionType.connectionError:
       case DioExceptionType.connectionTimeout:
+        return const NetworkException(
+          'Connection timed out. Please check your internet and try again.',
+        );
+
       case DioExceptionType.sendTimeout:
+        return const NetworkException(
+          'Request timed out while sending. Please try again.',
+        );
+
       case DioExceptionType.receiveTimeout:
-        return NetworkException(
-          e.message ?? 'Connection failed. Check your internet and try again.',
+        return const NetworkException(
+          'The server took too long to respond. Please try again.',
+        );
+
+      case DioExceptionType.connectionError:
+        return const NetworkException(
+          'No internet connection. Please check your network and try again.',
         );
 
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
         final serverMessage = _extractServerMessage(e.response);
 
-        if (statusCode == 401) return const AuthException();
+        if (statusCode == 401) {
+          // If the server returned a meaningful message (e.g. "The provided
+          // credentials are incorrect" from /api/login), surface it as a
+          // ServerException so the UI shows the real reason.
+          // Only fall back to AuthException (session expired) when there is
+          // no server message — meaning an authenticated endpoint rejected
+          // the token.
+          if (serverMessage != null && serverMessage.isNotEmpty) {
+            return ServerException(serverMessage, statusCode: 401);
+          }
+          return const AuthException();
+        }
+
+        if (statusCode == 422) {
+          // Validation error — try to extract field-level messages
+          final validationMsg = _extractValidationMessage(e.response);
+          return ServerException(
+            validationMsg ?? serverMessage ?? 'Validation failed. Please check your input.',
+            statusCode: 422,
+          );
+        }
 
         return ServerException(
           serverMessage ?? _defaultServerMessage(statusCode),
@@ -193,10 +232,25 @@ class ApiProvider {
         return const NetworkException('Request was cancelled.');
 
       case DioExceptionType.badCertificate:
-        return const NetworkException('SSL certificate error.');
+        return const NetworkException(
+          'Secure connection failed (SSL certificate error).',
+        );
 
       case DioExceptionType.unknown:
-      return UnknownException(e.message ?? 'An unexpected error occurred.');
+        // Catch common socket / host-not-found errors that Dio reports as
+        // "unknown" even though they are really connectivity issues.
+        final msg = e.message ?? '';
+        if (msg.contains('SocketException') ||
+            msg.contains('Failed host lookup') ||
+            msg.contains('Network is unreachable') ||
+            msg.contains('Connection refused')) {
+          return const NetworkException(
+            'No internet connection. Please check your network and try again.',
+          );
+        }
+        return const UnknownException(
+          'An unexpected error occurred. Please try again.',
+        );
     }
   }
 
@@ -213,17 +267,34 @@ class ApiProvider {
     return null;
   }
 
+  /// Attempts to extract a field-level validation error from a 422 response.
+  /// Laravel returns them in the shape: { "errors": { "email": ["message"] } }
+  String? _extractValidationMessage(Response? response) {
+    try {
+      final data = response?.data;
+      if (data is Map<String, dynamic>) {
+        final errors = data['errors'];
+        if (errors is Map<String, dynamic> && errors.isNotEmpty) {
+          final firstField = errors.values.first;
+          if (firstField is List && firstField.isNotEmpty) {
+            return firstField.first.toString();
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   String _defaultServerMessage(int? statusCode) => switch (statusCode) {
-        400 => 'Bad request.',
+        400 => 'Bad request. Please check your input.',
         403 => 'You do not have permission to do that.',
-        404 => 'Resource not found.',
-        408 => 'Request timed out.',
-        422 => 'Validation failed.',
-        429 => 'Too many requests. Please slow down.',
-        500 => 'Internal server error.',
-        502 => 'Bad gateway.',
-        503 => 'Service temporarily unavailable.',
-        _ => 'Something went wrong (HTTP $statusCode).',
+        404 => 'The requested resource was not found.',
+        408 => 'The server request timed out.',
+        429 => 'Too many requests. Please slow down and try again.',
+        500 => 'Internal server error. Please try again later.',
+        502 => 'Server is temporarily unavailable (bad gateway).',
+        503 => 'Service is temporarily unavailable. Please try again later.',
+        _ => 'Something went wrong. Please try again.',
       };
 
   // ── Convenience Methods ──────────────────────────────────────────
@@ -284,6 +355,31 @@ class ApiProvider {
       throw _mapDioError(e);
     } catch (e, st) {
       logger.e('[ApiProvider] Unexpected DELETE error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Sends [formData] as a POST multipart/form-data request.
+  /// Dio sets the Content-Type header automatically when FormData is passed.
+  /// Use this for file uploads (e.g. profile photo).
+  Future<Response> postFormData(
+    String path,
+    FormData formData, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      return await dio.post(
+        path,
+        data: formData,
+        queryParameters: queryParameters,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    } catch (e, st) {
+      logger.e('[ApiProvider] Unexpected multipart POST error', error: e, stackTrace: st);
       throw UnknownException(e.toString());
     }
   }

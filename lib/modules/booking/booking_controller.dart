@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
@@ -54,8 +54,7 @@ class BookingController extends GetxController {
 
   Future<void> selectReturnDate(BuildContext context) async {
     if (pickupDate.value == null) {
-      Get.snackbar('', 'select_pickup_date'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      SnackbarHelper.showWarning('select_pickup_date'.tr);
       return;
     }
     final date = await showDatePicker(
@@ -76,36 +75,27 @@ class BookingController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 800));
 
     // Add to mock bookings
-    mockBookings.insert(
-      0,
-      BookingModel(
-        id: 'BK-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-        vehicle: vehicle,
-        pickupDate: pickupDate.value!,
-        returnDate: returnDate.value!,
-        pickupLocation: pickupLocation.value,
-        status: BookingStatus.upcoming,
-        rentalType: isSelfDrive.value ? RentalType.selfDrive : RentalType.chauffeur,
-        subtotal: subtotal,
-        serviceFee: serviceFee,
-        securityDeposit: securityDeposit,
-        totalPrice: total,
-        createdAt: DateTime.now(),
-      ),
-    );
+    // mockBookings.insert(
+    //   0,
+    //   BookingModel(
+    //     id: 'BK-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+    //     vehicle: vehicle,
+    //     pickupDate: pickupDate.value!,
+    //     returnDate: returnDate.value!,
+    //     pickupLocation: pickupLocation.value,
+    //     status: BookingStatus.upcoming,
+    //     rentalType: isSelfDrive.value ? RentalType.selfDrive : RentalType.chauffeur,
+    //     subtotal: subtotal,
+    //     serviceFee: serviceFee,
+    //     securityDeposit: securityDeposit,
+    //     totalPrice: total,
+    //     createdAt: DateTime.now(),
+    //   ),
+    // );
 
     isLoading.value = false;
 
     Get.back(); // Return to vehicle detail
-    Get.snackbar(
-      'booking_confirmed'.tr,
-      'booking_success_msg'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Get.theme.colorScheme.primaryContainer,
-      colorText: Get.theme.colorScheme.onPrimaryContainer,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 3),
-    );
+    SnackbarHelper.showSuccess('booking_success_msg'.tr);
   }
 }

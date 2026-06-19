@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 import '../../core/utils/logger.dart';
@@ -20,6 +22,7 @@ class AuthController extends GetxController {
   final loginFormKey         = GlobalKey<FormState>();
   final signupFormKey        = GlobalKey<FormState>();
   final forgotFormKey        = GlobalKey<FormState>();
+  final verifyOtpFormKey     = GlobalKey<FormState>();
   final resetPasswordFormKey = GlobalKey<FormState>();
 
   // ── State ─────────────────────────────────────────────────────
@@ -27,8 +30,25 @@ class AuthController extends GetxController {
   final obscurePassword        = true.obs;
   final obscureConfirmPassword = true.obs;
 
+  // ── OTP Resend Timer ──────────────────────────────────────────
+  Timer? _otpTimer;
+  final otpTimerSeconds = 0.obs;
+
+  void startOtpTimer() {
+    _otpTimer?.cancel();
+    otpTimerSeconds.value = 120;
+    _otpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (otpTimerSeconds.value > 0) {
+        otpTimerSeconds.value--;
+      } else {
+        _otpTimer?.cancel();
+      }
+    });
+  }
+
   @override
   void onClose() {
+    _otpTimer?.cancel();
     nameCtrl.dispose();
     emailCtrl.dispose();
     passwordCtrl.dispose();
@@ -47,7 +67,7 @@ class AuthController extends GetxController {
 
   String? validatePassword(String? v) {
     if (v == null || v.isEmpty) return 'field_required'.tr;
-    if (v.length < 6) return 'password_too_short'.tr;
+    if (v.length < 8) return 'password_too_short'.tr;
     return null;
   }
 
@@ -64,7 +84,7 @@ class AuthController extends GetxController {
 
   String? validateOtp(String? v) {
     if (v == null || v.trim().isEmpty) return 'field_required'.tr;
-    if (v.trim().length < 4) return 'OTP must be at least 4 digits';
+    if (v.trim().length != 6) return 'OTP must be exactly 6 digits';
     return null;
   }
 
@@ -117,8 +137,51 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       final message = await _auth.forgotPassword(emailCtrl.text.trim());
-      Get.toNamed(AppRoutes.resetPassword);
+      startOtpTimer();
+      Get.toNamed(AppRoutes.verifyOtp);
       _showSuccess('forgot_password_title'.tr, message);
+    } on AppException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('An unexpected error occurred.');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> resendOtp() async {
+    if (emailCtrl.text.trim().isEmpty) {
+      _showError('Email is required to resend OTP.');
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      final message = await _auth.forgotPassword(emailCtrl.text.trim());
+      startOtpTimer();
+      _showSuccess('forgot_password_title'.tr, message);
+    } on AppException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('An unexpected error occurred.');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> verifyOtp() async {
+    if (!verifyOtpFormKey.currentState!.validate()) return;
+
+    isLoading.value = true;
+    try {
+      final message = await _auth.verifyOtp(
+        email: emailCtrl.text.trim(),
+        otp: otpCtrl.text.trim(),
+      );
+      _otpTimer?.cancel();
+      otpTimerSeconds.value = 0;
+      Get.toNamed(AppRoutes.resetPassword);
+      _showSuccess('success'.tr, message);
     } on AppException catch (e) {
       _showError(e.message);
     } catch (e) {
@@ -134,10 +197,9 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       await _auth.resetPassword(
-        email:                emailCtrl.text.trim(),
-        otp:                  otpCtrl.text.trim(),
-        password:             passwordCtrl.text,
-        passwordConfirmation: confirmPasswordCtrl.text,
+        email:    emailCtrl.text.trim(),
+        otp:      otpCtrl.text.trim(),
+        password: passwordCtrl.text,
       );
       _clearFields();
       Get.offAllNamed(AppRoutes.login);
@@ -183,6 +245,7 @@ class AuthController extends GetxController {
       AppRoutes.login,
       AppRoutes.signup,
       AppRoutes.forgotPassword,
+      AppRoutes.verifyOtp,
       AppRoutes.resetPassword,
     };
 
@@ -210,25 +273,11 @@ class AuthController extends GetxController {
 
   void _showSuccess(String title, [String message = '']) {
     Future.delayed(const Duration(milliseconds: 100), () {
-      Get.snackbar(
-        title, message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.primaryContainer,
-        colorText: Get.theme.colorScheme.onPrimaryContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      SnackbarHelper.showSuccess(message.isNotEmpty ? message : title);
     });
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'error'.tr, message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Get.theme.colorScheme.errorContainer,
-      colorText: Get.theme.colorScheme.onErrorContainer,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+    SnackbarHelper.showError(message);
   }
 }

@@ -1,16 +1,25 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+    logger.i('[NotificationService] Handling background message: ${message.messageId}');
+  } catch (e) {
+    logger.w('[NotificationService] Background message handler Firebase initialization failed (non-fatal): $e');
+  }
+}
+
 /// Push notification service.
 ///
-/// Currently uses local mock data. When your backend push-notification API
-/// is ready, replace the TODO-marked sections with real implementations
-/// (e.g. Firebase Cloud Messaging, OneSignal, or your own server).
-///
+/// Integrates Firebase Cloud Messaging for notification updates.
 /// Usage:
-///   Register in InitialBinding as a permanent service, then
-///   call initialize() when ready.
+///   Register in InitialBinding as a permanent service.
 class NotificationService extends GetxService {
   // ── Preference Keys ─────────────────────────────────────────
   static const _keyPushEnabled = 'notif_push_enabled';
@@ -40,33 +49,63 @@ class NotificationService extends GetxService {
   void onInit() {
     super.onInit();
     _restorePreferences();
+    initialize();
   }
 
-  /// Call this early in app startup (e.g. in main() or InitialBinding).
-  /// When the real push SDK is available, initialize it here.
+  /// Call this early in app startup.
+  /// Initializes Firebase and configures messaging listeners.
   Future<void> initialize() async {
-    // TODO: Replace with real push SDK initialization, e.g.:
-    //   await Firebase.initializeApp();
-    //   final fcm = FirebaseMessaging.instance;
-    //   deviceToken.value = await fcm.getToken() ?? '';
-    //   fcm.onTokenRefresh.listen((t) => deviceToken.value = t);
+    try {
+      await Firebase.initializeApp();
+      final fcm = FirebaseMessaging.instance;
 
-    // Mock: simulate token generation
-    await Future.delayed(const Duration(milliseconds: 200));
-    deviceToken.value = 'mock_device_token_${DateTime.now().millisecondsSinceEpoch}';
-    permissionStatus.value = 'granted';
+      // Request permission
+      await requestPermission();
+
+      // Get FCM token
+      deviceToken.value = await fcm.getToken() ?? '';
+      logger.i('[NotificationService] FCM Device Token: ${deviceToken.value}');
+
+      // Listen for token updates
+      fcm.onTokenRefresh.listen((t) {
+        deviceToken.value = t;
+        logger.i('[NotificationService] FCM Token Refreshed: $t');
+      });
+
+      // Handle background messages
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      // Handle foreground messages
+      onForegroundMessage();
+
+      // Handle message clicks when app is in background/terminated
+      _setupMessageTaps();
+
+    } catch (e, st) {
+      logger.e('[NotificationService] Firebase failed to initialize. Make sure google-services.json / GoogleService-Info.plist is configured.', error: e, stackTrace: st);
+      // Fallback: simulate token generation so app remains functional
+      deviceToken.value = 'mock_device_token_${DateTime.now().millisecondsSinceEpoch}';
+      permissionStatus.value = 'granted';
+    }
   }
 
   /// Request push permission from the OS.
   /// Returns `true` if granted.
   Future<bool> requestPermission() async {
-    // TODO: Replace with real permission request, e.g.:
-    //   final settings = await FirebaseMessaging.instance.requestPermission();
-    //   return settings.authorizationStatus == AuthorizationStatus.authorized;
-
-    await Future.delayed(const Duration(milliseconds: 300));
-    permissionStatus.value = 'granted';
-    return true;
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      final granted = settings.authorizationStatus == AuthorizationStatus.authorized ||
+                      settings.authorizationStatus == AuthorizationStatus.provisional;
+      permissionStatus.value = granted ? 'granted' : 'denied';
+      return granted;
+    } catch (_) {
+      permissionStatus.value = 'denied';
+      return false;
+    }
   }
 
   // ── Preference Toggles ──────────────────────────────────────
@@ -83,52 +122,101 @@ class NotificationService extends GetxService {
     pushEnabled.value = value;
     _prefs.setBool(_keyPushEnabled, value);
 
-    // TODO: If disabling, unregister token with backend:
-    //   if (!value) await _api.unregisterDevice(deviceToken.value);
-    //   else await _api.registerDevice(deviceToken.value);
+    if (value) {
+      initialize();
+    } else {
+      FirebaseMessaging.instance.deleteToken().catchError((_) {});
+      deviceToken.value = '';
+    }
   }
 
   void toggleBookingUpdates(bool value) {
     bookingUpdates.value = value;
     _prefs.setBool(_keyBookingUpdates, value);
-    // TODO: Sync with backend topic subscription
-    //   _subscribeOrUnsubscribe('booking_updates', value);
+    _subscribeOrUnsubscribe('booking_updates', value);
   }
 
   void togglePromotions(bool value) {
     promotions.value = value;
     _prefs.setBool(_keyPromotions, value);
-    // TODO: _subscribeOrUnsubscribe('promotions', value);
+    _subscribeOrUnsubscribe('promotions', value);
   }
 
   void togglePriceAlerts(bool value) {
     priceAlerts.value = value;
     _prefs.setBool(_keyPriceAlerts, value);
-    // TODO: _subscribeOrUnsubscribe('price_alerts', value);
+    _subscribeOrUnsubscribe('price_alerts', value);
   }
 
   void toggleNewVehicles(bool value) {
     newVehicles.value = value;
     _prefs.setBool(_keyNewVehicles, value);
-    // TODO: _subscribeOrUnsubscribe('new_vehicles', value);
+    _subscribeOrUnsubscribe('new_vehicles', value);
+  }
+
+  Future<void> _subscribeOrUnsubscribe(String topic, bool subscribe) async {
+    try {
+      final fcm = FirebaseMessaging.instance;
+      if (subscribe) {
+        await fcm.subscribeToTopic(topic);
+        logger.i('[NotificationService] Subscribed to topic: $topic');
+      } else {
+        await fcm.unsubscribeFromTopic(topic);
+        logger.i('[NotificationService] Unsubscribed from topic: $topic');
+      }
+    } catch (e) {
+      logger.w('[NotificationService] Topic subscription change failed: $e');
+    }
   }
 
   // ── Foreground Message Handler ──────────────────────────────
 
   /// Register a handler for foreground messages.
-  /// Call from main() or a top-level widget.
   void onForegroundMessage() {
-    // TODO: Replace with real handler, e.g.:
-    //   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    //     _showLocalNotification(message);
-    //   });
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      logger.i('[NotificationService] Foreground message received: ${message.notification?.title}');
+      _showLocalNotification(message);
+    });
+  }
+
+  void _showLocalNotification(RemoteMessage message) {
+    final title = message.notification?.title ?? 'Notification';
+    final body = message.notification?.body ?? '';
+    Get.snackbar(
+      title,
+      body,
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      backgroundColor: Get.theme.colorScheme.primaryContainer,
+      colorText: Get.theme.colorScheme.onPrimaryContainer,
+      onTap: (_) {
+        onNotificationTap(message.data);
+      },
+    );
+  }
+
+  Future<void> _setupMessageTaps() async {
+    try {
+      final fcm = FirebaseMessaging.instance;
+
+      // 1. Terminated state: Get any message that caused the app to open
+      final initialMessage = await fcm.getInitialMessage();
+      if (initialMessage != null) {
+        onNotificationTap(initialMessage.data);
+      }
+
+      // 2. Background state: Listen to clicks while app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        onNotificationTap(message.data);
+      });
+    } catch (e) {
+      logger.w('[NotificationService] Message taps setup failed: $e');
+    }
   }
 
   /// Handle a notification tap (when user taps a notification).
   void onNotificationTap(Map<String, dynamic> data) {
-    // TODO: Route based on payload, e.g.:
-    //   final type = data['type'];
-    //   if (type == 'booking') Get.toNamed(AppRoutes.bookingDetail, arguments: data['id']);
     logger.i('[NotificationService] Notification tapped: $data');
   }
 }

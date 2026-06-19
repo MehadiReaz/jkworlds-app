@@ -167,9 +167,9 @@ class OrdersView extends StatelessWidget {
                                           ),
                                           child: ClipRRect(
                                             borderRadius: BorderRadius.circular(8),
-                                            child: booking.vehicle.images.isNotEmpty
+                                            child: (booking.vehicle?.images.isNotEmpty ?? false)
                                                 ? Image.asset(
-                                                    booking.vehicle.images[0],
+                                                    booking.vehicle!.images[0],
                                                     fit: BoxFit.cover,
                                                     errorBuilder: (context, error, stackTrace) => Icon(
                                                       Icons.directions_car_rounded,
@@ -187,7 +187,7 @@ class OrdersView extends StatelessWidget {
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            '${booking.vehicle.brand} ${booking.vehicle.name}'.replaceAll(RegExp(r'\s*\(.*\)'), ''),
+                                            '${booking.vehicle?.brand ?? ''} ${booking.vehicle?.name ?? 'Booking #${booking.id}'}'.trim().replaceAll(RegExp(r'\s*\(.*\)'), ''),
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,

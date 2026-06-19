@@ -1,20 +1,25 @@
 import 'dart:async';
 import 'package:get/get.dart';
+import 'package:jkworlds/core/utils/logger.dart';
 
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
-import 'package:jkworlds/data/mock/mock_vehicles.dart';
-import 'package:jkworlds/data/mock/mock_bookings.dart';
+import 'package:jkworlds/data/models/category_model.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/data/services/category_service.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 class HomeController extends GetxController {
   final featuredVehicles = <VehicleModel>[].obs;
-  final popularVehicles = <VehicleModel>[].obs;
+  final popularVehicles  = <VehicleModel>[].obs;
+  final apiCategories    = <CategoryModel>[].obs;
   final selectedCategory = 'All'.obs;
+  final isLoading        = false.obs;
+  final errorMessage     = ''.obs;
 
-  final categories = const ['All', 'Sedan', 'SUV', 'Luxury', 'Van'];
+  final categories = <String>['All', 'Sedan', 'SUV', 'Luxury', 'Van'].obs;
 
   // ── Promo banner ───────────────────────────────────────────────
   final currentPromoIndex = 0.obs;
@@ -22,6 +27,9 @@ class HomeController extends GetxController {
 
   // ── Active booking ─────────────────────────────────────────────
   final activeBooking = Rxn<BookingModel>();
+
+  CategoryService get _categoryService => Get.find<CategoryService>();
+  BookingService  get _bookingService  => Get.find<BookingService>();
 
   @override
   void onInit() {
@@ -36,35 +44,75 @@ class HomeController extends GetxController {
     super.onClose();
   }
 
-  void _loadData() {
-    featuredVehicles.value =
-        mockVehicles.where((v) => v.isFeatured).toList();
-    _filterPopular();
+  Future<void> _loadData() async {
+    isLoading.value = true;
+    errorMessage.value = '';
+    try {
+      // Load categories list
+      final cats = await _categoryService.fetchCategories();
+      apiCategories.value = cats;
+
+      if (cats.isNotEmpty) {
+        categories.value = ['All', ...cats.map((c) => c.name)];
+        
+        // Load featured vehicles across all categories (with featured: '1')
+        final allFeatured = await _categoryService.fetchAllVehicles(featured: '1');
+        featuredVehicles.value = allFeatured.where((v) => v.isFeatured).toList();
+        
+        // Load popular vehicles based on the selected category ('All' on startup)
+        await _loadVehiclesForSelectedCategory();
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+
+    // Load active booking (non-critical)
     _loadActiveBooking();
   }
 
-  void _loadActiveBooking() {
-    // Find the first active or upcoming booking
-    final active = mockBookings.where(
-      (b) => b.status == BookingStatus.active || b.status == BookingStatus.upcoming,
-    );
-    if (active.isNotEmpty) {
-      activeBooking.value = active.first;
+  Future<void> _loadActiveBooking() async {
+    try {
+      final bookings = await _bookingService.fetchBookings();
+      final active = bookings.where(
+        (b) => b.status == BookingStatus.active || b.status == BookingStatus.upcoming,
+      );
+      if (active.isNotEmpty) activeBooking.value = active.first;
+    } catch (e) {
+      logger.e('Error loading active booking: $e');
     }
   }
 
+  @override
+  Future<void> refresh() => _loadData();
+
   void selectCategory(String category) {
     selectedCategory.value = category;
-    _filterPopular();
+    if (apiCategories.isNotEmpty) {
+      _loadVehiclesForSelectedCategory();
+    }
   }
 
-  void _filterPopular() {
-    if (selectedCategory.value == 'All') {
-      popularVehicles.value = mockVehicles;
-    } else {
-      popularVehicles.value = mockVehicles
-          .where((v) => v.type == selectedCategory.value)
-          .toList();
+  Future<void> _loadVehiclesForSelectedCategory() async {
+    isLoading.value = true;
+    try {
+      if (selectedCategory.value == 'All') {
+        final vehicles = await _categoryService.fetchAllVehicles();
+        popularVehicles.value = vehicles;
+      } else {
+        final targetCat = apiCategories.firstWhereOrNull(
+          (c) => c.name.toLowerCase() == selectedCategory.value.toLowerCase(),
+        );
+        if (targetCat != null) {
+          final vehicles = await _categoryService.fetchVehiclesByCategory(targetCat.id);
+          popularVehicles.value = vehicles;
+        }
+      }
+    } catch (e) {
+      logger.e('Error loading vehicles: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 

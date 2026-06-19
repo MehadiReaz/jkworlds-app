@@ -522,9 +522,9 @@ class HomeView extends StatelessWidget {
                           child: SizedBox(
                             width: 72,
                             height: 52,
-                            child: booking.vehicle.images.isNotEmpty
+                            child: (booking.vehicle?.images.isNotEmpty ?? false)
                                 ? Image.network(
-                                    booking.vehicle.images[0],
+                                    booking.vehicle!.images[0],
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => Container(
                                       color: cs.surfaceContainerHighest,
@@ -546,7 +546,8 @@ class HomeView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${booking.vehicle.brand} ${booking.vehicle.name}'
+                                '${booking.vehicle?.brand ?? ''} ${booking.vehicle?.name ?? 'Active Booking'}'
+                                    .trim()
                                     .replaceAll(RegExp(r'\s*\(.*\)'), ''),
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
@@ -637,13 +638,16 @@ class HomeView extends StatelessWidget {
     ThemeData theme,
     ColorScheme cs,
   ) {
-    final categoryIcons = {
-      'All': Icons.grid_view_rounded,
-      'Sedan': Icons.directions_car_rounded,
-      'SUV': Icons.directions_car_filled_rounded,
-      'Luxury': Icons.diamond_rounded,
-      'Van': Icons.airport_shuttle_rounded,
-    };
+    IconData getCategoryIcon(String name) {
+      final normalized = name.trim().toLowerCase();
+      if (normalized == 'all') return Icons.grid_view_rounded;
+      if (normalized.contains('sedan') || normalized.contains('car')) return Icons.directions_car_rounded;
+      if (normalized.contains('suv') || normalized.contains('jeep')) return Icons.directions_car_filled_rounded;
+      if (normalized.contains('luxury') || normalized.contains('sports') || normalized.contains('exotic')) return Icons.diamond_rounded;
+      if (normalized.contains('van') || normalized.contains('bus') || normalized.contains('shuttle')) return Icons.airport_shuttle_rounded;
+      if (normalized.contains('truck') || normalized.contains('pickup')) return Icons.local_shipping_rounded;
+      return Icons.category_rounded;
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -658,70 +662,68 @@ class HomeView extends StatelessWidget {
           const SizedBox(height: 12),
           SizedBox(
             height: 80,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: ctrl.categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final category = ctrl.categories[index];
-                final icon = categoryIcons[category] ?? Icons.category_rounded;
-                return Obx(() {
-                  final isSelected = ctrl.selectedCategory.value == category;
-                  return GestureDetector(
-                    onTap: () => ctrl.selectCategory(category),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 72,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? cs.primary
-                            : (theme.brightness == Brightness.light
-                                ? Colors.white
-                                : const Color(0xFF1A1C22)),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
+            child: Obx(() => ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: ctrl.categories.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final category = ctrl.categories[index];
+                    final icon = getCategoryIcon(category);
+                    final isSelected = ctrl.selectedCategory.value == category;
+                    return GestureDetector(
+                      onTap: () => ctrl.selectCategory(category),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 72,
+                        decoration: BoxDecoration(
                           color: isSelected
                               ? cs.primary
-                              : cs.outlineVariant.withValues(alpha: 0.4),
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: cs.primary.withValues(alpha: 0.25),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            icon,
-                            size: 26,
+                              : (theme.brightness == Brightness.light
+                                  ? Colors.white
+                                  : const Color(0xFF1A1C22)),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
                             color: isSelected
-                                ? cs.onPrimary
-                                : cs.onSurfaceVariant,
+                                ? cs.primary
+                                : cs.outlineVariant.withValues(alpha: 0.4),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            category,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: cs.primary.withValues(alpha: 0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              icon,
+                              size: 26,
                               color: isSelected
                                   ? cs.onPrimary
                                   : cs.onSurfaceVariant,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            Text(
+                              category,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isSelected
+                                    ? cs.onPrimary
+                                    : cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                });
-              },
-            ),
+                    );
+                  },
+                )),
           ),
         ],
       ),

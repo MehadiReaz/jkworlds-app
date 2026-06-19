@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/review_model.dart';
@@ -31,12 +32,8 @@ class VehicleDetailController extends GetxController {
     super.onInit();
     // Vehicle is passed via Get.arguments
     vehicle = Get.arguments as VehicleModel;
-    _loadReviews();
   }
 
-  void _loadReviews() {
-    reviews.value = mockReviews.where((r) => r.vehicleId == vehicle.id).toList();
-  }
 
   void selectPriceTab(int tab) {
     selectedPriceTab.value = tab;
@@ -48,11 +45,8 @@ class VehicleDetailController extends GetxController {
 
   void toggleWishlist() {
     isWishlisted.value = !isWishlisted.value;
-    Get.snackbar(
-      isWishlisted.value ? 'wishlisted'.tr : 'removed_wishlist'.tr,
-      vehicle.name,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
+    SnackbarHelper.showSuccess(
+      '${isWishlisted.value ? 'wishlisted'.tr : 'removed_wishlist'.tr}: ${vehicle.name}',
     );
   }
 
@@ -144,8 +138,7 @@ class VehicleDetailController extends GetxController {
 
   Future<void> selectReturnDate(BuildContext context) async {
     if (pickupDate.value == null) {
-      Get.snackbar('Alert', 'Please select a pick-up date first.',
-          snackPosition: SnackPosition.BOTTOM);
+      SnackbarHelper.showWarning('Please select a pick-up date first.');
       return;
     }
     final date = await showDatePicker(

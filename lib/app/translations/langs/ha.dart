@@ -227,7 +227,7 @@ const Map<String, String> ha = {
   'confirm_your_password': 'Tabbatar da kalmar sirrin ku',
   'forgot_password_title': 'AN MANTA KALMAR SIRRI',
   'forgot_password_subtitle': 'Shigar da imel ɗin ku, za mu aiko muku da hanyar saita sabuwar kalmar sirri.',
-  'send_password_reset_link': 'Aika Hanyar Sake Saita Kalmar Sirri',
+  'send_otp': 'Aika Hanyar Sake Saita Kalmar Sirri',
   'back_to_log_in': 'Koma Shiga',
 
   // ── Settings ────────────────────────────────────────────────

@@ -227,7 +227,7 @@ const Map<String, String> yo = {
   'confirm_your_password': 'Jẹ́rìísí ọ̀rọ̀ aṣínà rẹ',
   'forgot_password_title': 'GBÀGBÉ Ọ̀RỌ̀ AṢÍNÀ',
   'forgot_password_subtitle': 'Tẹ ímeèlì rẹ sí, àwa yóò fi ìjápọ̀ ránṣẹ́ fún ìtúnṣe.',
-  'send_password_reset_link': 'Fi Ìjápọ̀ Ìtúnṣe Ránṣẹ́',
+  'send_otp': 'Fi Ìjápọ̀ Ìtúnṣe Ránṣẹ́',
   'back_to_log_in': 'Padà sí Ìwọlé',
 
   // ── Settings ────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
@@ -111,21 +112,9 @@ class CheckoutController extends GetxController {
       // 10% discount on initial rental subtotal
       discountAmount.value = initialSubtotal * 0.10;
       appliedPromoCode.value = code;
-      Get.snackbar(
-        'Promo Applied',
-        '10% discount applied to your rental base rate!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.shade500,
-        colorText: Colors.white,
-      );
+      SnackbarHelper.showSuccess('10% discount applied to your rental base rate!');
     } else {
-      Get.snackbar(
-        'Invalid Promo',
-        'This promo code is not valid.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade500,
-        colorText: Colors.white,
-      );
+      SnackbarHelper.showError('This promo code is not valid.');
     }
   }
 
@@ -145,8 +134,7 @@ class CheckoutController extends GetxController {
   // ── Checkout Action ──────────────────────────────────────────────
   Future<void> confirmAndPay() async {
     if (!canPay) {
-      Get.snackbar('Alert', 'Please fill in all required fields and upload your driver\'s license.',
-          snackPosition: SnackPosition.BOTTOM);
+      SnackbarHelper.showWarning("Please fill in all required fields and upload your driver's license.");
       return;
     }
 
@@ -174,11 +162,11 @@ class CheckoutController extends GetxController {
     );
 
     // Insert to global mockBookings
-    mockBookings.insert(0, newBooking);
+    // mockBookings.insert(0, newBooking);
 
     // Trigger OrdersController reactive refresh
     if (Get.isRegistered<OrdersController>()) {
-      Get.find<OrdersController>().allBookings.value = List.from(mockBookings);
+      // Get.find<OrdersController>().allBookings.value = List.from(mockBookings);
     }
 
     isLoading.value = false;
@@ -187,16 +175,7 @@ class CheckoutController extends GetxController {
     Get.back();
     Get.back();
 
-    Get.snackbar(
-      'Reservation Successful',
-      'Your booking for ${vehicle.brand} ${vehicle.name} has been processed successfully.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Get.theme.colorScheme.primaryContainer,
-      colorText: Get.theme.colorScheme.onPrimaryContainer,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 4),
-    );
+    SnackbarHelper.showSuccess('Your booking for ${vehicle.brand} ${vehicle.name} has been processed successfully.');
   }
 
   DateTime _combineDateAndTime(DateTime date, String timeStr) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
 
 class ProfileController extends GetxController {
   static const _localeKey = 'locale';
@@ -18,11 +19,14 @@ class ProfileController extends GetxController {
   ];
 
   SharedPreferences get _prefs => Get.find<SharedPreferences>();
+  AuthService get _auth => Get.find<AuthService>();
 
   @override
   void onInit() {
     super.onInit();
     _restoreDarkMode();
+    // Refresh user profile from server in the background (non-blocking)
+    _auth.fetchProfile();
   }
 
   // ── Dark Mode ────────────────────────────────────────────────

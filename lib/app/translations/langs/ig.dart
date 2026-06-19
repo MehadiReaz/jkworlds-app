@@ -227,7 +227,7 @@ const Map<String, String> ig = {
   'confirm_your_password': 'Kwado okwuntụghe gị',
   'forgot_password_title': 'CHEFURU OKWUNTỤGHE',
   'forgot_password_subtitle': 'Tinye email gị, anyị ga-ezitere gị njikọ iji tọgharia okwuntụghe gị.',
-  'send_password_reset_link': 'Ziga Njikọ Ntọgharia Okwuntụghe',
+  'send_otp': 'Ziga Njikọ Ntọgharia Okwuntụghe',
   'back_to_log_in': 'Laghachi na Ịbanye',
 
   // ── Settings ────────────────────────────────────────────────

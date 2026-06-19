@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 /// Reusable utility helper for picking images using [image_picker].
 ///
@@ -72,15 +73,7 @@ class ImagePickerHelper {
       );
       return file?.path;
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        'failed_to_pick_image'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.errorContainer,
-        colorText: Get.theme.colorScheme.onErrorContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      SnackbarHelper.showError('failed_to_pick_image'.tr);
       return null;
     }
   }

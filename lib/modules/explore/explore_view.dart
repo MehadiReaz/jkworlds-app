@@ -28,261 +28,355 @@ class ExploreView extends StatelessWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Search Panel (Top Section) ──────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                border: Border(
-                  bottom: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: ExpansionTile(
-                initiallyExpanded: true,
-                title: Text(
-                  'Search Options',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.primary,
-                  ),
-                ),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                expandedAlignment: Alignment.topLeft,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Pick-up Location Input
-                  TextField(
-                    onChanged: (val) {
-                      ctrl.pickupLocation.value = val;
-                      ctrl.applyFilters();
-                    },
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
-                      labelText: 'Pick-up Location',
-                      hintText: 'Enter city or neighborhood',
-                      filled: true,
-                      fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  // ── Search Panel (Top Section) ──────────────────────────────
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: cs.outlineVariant.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    child: ExpansionTile(
+                      initiallyExpanded: true,
+                      title: Text(
+                        'Search Options',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.primary,
+                        ),
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      expandedAlignment: Alignment.topLeft,
+                      children: [
+                        // Pick-up Location Input
+                        TextField(
+                          controller: ctrl.pickupLocationCtrl,
+                          onChanged: (val) {
+                            ctrl.pickupLocation.value = val;
+                            ctrl.applyFilters();
+                          },
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
+                            labelText: 'Pick-up Location',
+                            hintText: 'Enter city or neighborhood',
+                            filled: true,
+                            fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                            ),
+                            suffixIcon: Obx(() => ctrl.isLoadingPickup.value
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12.0),
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  )
+                                : const SizedBox.shrink()),
+                          ),
+                        ),
+                        Obx(() {
+                          if (ctrl.pickupSuggestions.isEmpty) return const SizedBox.shrink();
+                          return Container(
+                            margin: const EdgeInsets.only(top: 4, bottom: 8),
+                            decoration: BoxDecoration(
+                              color: theme.cardColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                            ),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: ctrl.pickupSuggestions.length,
+                              itemBuilder: (context, index) {
+                                final suggestion = ctrl.pickupSuggestions[index];
+                                return ListTile(
+                                  leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
+                                  title: Text(
+                                    suggestion.description,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  dense: true,
+                                  onTap: () => ctrl.selectPickupSuggestion(suggestion),
+                                );
+                              },
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 12),
 
-                  // Different Drop-off Toggle
-                  Obx(() => CheckboxListTile(
-                        value: ctrl.isDifferentDropoff.value,
-                        onChanged: (val) {
-                          ctrl.isDifferentDropoff.value = val ?? false;
-                          if (!ctrl.isDifferentDropoff.value) {
-                            ctrl.dropoffLocation.value = '';
-                          }
-                          ctrl.applyFilters();
-                        },
-                        title: const Text('Different Drop-off Location?'),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        activeColor: cs.primary,
-                        contentPadding: EdgeInsets.zero,
-                      )),
+                        // Different Drop-off Toggle
+                        Obx(() => CheckboxListTile(
+                              value: ctrl.isDifferentDropoff.value,
+                              onChanged: (val) {
+                                ctrl.isDifferentDropoff.value = val ?? false;
+                                if (!ctrl.isDifferentDropoff.value) {
+                                  ctrl.dropoffLocation.value = '';
+                                }
+                                ctrl.applyFilters();
+                              },
+                              title: const Text('Different Drop-off Location?'),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: cs.primary,
+                              contentPadding: EdgeInsets.zero,
+                            )),
 
-                  // Drop-off Location Input (Conditional)
-                  Obx(() => ctrl.isDifferentDropoff.value
-                      ? Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: TextField(
-                            onChanged: (val) {
-                              ctrl.dropoffLocation.value = val;
-                              ctrl.applyFilters();
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.location_off_rounded, color: cs.primary),
-                              labelText: 'Drop-off Location',
-                              hintText: 'Enter drop-off city',
-                              filled: true,
-                              fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                              border: OutlineInputBorder(
+                        // Drop-off Location Input (Conditional)
+                        Obx(() => ctrl.isDifferentDropoff.value
+                            ? Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    TextField(
+                                      controller: ctrl.dropoffLocationCtrl,
+                                      onChanged: (val) {
+                                        ctrl.dropoffLocation.value = val;
+                                        ctrl.applyFilters();
+                                      },
+                                      decoration: InputDecoration(
+                                        prefixIcon: Icon(Icons.location_off_rounded, color: cs.primary),
+                                        labelText: 'Drop-off Location',
+                                        hintText: 'Enter drop-off city',
+                                        filled: true,
+                                        fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                        ),
+                                        suffixIcon: Obx(() => ctrl.isLoadingDropoff.value
+                                            ? const Padding(
+                                                padding: EdgeInsets.all(12.0),
+                                                child: SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                ),
+                                              )
+                                            : const SizedBox.shrink()),
+                                      ),
+                                    ),
+                                    Obx(() {
+                                      if (ctrl.dropoffSuggestions.isEmpty) return const SizedBox.shrink();
+                                      return Container(
+                                        margin: const EdgeInsets.only(top: 4, bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: theme.cardColor,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                        ),
+                                        child: ListView.builder(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          itemCount: ctrl.dropoffSuggestions.length,
+                                          itemBuilder: (context, index) {
+                                            final suggestion = ctrl.dropoffSuggestions[index];
+                                            return ListTile(
+                                              leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
+                                              title: Text(
+                                                suggestion.description,
+                                                style: theme.textTheme.bodyMedium?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              dense: true,
+                                              onTap: () => ctrl.selectDropoffSuggestion(suggestion),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ),
+                              )
+                            : const SizedBox.shrink()),
+
+                        // Pick-up and Drop-off Date/Time buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => _selectDateTime(context, ctrl.pickupDateTime, ctrl),
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('PICK-UP DATE & TIME', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
+                                      const SizedBox(height: 4),
+                                      Obx(() => Text(
+                                            ctrl.pickupDateTime.value == null
+                                                ? 'Select Date & Time'
+                                                : DateFormat('MMM d, h:mm a').format(ctrl.pickupDateTime.value!),
+                                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                                          )),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                      : const SizedBox.shrink()),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => _selectDateTime(context, ctrl.dropoffDateTime, ctrl),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('DROP-OFF DATE & TIME', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
+                                      const SizedBox(height: 4),
+                                      Obx(() => Text(
+                                            ctrl.dropoffDateTime.value == null
+                                                ? 'Select Date & Time'
+                                                : DateFormat('MMM d, h:mm a').format(ctrl.dropoffDateTime.value!),
+                                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                                          )),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
 
-                  // Pick-up and Drop-off Date/Time buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDateTime(context, ctrl.pickupDateTime, ctrl),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('PICK-UP DATE & TIME', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
-                                const SizedBox(height: 4),
-                                Obx(() => Text(
-                                      ctrl.pickupDateTime.value == null
-                                          ? 'Select Date & Time'
-                                          : DateFormat('MMM d, h:mm a').format(ctrl.pickupDateTime.value!),
-                                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                                    )),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDateTime(context, ctrl.dropoffDateTime, ctrl),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('DROP-OFF DATE & TIME', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
-                                const SizedBox(height: 4),
-                                Obx(() => Text(
-                                      ctrl.dropoffDateTime.value == null
-                                          ? 'Select Date & Time'
-                                          : DateFormat('MMM d, h:mm a').format(ctrl.dropoffDateTime.value!),
-                                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                                    )),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                        // Chauffeur availability checkbox
+                        Obx(() => CheckboxListTile(
+                              value: ctrl.isChauffeurRequired.value,
+                              onChanged: (val) {
+                                ctrl.isChauffeurRequired.value = val ?? false;
+                                ctrl.applyFilters();
+                              },
+                              title: const Text('Require Chauffeur Service?'),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: cs.primary,
+                              contentPadding: EdgeInsets.zero,
+                            )),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
 
-                  // Chauffeur availability checkbox
-                  Obx(() => CheckboxListTile(
-                        value: ctrl.isChauffeurRequired.value,
-                        onChanged: (val) {
-                          ctrl.isChauffeurRequired.value = val ?? false;
-                          ctrl.applyFilters();
-                        },
-                        title: const Text('Require Chauffeur Service?'),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        activeColor: cs.primary,
-                        contentPadding: EdgeInsets.zero,
+                  // ── Expandable Filters Panel Button ──────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => isFiltersExpanded.value = !isFiltersExpanded.value,
+                          icon: Obx(() => Icon(
+                                isFiltersExpanded.value ? Icons.expand_less_rounded : Icons.tune_rounded,
+                                color: cs.primary,
+                              )),
+                          label: Obx(() => Text(
+                                isFiltersExpanded.value ? 'Collapse Filters' : 'Filters & Sorting',
+                                style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold),
+                              )),
+                        ),
+                        TextButton(
+                          onPressed: ctrl.clearFilters,
+                          child: Text('Reset', style: TextStyle(color: cs.error)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Expanded Filters Panel ──────────────────────────────────
+                  Obx(() => AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: isFiltersExpanded.value ? 380 : 0,
+                        child: SingleChildScrollView(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            color: theme.cardColor,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Category Select
+                                _buildFilterHeader('Category'),
+                                _buildChoicesRow(
+                                  ctrl.categories,
+                                  ctrl.selectedCategory,
+                                  ctrl,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Service Type Select
+                                _buildFilterHeader('Service Type'),
+                                _buildChoicesRow(
+                                  ctrl.serviceTypes,
+                                  ctrl.selectedServiceType,
+                                  ctrl,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Transmission Select
+                                _buildFilterHeader('Transmission'),
+                                _buildChoicesRow(
+                                  ctrl.transmissions,
+                                  ctrl.selectedTransmission,
+                                  ctrl,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Fuel Type Select
+                                _buildFilterHeader('Fuel Type'),
+                                _buildChoicesRow(
+                                  ctrl.fuelTypes,
+                                  ctrl.selectedFuelType,
+                                  ctrl,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Sort Select
+                                _buildFilterHeader('Sort By'),
+                                _buildChoicesRow(
+                                  ctrl.sortTypes,
+                                  ctrl.selectedSortType,
+                                  ctrl,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       )),
                 ],
               ),
             ),
 
-            // ── Expandable Filters Panel Button ──────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => isFiltersExpanded.value = !isFiltersExpanded.value,
-                    icon: Obx(() => Icon(
-                          isFiltersExpanded.value ? Icons.expand_less_rounded : Icons.tune_rounded,
-                          color: cs.primary,
-                        )),
-                    label: Obx(() => Text(
-                          isFiltersExpanded.value ? 'Collapse Filters' : 'Filters & Sorting',
-                          style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold),
-                        )),
-                  ),
-                  TextButton(
-                    onPressed: ctrl.clearFilters,
-                    child: Text('Reset', style: TextStyle(color: cs.error)),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Expanded Filters Panel ──────────────────────────────────
-            Obx(() => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: isFiltersExpanded.value ? 380 : 0,
-                  child: SingleChildScrollView(
-
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      color: theme.cardColor,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Category Select
-                          _buildFilterHeader('Category'),
-                          _buildChoicesRow(
-                            ctrl.categories,
-                            ctrl.selectedCategory,
-                            ctrl,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Service Type Select
-                          _buildFilterHeader('Service Type'),
-                          _buildChoicesRow(
-                            ctrl.serviceTypes,
-                            ctrl.selectedServiceType,
-                            ctrl,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Transmission Select
-                          _buildFilterHeader('Transmission'),
-                          _buildChoicesRow(
-                            ctrl.transmissions,
-                            ctrl.selectedTransmission,
-                            ctrl,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Fuel Type Select
-                          _buildFilterHeader('Fuel Type'),
-                          _buildChoicesRow(
-                            ctrl.fuelTypes,
-                            ctrl.selectedFuelType,
-                            ctrl,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Sort Select
-                          _buildFilterHeader('Sort By'),
-                          _buildChoicesRow(
-                            ctrl.sortTypes,
-                            ctrl.selectedSortType,
-                            ctrl,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )),
-
             // ── Vehicles List ───────────────────────────────────────────
-            Expanded(
-              child: Obx(() {
-                final vehicles = ctrl.filteredVehicles;
-                if (vehicles.isEmpty) {
-                  return Center(
+            Obx(() {
+              final vehicles = ctrl.filteredVehicles;
+              if (vehicles.isEmpty) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -294,19 +388,23 @@ class ExploreView extends StatelessWidget {
                         ),
                       ],
                     ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: vehicles.length,
-                  itemBuilder: (context, index) {
-                    final vehicle = vehicles[index];
-                    return _buildCarCard(context, vehicle, currencyService, theme, cs);
-                  },
+                  ),
                 );
-              }),
-            ),
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final vehicle = vehicles[index];
+                      return _buildCarCard(context, vehicle, currencyService, theme, cs);
+                    },
+                    childCount: vehicles.length,
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -321,7 +419,7 @@ class ExploreView extends StatelessWidget {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (date == null) return;
+    if (date == null || !context.mounted) return;
 
     final time = await showTimePicker(
       context: context,

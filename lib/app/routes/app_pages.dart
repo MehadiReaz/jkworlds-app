@@ -8,6 +8,7 @@ import 'package:jkworlds/modules/main_nav/main_nav_binding.dart';
 import 'package:jkworlds/modules/auth/login_view.dart';
 import 'package:jkworlds/modules/auth/signup_view.dart';
 import 'package:jkworlds/modules/auth/forgot_password_view.dart';
+import 'package:jkworlds/modules/auth/verify_otp_view.dart';
 import 'package:jkworlds/modules/auth/reset_password_view.dart';
 import 'package:jkworlds/modules/auth/auth_binding.dart';
 
@@ -52,6 +53,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.forgotPassword,
       page: () => const ForgotPasswordView(),
+      binding: AuthBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.verifyOtp,
+      page: () => const VerifyOtpView(),
       binding: AuthBinding(),
     ),
     GetPage(

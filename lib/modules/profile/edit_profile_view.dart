@@ -211,6 +211,7 @@ class EditProfileView extends GetView<EditProfileController> {
                             _buildLabel('EMAIL', cs),
                             const SizedBox(height: 8),
                             TextFormField(
+                              readOnly: true,
                               controller: controller.emailCtrl,
                               keyboardType: TextInputType.emailAddress,
                               validator: controller.validateEmail,
@@ -328,7 +329,22 @@ class EditProfileView extends GetView<EditProfileController> {
                       ),
                       const SizedBox(height: 24),
 
-                      // ── New Password Grid Row (Half width on tablet) ─
+                      // ── Current Password ────────────────────────────
+                      _buildLabel('CURRENT PASSWORD', cs),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: controller.currentPasswordCtrl,
+                        obscureText: true,
+                        validator: controller.validateCurrentPassword,
+                        decoration: buildAuthInputDecoration(
+                          hintText: 'Enter current password',
+                          cs: cs,
+                          theme: theme,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── New Password & Confirm Password Row ─────────
                       _buildGridRow(
                         context: context,
                         child1: Column(
@@ -339,7 +355,7 @@ class EditProfileView extends GetView<EditProfileController> {
                             TextFormField(
                               controller: controller.newPasswordCtrl,
                               obscureText: true,
-                              // validator: controller.,
+                              validator: controller.validateNewPassword,
                               decoration: buildAuthInputDecoration(
                                 hintText: 'Enter new password',
                                 cs: cs,
@@ -348,21 +364,22 @@ class EditProfileView extends GetView<EditProfileController> {
                             ),
                           ],
                         ),
-                        child2: const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // ── Confirm New Password ────────────────────────
-                      _buildLabel('CONFIRM NEW PASSWORD', cs),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: controller.confirmNewPasswordCtrl,
-                        obscureText: true,
-                        validator: controller.validateConfirmPassword,
-                        decoration: buildAuthInputDecoration(
-                          hintText: 'Confirm new password',
-                          cs: cs,
-                          theme: theme,
+                        child2: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('CONFIRM NEW PASSWORD', cs),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: controller.confirmNewPasswordCtrl,
+                              obscureText: true,
+                              validator: controller.validateConfirmPassword,
+                              decoration: buildAuthInputDecoration(
+                                hintText: 'Confirm new password',
+                                cs: cs,
+                                theme: theme,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 28),

@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'profile_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
+import 'package:jkworlds/core/constants/api_constants.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 import 'package:jkworlds/core/utils/dialog_helper.dart';
@@ -94,13 +97,7 @@ class ProfileView extends StatelessWidget {
               iconColor: cs.onSecondaryContainer,
               title: 'help_support'.tr,
               onTap: () {
-                Get.snackbar(
-                  'coming_soon'.tr,
-                  'help_support'.tr,
-                  snackPosition: SnackPosition.BOTTOM,
-                  margin: const EdgeInsets.all(16),
-                  borderRadius: 12,
-                );
+                SnackbarHelper.showInfo('coming_soon'.tr);
               },
             ),
             _MenuItem(
@@ -124,13 +121,7 @@ class ProfileView extends StatelessWidget {
               iconColor: cs.onSurfaceVariant,
               title: 'terms_of_service'.tr,
               onTap: () {
-                Get.snackbar(
-                  'coming_soon'.tr,
-                  'terms_of_service'.tr,
-                  snackPosition: SnackPosition.BOTTOM,
-                  margin: const EdgeInsets.all(16),
-                  borderRadius: 12,
-                );
+                SnackbarHelper.showInfo('coming_soon'.tr);
               },
             ),
             _MenuItem(
@@ -139,13 +130,7 @@ class ProfileView extends StatelessWidget {
               iconColor: cs.onSurfaceVariant,
               title: 'privacy_policy'.tr,
               onTap: () {
-                Get.snackbar(
-                  'coming_soon'.tr,
-                  'privacy_policy'.tr,
-                  snackPosition: SnackPosition.BOTTOM,
-                  margin: const EdgeInsets.all(16),
-                  borderRadius: 12,
-                );
+                SnackbarHelper.showInfo('coming_soon'.tr);
               },
             ),
           ]),
@@ -267,16 +252,33 @@ class ProfileView extends StatelessWidget {
           CircleAvatar(
             radius: 30,
             backgroundColor: cs.primary,
-            child: Text(
-              auth.userName.value.isNotEmpty
-                  ? auth.userName.value[0].toUpperCase()
-                  : '?',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: cs.onPrimary,
-              ),
-            ),
+            child: auth.userPhotoUrl.value.isNotEmpty
+                ? ClipOval(
+                    child: _buildAvatarImage(
+                      auth.userPhotoUrl.value,
+                      cs,
+                      Text(
+                        auth.userName.value.isNotEmpty
+                            ? auth.userName.value[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onPrimary,
+                        ),
+                      ),
+                    ),
+                  )
+                : Text(
+                    auth.userName.value.isNotEmpty
+                        ? auth.userName.value[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onPrimary,
+                    ),
+                  ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -381,6 +383,46 @@ class ProfileView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAvatarImage(String path, ColorScheme cs, Widget fallback) {
+    if (path.isEmpty) {
+      return fallback;
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      );
+    }
+
+    final isNetworkPath = path.contains('backend/image') ||
+        (!path.startsWith('/') && !path.contains(':/') && !path.startsWith('content:'));
+
+    if (isNetworkPath) {
+      final fullUrl = path.startsWith('/')
+          ? '${ApiConstants.baseUrl}$path'
+          : '${ApiConstants.baseUrl}/$path';
+      return Image.network(
+        fullUrl,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      );
+    }
+
+    return Image.file(
+      File(path),
+      width: 60,
+      height: 60,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
     );
   }
 }

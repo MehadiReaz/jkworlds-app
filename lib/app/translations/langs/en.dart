@@ -226,7 +226,7 @@ const Map<String, String> en = {
   'confirm_your_password': 'Confirm your password',
   'forgot_password_title': 'FORGOT PASSWORD',
   'forgot_password_subtitle': 'Enter your email address and we\'ll send you a link to reset your password.',
-  'send_password_reset_link': 'Send Password Reset Link',
+  'send_otp': 'Send Otp',
   'back_to_log_in': 'Back to Log In',
 
   // ── Settings ────────────────────────────────────────────────

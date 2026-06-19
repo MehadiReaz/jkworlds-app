@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/models/promo_code.dart';
 import 'package:jkworlds/data/services/promo_service.dart';
 import 'package:intl/intl.dart';
@@ -38,41 +39,16 @@ class _PromoCodesViewState extends State<PromoCodesView> with SingleTickerProvid
       final success = await promoService.claimPromoCode(input);
       if (success) {
         _promoCtrl.clear();
-        Get.snackbar(
-          'success'.tr,
-          'promo_apply_success'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: cs.primaryContainer,
-          colorText: cs.onPrimaryContainer,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
+        SnackbarHelper.showSuccess('promo_apply_success'.tr);
       }
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: cs.errorContainer,
-        colorText: cs.onErrorContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      SnackbarHelper.showError(e.toString());
     }
   }
 
   void _copyToClipboard(String code, ColorScheme cs) {
     Clipboard.setData(ClipboardData(text: code));
-    Get.snackbar(
-      'promo_copied'.tr,
-      'code_copied_msg'.trParams({'code': code}),
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: cs.secondaryContainer,
-      colorText: cs.onSecondaryContainer,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 2),
-    );
+    SnackbarHelper.showInfo('code_copied_msg'.trParams({'code': code}));
   }
 
   @override

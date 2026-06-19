@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/contact_service.dart';
 
 class ContactUsView extends StatefulWidget {
@@ -47,26 +48,9 @@ class _ContactUsViewState extends State<ContactUsView> {
       _subjectCtrl.clear();
       _messageCtrl.clear();
 
-      Get.snackbar(
-        'contact_success'.tr,
-        'contact_success_msg'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.primaryContainer,
-        colorText: Get.theme.colorScheme.onPrimaryContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        duration: const Duration(seconds: 3),
-      );
+      SnackbarHelper.showSuccess('contact_success_msg'.tr);
     } else {
-      Get.snackbar(
-        'error'.tr,
-        'contact_error_msg'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.errorContainer,
-        colorText: Get.theme.colorScheme.onErrorContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      SnackbarHelper.showError('contact_error_msg'.tr);
     }
   }
 

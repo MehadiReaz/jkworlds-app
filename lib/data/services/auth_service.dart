@@ -1,8 +1,11 @@
 // lib/data/services/auth_service.dart
 
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
@@ -74,7 +77,7 @@ class AuthService extends GetxService {
   /// for network/auth errors (propagated from [ApiProvider]).
   Future<void> login(String email, String password) async {
     final response = await _api.post(
-      '/api/login',
+      ApiConstants.login,
       data: {'email': email, 'password': password},
     );
 
@@ -100,7 +103,7 @@ class AuthService extends GetxService {
     String passwordConfirmation,
   ) async {
     final response = await _api.post(
-      '/api/register',
+      ApiConstants.register,
       data: {
         'name': name,
         'email': email,
@@ -126,7 +129,7 @@ class AuthService extends GetxService {
   /// Forgot password — returns the server's success message (e.g. "OTP sent").
   Future<String> forgotPassword(String email) async {
     final response = await _api.post(
-      '/api/forgot-password',
+      ApiConstants.forgotPassword,
       data: {'email': email},
     );
 
@@ -139,15 +142,13 @@ class AuthService extends GetxService {
     required String email,
     required String otp,
     required String password,
-    required String passwordConfirmation,
   }) async {
     final response = await _api.post(
-      '/api/reset-password',
+      ApiConstants.resetPassword,
       data: {
         'email': email,
         'otp': otp,
         'password': password,
-        'password_confirmation': passwordConfirmation,
       },
     );
 
@@ -155,73 +156,177 @@ class AuthService extends GetxService {
   }
 
   /// Update profile on the server, then sync local state and prefs.
+  /// Uses POST /api/profile with _method=PUT (Laravel method-spoofing).
+  /// When [imagePath] is a local file path, sends it as a real MultipartFile
+  /// so the server can validate and store it as an image.
   Future<void> updateProfile({
     required String name,
     required String email,
     required String phone,
     required String address,
     String? imagePath,
+    String? city,
+    String? country,
+    String? countryCode,
+    String? dateOfBirth,
+    String? licenseNumber,
+    String? licenseExpiry,
   }) async {
     if (name.isEmpty || email.isEmpty) {
       throw const ServerException('Name and email are required.');
     }
 
-    final response = await _api.put(
-      '/api/profile',
-      data: {
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'address': address,
-        if (imagePath != null && imagePath.isNotEmpty) 'image': imagePath,
-      },
-    );
+    // Build FormData so text fields AND the file all travel as multipart/form-data.
+    // The API uses POST + _method=PUT (Laravel method-spoofing).
+    final fields = <String, dynamic>{
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'address': address,
+      '_method': 'PUT',
+      if (city != null && city.isNotEmpty) 'city': city,
+      if (country != null && country.isNotEmpty) 'country': country,
+      if (countryCode != null && countryCode.isNotEmpty) 'country_code': countryCode,
+      if (dateOfBirth != null && dateOfBirth.isNotEmpty) 'date_of_birth': dateOfBirth,
+      if (licenseNumber != null && licenseNumber.isNotEmpty) 'license_number': licenseNumber,
+      if (licenseExpiry != null && licenseExpiry.isNotEmpty) 'license_expiry': licenseExpiry,
+    };
 
-    _requireSuccess(response, fallbackMessage: 'Profile update failed');
+    // Attach the image as a real file when a local path is given
+    final bool hasLocalImage = imagePath != null &&
+        imagePath.isNotEmpty &&
+        !imagePath.startsWith('http') &&
+        File(imagePath).existsSync();
 
-    // Merge into the stored UserModel so nothing is lost
-    await _mergeAndPersistProfileUpdate(
-      name: name,
-      email: email,
-      phone: phone,
-      address: address,
-      imagePath: imagePath,
-    );
-
-    // Sync flat fallback keys
-    await _prefs.setString(_nameKey, name);
-    await _prefs.setString(_emailKey, email);
-    await _prefs.setString(_phoneKey, phone);
-    await _prefs.setString(_addressKey, address);
-    if (imagePath != null && imagePath.isNotEmpty) {
-      await _prefs.setString(_photoKey, imagePath);
+    dio.FormData formData;
+    if (hasLocalImage) {
+      formData = dio.FormData.fromMap({
+        ...fields,
+        'image': await dio.MultipartFile.fromFile(
+          imagePath,
+          filename: imagePath.split('/').last,
+        ),
+      });
+    } else {
+      formData = dio.FormData.fromMap(fields);
     }
 
-    userName.value     = name;
-    userEmail.value    = email;
-    userPhone.value    = phone;
-    userAddress.value  = address;
-    if (imagePath != null && imagePath.isNotEmpty) {
-      userPhotoUrl.value = imagePath;
+    final response = await _api.postFormData(ApiConstants.profile, formData);
+
+    final data = _requireSuccess(response, fallbackMessage: 'Profile update failed');
+
+    // Prefer the server's returned UserResource so server-side
+    // normalizations (e.g. uppercase country, stored image URL) are
+    // reflected locally instead of using stale form values.
+    final userMap = data.isNotEmpty ? data : null;
+    if (userMap != null) {
+      final user = UserModel.fromJson(userMap);
+      await _persistSession(_prefs.getString(_tokenKey) ?? '', user);
+      _hydrateState(user);
+    } else {
+      // Fallback: merge form values into the stored model
+      await _mergeAndPersistProfileUpdate(
+        name: name,
+        email: email,
+        phone: phone,
+        address: address,
+        imagePath: imagePath,
+        city: city,
+        country: country,
+        countryCode: countryCode,
+        dateOfBirth: dateOfBirth,
+        licenseNumber: licenseNumber,
+        licenseExpiry: licenseExpiry,
+      );
+
+      // Sync flat fallback keys
+      await _prefs.setString(_nameKey, name);
+      await _prefs.setString(_emailKey, email);
+      await _prefs.setString(_phoneKey, phone);
+      await _prefs.setString(_addressKey, address);
+      if (imagePath != null && imagePath.isNotEmpty) {
+        await _prefs.setString(_photoKey, imagePath);
+      }
+
+      userName.value     = name;
+      userEmail.value    = email;
+      userPhone.value    = phone;
+      userAddress.value  = address;
+      if (imagePath != null && imagePath.isNotEmpty) {
+        userPhotoUrl.value = imagePath;
+      }
     }
   }
 
   /// Change password on the server.
+  /// Uses POST /api/password with _method=put (Laravel method-spoofing).
   Future<void> updatePassword({
     required String currentPassword,
     required String newPassword,
     required String newPasswordConfirmation,
   }) async {
-    final response = await _api.put(
-      '/api/change-password',
+    final response = await _api.post(
+      ApiConstants.password,
       data: {
         'current_password': currentPassword,
         'password': newPassword,
         'password_confirmation': newPasswordConfirmation,
+        '_method': 'put',
       },
     );
 
     _requireSuccess(response, fallbackMessage: 'Password change failed');
+  }
+
+  /// Verify OTP — used for email verification or forgot-password flow.
+  /// Returns the server success message.
+  Future<String> verifyOtp({
+    required String otp,
+    required String email
+  }) async {
+    final response = await _api.post(
+      ApiConstants.verifyOtp,
+      data: {'email': email, 'otp': otp},
+    );
+
+    final data = _requireSuccess(response, fallbackMessage: 'OTP verification failed');
+    final isVerified = data['verified'] as bool? ?? false;
+    if (!isVerified) {
+      final msg = response.data?['message'] as String? ?? 'Invalid or expired OTP.';
+      throw ServerException(msg);
+    }
+    return response.data['message'] as String? ?? 'OTP verified successfully';
+  }
+
+  /// Fetch the authenticated user's profile from the server
+  /// and refresh local state and persisted cache.
+  Future<void> fetchProfile() async {
+    try {
+      final response = await _api.get(ApiConstants.user);
+
+      final body = response.data;
+      if (body == null) return;
+
+      // The /user endpoint may return the user directly or inside a data wrapper
+      final userMap = body['data'] is Map<String, dynamic>
+          ? body['data'] as Map<String, dynamic>
+          : body is Map<String, dynamic>
+              ? body
+              : null;
+
+      if (userMap == null) return;
+
+      // If data contains a 'user' key, unwrap it
+      final rawUser = userMap['user'] is Map<String, dynamic>
+          ? userMap['user'] as Map<String, dynamic>
+          : userMap;
+
+      final user = UserModel.fromJson(rawUser);
+      await _persistSession(_prefs.getString(_tokenKey) ?? '', user);
+      _hydrateState(user);
+    } catch (e) {
+      logger.w('[AuthService] fetchProfile failed (non-fatal): $e');
+    }
   }
 
   // ── Social Auth (mocked) ──────────────────────────────────────
@@ -267,7 +372,7 @@ class AuthService extends GetxService {
   /// Clears local state and calls the logout endpoint (best-effort).
   Future<void> logout() async {
     try {
-      await _api.post('/api/logout');
+      await _api.post(ApiConstants.logout);
     } catch (e) {
       // Non-fatal: always clear local state even if the server call fails
       logger.w('[AuthService] Logout API call failed (proceeding anyway): $e');
@@ -289,7 +394,8 @@ class AuthService extends GetxService {
     final body = response.data;
     if (body == null) throw ServerException(fallbackMessage);
 
-    final success = body['status'] as bool? ?? false;
+    // API returns "success": true/false (not "status")
+    final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
     if (!success) {
       final msg = body['message'] as String? ?? fallbackMessage;
       throw ServerException(msg);
@@ -325,6 +431,12 @@ class AuthService extends GetxService {
     required String phone,
     required String address,
     String? imagePath,
+    String? city,
+    String? country,
+    String? countryCode,
+    String? dateOfBirth,
+    String? licenseNumber,
+    String? licenseExpiry,
   }) async {
     final userJson = _prefs.getString(_userKey);
     if (userJson == null || userJson.isEmpty) return;
@@ -353,14 +465,14 @@ class AuthService extends GetxService {
         preferredService: existing.preferredService,
         locationLatitude: existing.locationLatitude,
         locationLongitude: existing.locationLongitude,
-        countryCode: existing.countryCode,
+        countryCode: countryCode ?? existing.countryCode,
         phone: phone,
-        dateOfBirth: existing.dateOfBirth,
+        dateOfBirth: dateOfBirth ?? existing.dateOfBirth,
         address: address,
-        city: existing.city,
-        country: existing.country,
-        licenseNumber: existing.licenseNumber,
-        licenseExpiry: existing.licenseExpiry,
+        city: city ?? existing.city,
+        country: country ?? existing.country,
+        licenseNumber: licenseNumber ?? existing.licenseNumber,
+        licenseExpiry: licenseExpiry ?? existing.licenseExpiry,
         createdAt: existing.createdAt,
         updatedAt: existing.updatedAt,
         googleId: existing.googleId,

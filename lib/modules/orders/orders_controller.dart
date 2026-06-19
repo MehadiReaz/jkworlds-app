@@ -1,16 +1,37 @@
 import 'package:get/get.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
-import 'package:jkworlds/data/mock/mock_bookings.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
 
 class OrdersController extends GetxController {
-  final allBookings = <BookingModel>[].obs;
-  final selectedTab = 0.obs; // 0: All, 1: Confirmed, 2: Active, 3: Completed, 4: Cancelled
+  final allBookings  = <BookingModel>[].obs;
+  final isLoading    = false.obs;
+  final errorMessage = ''.obs;
+  final selectedTab  = 0.obs; // 0: All, 1: Confirmed, 2: Active, 3: Completed, 4: Cancelled
+
+  BookingService get _bookingService => Get.find<BookingService>();
 
   @override
   void onInit() {
     super.onInit();
-    allBookings.value = mockBookings;
+    loadBookings();
   }
+
+  Future<void> loadBookings() async {
+    isLoading.value = true;
+    errorMessage.value = '';
+    try {
+      final bookings = await _bookingService.fetchBookings();
+      allBookings.value = bookings;
+    } catch (e) {
+      // Non-fatal: fall back to mock bookings
+      // allBookings.value = mockBookings;
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> refresh() => loadBookings();
 
   /// Returns the list of bookings filtered by the active filter tab index.
   List<BookingModel> get filteredBookings {

@@ -137,7 +137,7 @@ void main() {
 
     // Verify a new booking is registered in the list database
     expect(mockBookings.length, initialBookingCount + 1);
-    expect(mockBookings[0].vehicle.id, 'v11');
+    expect(mockBookings[0].vehicle?.id ?? mockBookings[0].vehicleId?.toString(), 'v11');
     expect(mockBookings[0].totalPrice, 214500.0);
 
     // Pump to let getx success snackbar timer dismiss safely

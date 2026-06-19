@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/core/utils/image_picker_helper.dart';
 
@@ -77,7 +78,7 @@ class EditProfileController extends GetxController {
 
   String? validateNewPassword(String? v) {
     if (v == null || v.isEmpty) return 'field_required'.tr;
-    if (v.length < 6) return 'password_too_short'.tr;
+    if (v.length < 8) return 'password_too_short'.tr;
     return null;
   }
 
@@ -154,23 +155,7 @@ class EditProfileController extends GetxController {
 
   // ── Snackbar Helpers ──────────────────────────────────────────
 
-  void _showSuccess(String message) => Get.snackbar(
-        'success'.tr,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.primaryContainer,
-        colorText: Get.theme.colorScheme.onPrimaryContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+  void _showSuccess(String message) => SnackbarHelper.showSuccess(message);
 
-  void _showError(String message) => Get.snackbar(
-        'error'.tr,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.errorContainer,
-        colorText: Get.theme.colorScheme.onErrorContainer,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+  void _showError(String message) => SnackbarHelper.showError(message);
 }

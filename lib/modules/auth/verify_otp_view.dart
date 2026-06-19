@@ -4,8 +4,9 @@ import 'package:get/get.dart';
 import 'auth_controller.dart';
 import 'widgets/shared_auth_widgets.dart';
 
-class ForgotPasswordView extends GetView<AuthController> {
-  const ForgotPasswordView({super.key});
+
+class VerifyOtpView extends GetView<AuthController> {
+  const VerifyOtpView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,16 +23,15 @@ class ForgotPasswordView extends GetView<AuthController> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Card Container ─────────────────────────
                 AuthCard(
                   child: Form(
-                    key: controller.forgotFormKey,
+                    key: controller.verifyOtpFormKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // ── Header Title ─────────────────────────────────
                         Text(
-                          'forgot_password_title'.tr,
+                          'Verification',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
@@ -42,7 +42,7 @@ class ForgotPasswordView extends GetView<AuthController> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'forgot_password_subtitle'.tr,
+                          'Enter the OTP code sent to: ${controller.emailCtrl.text}',
                           style: TextStyle(
                             fontSize: 15,
                             color: cs.onSurfaceVariant,
@@ -52,9 +52,9 @@ class ForgotPasswordView extends GetView<AuthController> {
                         ),
                         const SizedBox(height: 36),
 
-                        // ── Email Input Label ────────────────────────────
+                        // ── OTP Input Label ──────────────────────────────
                         Text(
-                          'email_address_label'.tr,
+                          'OTP CODE *',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -63,26 +63,30 @@ class ForgotPasswordView extends GetView<AuthController> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // ── Email TextFormField ──────────────────────────
+                        // ── OTP TextFormField ────────────────────────────
                         TextFormField(
-                          controller: controller.emailCtrl,
-                          keyboardType: TextInputType.emailAddress,
+                          controller: controller.otpCtrl,
+                          keyboardType: TextInputType.number,
                           textInputAction: TextInputAction.done,
-                          validator: controller.validateEmail,
+                          validator: controller.validateOtp,
                           decoration: buildAuthInputDecoration(
-                            hintText: 'enter_email'.tr,
+                            hintText: 'Enter OTP code',
                             cs: cs,
                             theme: theme,
+                            prefixIcon: Icon(
+                              Icons.pin_outlined,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 28),
 
-                        // ── Submit Button ────────────────────────────────
+                        // ── Verify Button ────────────────────────────────
                         Obx(
                           () => FilledButton(
                             onPressed: controller.isLoading.value
                                 ? null
-                                : controller.forgotPassword,
+                                : controller.verifyOtp,
                             style: FilledButton.styleFrom(
                               backgroundColor: cs.primary,
                               foregroundColor: cs.onPrimary,
@@ -104,18 +108,64 @@ class ForgotPasswordView extends GetView<AuthController> {
                                       color: cs.onPrimary,
                                     ),
                                   )
-                                : Text(
-                                    'send_otp'.tr,
-                                    style: const TextStyle(
+                                : const Text(
+                                    'Verify',
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 16),
 
-                        // ── Back to Log In ───────────────────────────────
+                        // ── OTP Resend Option ────────────────────────────
+                        Obx(() {
+                          final seconds = controller.otpTimerSeconds.value;
+                          return Center(
+                            child: seconds > 0
+                                ? RichText(
+                                    text: TextSpan(
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: cs.onSurfaceVariant,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: "Didn't receive code? "),
+                                        TextSpan(
+                                          text: 'Resend in ${seconds}s',
+                                          style: TextStyle(
+                                            color: cs.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : TextButton(
+                                    onPressed: controller.isLoading.value
+                                        ? null
+                                        : controller.resendOtp,
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Resend OTP',
+                                      style: TextStyle(
+                                        color: cs.primary,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                          );
+                        }),
+                        const SizedBox(height: 24),
+
+                        // ── Back to Forgot Password ──────────────────────
                         GestureDetector(
                           onTap: () => Get.back(),
                           child: Row(
@@ -128,7 +178,7 @@ class ForgotPasswordView extends GetView<AuthController> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'back_to_log_in'.tr,
+                                'Change Email',
                                 style: TextStyle(
                                   color: cs.primary,
                                   fontSize: 15,
