@@ -16,7 +16,7 @@ class DialogHelper {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
-        backgroundColor: theme.dialogBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 6,
         child: Padding(
           padding: const EdgeInsets.all(24),
