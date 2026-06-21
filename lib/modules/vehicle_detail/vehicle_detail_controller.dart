@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
+import 'package:jkworlds/core/utils/logger.dart';
 
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/review_model.dart';
-import 'package:jkworlds/data/mock/mock_reviews.dart';
-import 'package:jkworlds/data/models/booking_model.dart';
-import 'package:jkworlds/data/mock/mock_bookings.dart';
-import 'package:jkworlds/modules/orders/orders_controller.dart';
+import 'package:jkworlds/data/services/category_service.dart';
+import 'package:jkworlds/app/routes/app_routes.dart';
 
 class VehicleDetailController extends GetxController {
-  late final VehicleModel vehicle;
+  // The vehicle starts as the list-page preview; replaced with full detail after fetch.
+  late VehicleModel vehicle;
+  final vehicleRx = Rxn<VehicleModel>();
+
   final reviews = <ReviewModel>[].obs;
+  final similarVehicles = <VehicleModel>[].obs;
   final selectedPriceTab = 0.obs; // 0=daily, 1=weekly, 2=monthly
   final isSelfDrive = true.obs;
   final isWishlisted = false.obs;
+
+  // ── Loading / Error States ──────────────────────────────────────
+  final isLoadingDetail = true.obs;
+  final detailError = ''.obs;
 
   // ── Reservation Form States ──────────────────────────────────────
   final pickupDate = Rxn<DateTime>();
@@ -27,13 +34,48 @@ class VehicleDetailController extends GetxController {
   final childSeatAddon = false.obs;
   final isLoading = false.obs;
 
+  CategoryService get _categoryService => Get.find<CategoryService>();
+
   @override
   void onInit() {
     super.onInit();
-    // Vehicle is passed via Get.arguments
+    // Vehicle is passed via Get.arguments (from list page)
     vehicle = Get.arguments as VehicleModel;
+    vehicleRx.value = vehicle;
+
+    // Fetch full details from the API
+    _fetchVehicleDetail();
   }
 
+  /// Fetches the full vehicle detail from the API endpoint
+  /// GET /api/vehicles/{id}
+  Future<void> _fetchVehicleDetail() async {
+    isLoadingDetail.value = true;
+    detailError.value = '';
+
+    try {
+      final result = await _categoryService.fetchVehicleDetail(vehicle.id);
+
+      // Update vehicle with full details from API
+      vehicle = result.vehicle;
+      vehicleRx.value = result.vehicle;
+
+      // Populate reviews
+      reviews.assignAll(result.reviews);
+
+      // Populate similar vehicles
+      similarVehicles.assignAll(result.similarVehicles);
+    } catch (e) {
+      logger.e('[VehicleDetailController] Error fetching vehicle detail: $e');
+      detailError.value = e.toString();
+      // The page still works with the list-page preview data
+    } finally {
+      isLoadingDetail.value = false;
+    }
+  }
+
+  /// Retry fetching vehicle details (e.g. after a network error)
+  Future<void> retryFetchDetail() => _fetchVehicleDetail();
 
   void selectPriceTab(int tab) {
     selectedPriceTab.value = tab;
@@ -51,13 +93,14 @@ class VehicleDetailController extends GetxController {
   }
 
   double get displayPrice {
+    final v = vehicleRx.value ?? vehicle;
     switch (selectedPriceTab.value) {
       case 1:
-        return vehicle.pricePerWeek;
+        return v.pricePerWeek;
       case 2:
-        return vehicle.pricePerMonth;
+        return v.pricePerMonth;
       default:
-        return vehicle.pricePerDay;
+        return v.pricePerDay;
     }
   }
 
@@ -79,9 +122,26 @@ class VehicleDetailController extends GetxController {
     return diff > 0 ? diff : 0;
   }
 
-  double get subtotal => totalDays * vehicle.pricePerDay;
+  double get subtotal {
+    final v = vehicleRx.value ?? vehicle;
+    return totalDays * v.pricePerDay;
+  }
 
   double get protectionCost {
+    final v = vehicleRx.value ?? vehicle;
+    if (v.protectionPlans.isNotEmpty) {
+      final plans = v.protectionPlans.where((p) => p.title.toLowerCase().contains(selectedProtection.value.toLowerCase()));
+      if (plans.isNotEmpty) {
+        final plan = plans.first;
+        if (plan.priceType == 'percentage' && plan.priceValue != null) {
+          return subtotal * (plan.priceValue! / 100.0);
+        } else if (plan.priceType == 'fixed' && plan.priceValue != null) {
+          return plan.priceValue! * totalDays;
+        }
+      }
+      return 0.0;
+    }
+    // Fallback:
     if (selectedProtection.value == 'Premium') {
       return subtotal * 0.15;
     } else if (selectedProtection.value == 'Full') {
@@ -90,20 +150,58 @@ class VehicleDetailController extends GetxController {
     return 0.0;
   }
 
+  double get gpsAddonPrice {
+    final v = vehicleRx.value ?? vehicle;
+    final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('gps'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      return addons.first.priceValue!;
+    }
+    return 5000.0;
+  }
+
+  double get additionalDriverAddonPrice {
+    final v = vehicleRx.value ?? vehicle;
+    final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('driver'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      final addon = addons.first;
+      if (addon.priceType == 'percentage') {
+        return (subtotal * (addon.priceValue! / 100.0)) / (totalDays > 0 ? totalDays : 1);
+      }
+      return addon.priceValue!;
+    }
+    return 8000.0;
+  }
+
+  double get childSeatAddonPrice {
+    final v = vehicleRx.value ?? vehicle;
+    final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('seat') || a.title.toLowerCase().contains('child'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      final addon = addons.first;
+      if (addon.priceType == 'percentage') {
+        return (subtotal * (addon.priceValue! / 100.0)) / (totalDays > 0 ? totalDays : 1);
+      }
+      return addon.priceValue!;
+    }
+    return 4000.0;
+  }
+
   double get addonsCost {
     double cost = 0.0;
-    // Addons are cost per day
-    if (gpsAddon.value) cost += 5000.0 * totalDays;
-    if (additionalDriverAddon.value) cost += 8000.0 * totalDays;
-    if (childSeatAddon.value) cost += 4000.0 * totalDays;
+    if (gpsAddon.value) cost += gpsAddonPrice * totalDays;
+    if (additionalDriverAddon.value) cost += additionalDriverAddonPrice * totalDays;
+    if (childSeatAddon.value) cost += childSeatAddonPrice * totalDays;
     return cost;
   }
 
   double get serviceFee => subtotal * 0.05;
 
   double get securityDeposit {
-    if (vehicle.type == 'Luxury') return 150000.0;
-    if (vehicle.type == 'SUV') return 100000.0;
+    final v = vehicleRx.value ?? vehicle;
+    if (v.securityDepositAmount != null) {
+      return v.securityDepositAmount!;
+    }
+    if (v.type == 'Luxury') return 150000.0;
+    if (v.type == 'SUV') return 100000.0;
     return 50000.0;
   }
 
@@ -155,9 +253,11 @@ class VehicleDetailController extends GetxController {
   Future<void> confirmBooking() async {
     if (!canBook) return;
 
+    final currentVehicle = vehicleRx.value ?? vehicle;
+
     // Serialize the details of the booking configurator to pass to Checkout Screen
     final arguments = {
-      'vehicle': vehicle,
+      'vehicle': currentVehicle,
       'pickupDate': pickupDate.value!,
       'returnDate': returnDate.value!,
       'pickupTime': pickupTime.value,
@@ -179,13 +279,8 @@ class VehicleDetailController extends GetxController {
     Get.toNamed('/checkout', arguments: arguments);
   }
 
-  DateTime _combineDateAndTime(DateTime date, String timeStr) {
-    if (timeStr.isEmpty) return date;
-    final parts = timeStr.split(':');
-    if (parts.length < 2) return date;
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
-    return DateTime(date.year, date.month, date.day, hour, minute);
+  /// Navigate to a similar vehicle's detail page
+  void navigateToSimilarVehicle(VehicleModel similarVehicle) {
+    Get.offNamed(AppRoutes.vehicleDetail, arguments: similarVehicle);
   }
 }
-

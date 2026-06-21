@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
-import 'package:jkworlds/data/models/review_model.dart';
 import 'vehicle_detail_controller.dart';
 
 class VehicleDetailView extends StatelessWidget {
@@ -39,13 +38,15 @@ class VehicleDetailView extends StatelessWidget {
       return '$displayHourStr:$displayMinuteStr $period';
     }
 
-    final VehicleModel vehicle = ctrl.vehicle;
-    final cleanCarName = '${vehicle.brand} ${vehicle.name}'.replaceAll(RegExp(r'\s*\(.*\)'), '');
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(cleanCarName),
+        title: Obx(() {
+          final vehicle = ctrl.vehicleRx.value ?? ctrl.vehicle;
+          final cleanCarName = '${vehicle.brand} ${vehicle.name}'.replaceAll(RegExp(r'\s*\(.*\)'), '');
+          return Text(cleanCarName);
+        }),
         centerTitle: true,
         actions: [
           Obx(() => IconButton(
@@ -58,10 +59,13 @@ class VehicleDetailView extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Obx(() {
+          final VehicleModel vehicle = ctrl.vehicleRx.value ?? ctrl.vehicle;
+          final cleanCarName = '${vehicle.brand} ${vehicle.name}'.replaceAll(RegExp(r'\s*\(.*\)'), '');
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Car Image Top Portion
               ClipRRect(
@@ -243,9 +247,9 @@ class VehicleDetailView extends StatelessWidget {
                     'Plate: ',
                     style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
                   ),
-                  const Text(
-                    'LG-890-IKJ',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    vehicle.plateNumber ?? 'N/A',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 24),
                   Icon(Icons.speed_rounded, size: 18, color: cs.onSurfaceVariant),
@@ -254,9 +258,9 @@ class VehicleDetailView extends StatelessWidget {
                     'Mileage: ',
                     style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
                   ),
-                  const Text(
-                    '9,500 km',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    vehicle.mileage != null ? '${NumberFormat('#,###').format(vehicle.mileage)} km' : 'N/A',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -285,11 +289,13 @@ class VehicleDetailView extends StatelessWidget {
                 context: context,
                 icon: Icons.timer_outlined,
                 title: 'Mileage Policy',
-                points: [
-                  'Unlimited mileage included',
-                  'No extra distance charges',
-                  'Travel anywhere within Nigeria'
-                ],
+                points: vehicle.mileagePolicies.isNotEmpty
+                    ? vehicle.mileagePolicies
+                    : [
+                        'Unlimited mileage included',
+                        'No extra distance charges',
+                        'Travel anywhere within Nigeria'
+                      ],
                 cs: cs,
                 theme: theme,
               ),
@@ -298,12 +304,14 @@ class VehicleDetailView extends StatelessWidget {
                 context: context,
                 icon: Icons.assignment_outlined,
                 title: 'Rental Requirements',
-                points: [
-                  'Valid Driver License',
-                  'Minimum Driver Age 25+',
-                  'Government Issued ID',
-                  'Refundable Security Deposit'
-                ],
+                points: vehicle.rentalRequirements.isNotEmpty
+                    ? vehicle.rentalRequirements
+                    : [
+                        'Valid Driver License',
+                        'Minimum Driver Age 25+',
+                        'Government Issued ID',
+                        'Refundable Security Deposit'
+                      ],
                 cs: cs,
                 theme: theme,
               ),
@@ -312,14 +320,16 @@ class VehicleDetailView extends StatelessWidget {
                 context: context,
                 icon: Icons.shield_outlined,
                 title: "What's Included",
-                points: [
-                  'Basic Insurance',
-                  '24/7 Support',
-                  'Roadside Assistance',
-                  'Sanitized Vehicle',
-                  'Free Cancellation',
-                  'Vehicle Inspection'
-                ],
+                points: vehicle.includedItems.isNotEmpty
+                    ? vehicle.includedItems
+                    : [
+                        'Basic Insurance',
+                        '24/7 Support',
+                        'Roadside Assistance',
+                        'Sanitized Vehicle',
+                        'Free Cancellation',
+                        'Vehicle Inspection'
+                      ],
                 cs: cs,
                 theme: theme,
               ),
@@ -355,7 +365,8 @@ class VehicleDetailView extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '₦${NumberFormat('#,###').format(ctrl.securityDeposit)} deposit is authorized at pickup and fully released after vehicle inspection upon return.',
+                            vehicle.securityDepositDescription ??
+                                '₦${NumberFormat('#,###').format(ctrl.securityDeposit)} deposit is authorized at pickup and fully released after vehicle inspection upon return.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: isLight ? Colors.amber.shade900 : Colors.amber.shade200,
                               height: 1.4,
@@ -394,12 +405,12 @@ class VehicleDetailView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Free Cancellation',
+                            vehicle.cancellationTitle ?? 'Free Cancellation',
                             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Cancel up to 24 hours before pickup for a full refund — no questions asked.',
+                            vehicle.cancellationDescription ?? 'Cancel up to 24 hours before pickup for a full refund — no questions asked.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: isLight ? Colors.green.shade900 : Colors.green.shade200,
                               height: 1.4,
@@ -699,37 +710,68 @@ class VehicleDetailView extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Column(
-                      children: [
-                        _buildProtectionRadio(
-                          value: 'Basic',
-                          title: 'Basic Protection',
-                          desc: 'Third-party liability coverage',
-                          badge: 'Included',
-                          ctrl: ctrl,
-                          theme: theme,
-                          cs: cs,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildProtectionRadio(
-                          value: 'Premium',
-                          title: 'Premium Protection',
-                          desc: 'Collision damage waiver',
-                          badge: '+15%',
-                          ctrl: ctrl,
-                          theme: theme,
-                          cs: cs,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildProtectionRadio(
-                          value: 'Full',
-                          title: 'Full Coverage',
-                          desc: 'Zero excess & full protection',
-                          badge: '+25%',
-                          ctrl: ctrl,
-                          theme: theme,
-                          cs: cs,
-                        ),
-                      ],
+                      children: vehicle.protectionPlans.isNotEmpty
+                          ? vehicle.protectionPlans.map((plan) {
+                              String badge = '';
+                              if (plan.priceType == 'percentage' && plan.priceValue != null) {
+                                badge = '+${plan.priceValue!.toStringAsFixed(0)}%';
+                              } else if (plan.priceType == 'fixed' && plan.priceValue != null) {
+                                badge = '+${currencyService.formatPrice(plan.priceValue!)}';
+                              } else {
+                                badge = plan.priceLabel.isNotEmpty ? plan.priceLabel : 'Included';
+                              }
+                              
+                              String selectedValue = 'Basic';
+                              if (plan.title.toLowerCase().contains('premium')) {
+                                selectedValue = 'Premium';
+                              } else if (plan.title.toLowerCase().contains('full')) {
+                                selectedValue = 'Full';
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: _buildProtectionRadio(
+                                  value: selectedValue,
+                                  title: plan.title,
+                                  desc: plan.description,
+                                  badge: badge,
+                                  ctrl: ctrl,
+                                  theme: theme,
+                                  cs: cs,
+                                ),
+                              );
+                            }).toList()
+                          : [
+                              _buildProtectionRadio(
+                                value: 'Basic',
+                                title: 'Basic Protection',
+                                desc: 'Third-party liability coverage',
+                                badge: 'Included',
+                                ctrl: ctrl,
+                                theme: theme,
+                                cs: cs,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildProtectionRadio(
+                                value: 'Premium',
+                                title: 'Premium Protection',
+                                desc: 'Collision damage waiver',
+                                badge: '+15%',
+                                ctrl: ctrl,
+                                theme: theme,
+                                cs: cs,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildProtectionRadio(
+                                value: 'Full',
+                                title: 'Full Coverage',
+                                desc: 'Zero excess & full protection',
+                                badge: '+25%',
+                                ctrl: ctrl,
+                                theme: theme,
+                                cs: cs,
+                              ),
+                            ],
                     ),
                     const SizedBox(height: 24),
 
@@ -749,7 +791,7 @@ class VehicleDetailView extends StatelessWidget {
                           labelRx: ctrl.gpsAddon,
                           title: 'GPS Navigation',
                           desc: 'Turn-by-turn navigation',
-                          price: '+₦5,000 /day',
+                          price: '+${currencyService.formatPrice(ctrl.gpsAddonPrice)} /day',
                           theme: theme,
                           cs: cs,
                         ),
@@ -758,7 +800,7 @@ class VehicleDetailView extends StatelessWidget {
                           labelRx: ctrl.additionalDriverAddon,
                           title: 'Additional Driver',
                           desc: 'Add another licensed driver',
-                          price: '+₦8,000 /day',
+                          price: '+${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)} /day',
                           theme: theme,
                           cs: cs,
                         ),
@@ -767,7 +809,7 @@ class VehicleDetailView extends StatelessWidget {
                           labelRx: ctrl.childSeatAddon,
                           title: 'Child Seat',
                           desc: 'Safety seat for children',
-                          price: '+₦4,000 /day',
+                          price: '+${currencyService.formatPrice(ctrl.childSeatAddonPrice)} /day',
                           theme: theme,
                           cs: cs,
                         ),
@@ -858,12 +900,104 @@ class VehicleDetailView extends StatelessWidget {
                   ],
                 ),
               ),
+              // 10. Similar Vehicles Section
+              Obx(() {
+                if (ctrl.isLoadingDetail.value) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Loading full details...',
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (ctrl.detailError.value.isNotEmpty && ctrl.similarVehicles.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.cloud_off_rounded, color: cs.onSurfaceVariant, size: 28),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Could not load full details',
+                            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: ctrl.retryFetchDetail,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (ctrl.similarVehicles.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 28),
+                    Text(
+                      'Similar Vehicles',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: ctrl.similarVehicles.length,
+                        itemBuilder: (context, index) {
+                          final sv = ctrl.similarVehicles[index];
+                          return _buildSimilarVehicleCard(
+                            context: context,
+                            vehicle: sv,
+                            ctrl: ctrl,
+                            currencyService: currencyService,
+                            cs: cs,
+                            theme: theme,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              }),
+              const SizedBox(height: 32),
             ],
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }),
+    ),
+  );
+}
 
   // ── Spec Card Widget Generator ─────────────────────────────────
   Widget _buildSpecCard({
@@ -1175,6 +1309,109 @@ class VehicleDetailView extends StatelessWidget {
           ),
           Text(price, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         ],
+      ),
+    );
+  }
+
+  // ── Similar Vehicle Card ────────────────────────────────────────
+  Widget _buildSimilarVehicleCard({
+    required BuildContext context,
+    required VehicleModel vehicle,
+    required VehicleDetailController ctrl,
+    required dynamic currencyService,
+    required ColorScheme cs,
+    required ThemeData theme,
+  }) {
+    final isLight = theme.brightness == Brightness.light;
+    return GestureDetector(
+      onTap: () => ctrl.navigateToSimilarVehicle(vehicle),
+      child: Container(
+        width: 240,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isLight ? 0.03 : 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: SizedBox(
+                height: 110,
+                width: double.infinity,
+                child: vehicle.images.isNotEmpty
+                    ? Image.network(
+                        vehicle.images[0],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: cs.surfaceContainerHighest,
+                          child: Icon(Icons.directions_car_rounded, size: 40, color: cs.primary),
+                        ),
+                      )
+                    : Container(
+                        color: cs.surfaceContainerHighest,
+                        child: Icon(Icons.directions_car_rounded, size: 40, color: cs.primary),
+                      ),
+              ),
+            ),
+            // Info
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${vehicle.brand} ${vehicle.name}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        currencyService.formatPrice(vehicle.pricePerDay),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: cs.primary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text(
+                            vehicle.rating.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

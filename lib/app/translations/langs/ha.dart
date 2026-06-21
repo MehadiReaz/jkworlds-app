@@ -32,6 +32,7 @@ const Map<String, String> ha = {
   'search_vehicles': 'Nemo motoci...',
   'featured_vehicles': 'Motocin da aka fi so',
   'popular_vehicles': 'Shahararrun Motoci',
+  'top_rated_vehicles': 'Mafi Kyau',
   'categories': 'Rukunoni',
   'promo_title': '20% Rangwame a Farkon Tafiya',
   'promo_subtitle': 'Yi amfani da lambar JKFIRST don farkon hayar ku',

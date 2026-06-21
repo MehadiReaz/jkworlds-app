@@ -32,6 +32,7 @@ const Map<String, String> yo = {
   'search_vehicles': 'Wá ọkọ̀...',
   'featured_vehicles': 'Ọkọ̀ Pàtàkì',
   'popular_vehicles': 'Olókìkí Nítòsí',
+  'top_rated_vehicles': 'Tó Gbajúmọ̀ Jùlọ',
   'categories': 'Ẹ̀ka',
   'promo_title': '20% Dín Kúrò Nínú Ìrìn Àkọ́kọ́',
   'promo_subtitle': 'Lo koodu JKFIRST fún ìyálò àkọ́kọ́ rẹ',

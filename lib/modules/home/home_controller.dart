@@ -9,17 +9,18 @@ import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
+import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 class HomeController extends GetxController {
   final featuredVehicles = <VehicleModel>[].obs;
-  final popularVehicles  = <VehicleModel>[].obs;
+  final topRatedVehicles  = <VehicleModel>[].obs;
   final apiCategories    = <CategoryModel>[].obs;
   final selectedCategory = 'All'.obs;
   final isLoading        = false.obs;
   final errorMessage     = ''.obs;
 
-  final categories = <String>['All', 'Sedan', 'SUV', 'Luxury', 'Van'].obs;
+  final categories = <String>[].obs;
 
   // ── Promo banner ───────────────────────────────────────────────
   final currentPromoIndex = 0.obs;
@@ -30,6 +31,8 @@ class HomeController extends GetxController {
 
   CategoryService get _categoryService => Get.find<CategoryService>();
   BookingService  get _bookingService  => Get.find<BookingService>();
+
+  RxBool get isLoadingCategories => _categoryService.isLoadingCategories;
 
   @override
   void onInit() {
@@ -50,18 +53,21 @@ class HomeController extends GetxController {
     try {
       // Load categories list
       final cats = await _categoryService.fetchCategories();
-      apiCategories.value = cats;
+      final activeCats = cats.where((c) => c.status).toList();
+      apiCategories.value = activeCats;
 
-      if (cats.isNotEmpty) {
-        categories.value = ['All', ...cats.map((c) => c.name)];
-        
-        // Load featured vehicles across all categories (with featured: '1')
-        final allFeatured = await _categoryService.fetchAllVehicles(featured: '1');
-        featuredVehicles.value = allFeatured.where((v) => v.isFeatured).toList();
-        
-        // Load popular vehicles based on the selected category ('All' on startup)
-        await _loadVehiclesForSelectedCategory();
+      if (activeCats.isNotEmpty) {
+        categories.value = ['All', ...activeCats.map((c) => c.name)];
       }
+        
+      // Load featured vehicles across all categories (with featured: '1')
+      final allFeatured = await _categoryService.fetchAllVehicles(featured: '1');
+      featuredVehicles.value = allFeatured.where((v) => v.isFeatured).toList();
+      
+      // Load top rated vehicles using global /api/vehicles (show 5 on home)
+      final topRatedList = await _categoryService.fetchAllVehicles(sort: 'top_rated');
+      topRatedVehicles.value = topRatedList;
+      
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -88,32 +94,12 @@ class HomeController extends GetxController {
   Future<void> refresh() => _loadData();
 
   void selectCategory(String category) {
-    selectedCategory.value = category;
-    if (apiCategories.isNotEmpty) {
-      _loadVehiclesForSelectedCategory();
-    }
-  }
-
-  Future<void> _loadVehiclesForSelectedCategory() async {
-    isLoading.value = true;
     try {
-      if (selectedCategory.value == 'All') {
-        final vehicles = await _categoryService.fetchAllVehicles();
-        popularVehicles.value = vehicles;
-      } else {
-        final targetCat = apiCategories.firstWhereOrNull(
-          (c) => c.name.toLowerCase() == selectedCategory.value.toLowerCase(),
-        );
-        if (targetCat != null) {
-          final vehicles = await _categoryService.fetchVehiclesByCategory(targetCat.id);
-          popularVehicles.value = vehicles;
-        }
-      }
-    } catch (e) {
-      logger.e('Error loading vehicles: $e');
-    } finally {
-      isLoading.value = false;
-    }
+      final exploreCtrl = Get.find<ExploreController>();
+      exploreCtrl.selectedCategory.value = category;
+      exploreCtrl.applyFilters();
+    } catch (_) {}
+    navigateToExplore(resetToAll: false);
   }
 
   /// Greeting based on time of day.
@@ -162,7 +148,14 @@ class HomeController extends GetxController {
 
   // ── Navigation Helpers ─────────────────────────────────────────
 
-  void navigateToExplore() {
+  void navigateToExplore({bool resetToAll = true}) {
+    if (resetToAll) {
+      try {
+        final exploreCtrl = Get.find<ExploreController>();
+        exploreCtrl.selectedCategory.value = 'All';
+        exploreCtrl.applyFilters();
+      } catch (_) {}
+    }
     try {
       final navCtrl = Get.find<MainNavController>();
       navCtrl.changePage(1); // Explore tab
@@ -178,6 +171,19 @@ class HomeController extends GetxController {
       navCtrl.changePage(2); // Orders/Bookings tab
     } catch (_) {
       Get.toNamed(AppRoutes.orders);
+    }
+  }
+
+  void navigateToNotifications() {
+    Get.toNamed(AppRoutes.notificationSettings);
+  }
+
+  void navigateToProfile() {
+    try {
+      final navCtrl = Get.find<MainNavController>();
+      navCtrl.changePage(3); // Profile tab
+    } catch (_) {
+      Get.toNamed(AppRoutes.profile);
     }
   }
 

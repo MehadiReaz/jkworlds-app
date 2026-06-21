@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
+import 'package:jkworlds/data/services/category_service.dart';
+import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/modules/explore/explore_view.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
+import 'mocks.dart';
 
 void main() {
   testWidgets('ExploreView renders search fields, interactive filters, and car cards', (WidgetTester tester) async {
@@ -21,9 +24,12 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     Get.put<SharedPreferences>(prefs, permanent: true);
 
+    Get.put<CategoryService>(MockCategoryService(), permanent: true);
+    Get.put<LocationService>(MockLocationService(), permanent: true);
+
     // 2. Initialize CurrencyService and ExploreController
     Get.put(CurrencyService(), permanent: true);
-    Get.put(ExploreController());
+    final ctrl = Get.put(ExploreController());
 
     // 3. Pump the widget
     await tester.pumpWidget(
@@ -32,6 +38,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    print('DEBUG: categories length = ${Get.find<CategoryService>().categories.length}');
+    print('DEBUG: filteredVehicles length = ${ctrl.filteredVehicles.length}');
 
     // 4. Verify search section headers and initial state
     expect(find.text('Search Options'), findsOneWidget);

@@ -1,7 +1,9 @@
-/// Category data model for vehicle categories.
 class CategoryModel {
   final int id;
   final String name;
+  final String slug;
+  final String type;
+  final bool status;
   final String? image;
   final String? icon;
   final String? description;
@@ -10,6 +12,9 @@ class CategoryModel {
   const CategoryModel({
     required this.id,
     required this.name,
+    required this.slug,
+    required this.type,
+    required this.status,
     this.image,
     this.icon,
     this.description,
@@ -21,7 +26,10 @@ class CategoryModel {
       id: json['id'] is int
           ? json['id'] as int
           : int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      name: json['name'] as String? ?? '',
+      name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      status: json['status'] as bool? ?? false,
       image: json['image'] as String?,
       icon: json['icon'] as String?,
       description: json['description'] as String?,
@@ -34,6 +42,9 @@ class CategoryModel {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'slug': slug,
+        'type': type,
+        'status': status,
         'image': image,
         'icon': icon,
         'description': description,

@@ -24,6 +24,9 @@ class ApiConstants {
   // ── Category & Vehicle Endpoints ─────────────────────────────
   static const String categories = '/api/categories';
   static String categoryVehicles(int categoryId) => '/api/categories/$categoryId/vehicles';
+  static const String vehicles = '/api/vehicles';
+  static String vehicleDetail(dynamic id) => '/api/vehicles/$id';
+  static const String vehicleFilters = '/api/vehicles/filters';
 
   // ── Booking Endpoints ────────────────────────────────────────
   static const String bookings = '/api/bookings';

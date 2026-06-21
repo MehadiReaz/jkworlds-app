@@ -1,3 +1,11 @@
+import 'protection_plan_model.dart';
+import 'rental_addon_model.dart';
+import 'unavailable_date_model.dart';
+
+export 'protection_plan_model.dart';
+export 'rental_addon_model.dart';
+export 'unavailable_date_model.dart';
+
 /// Vehicle data model for car rental listings.
 class VehicleModel {
   final String id;
@@ -24,6 +32,32 @@ class VehicleModel {
   // API extras
   final int? categoryId;
   final String? serviceType; // self-drive, chauffeur
+  final String currency;
+  final String dailyRateFormatted;
+  final double totalPrice;
+  final String totalPriceFormatted;
+
+  // Dynamic details fields from new API
+  final String? plateNumber;
+  final int? mileage;
+  final String? color;
+  final List<String> gallery;
+  final double? dailyRate;
+  final double? weeklyRate;
+  final double? monthlyRate;
+  final double? chauffeurRatePerDay;
+  final double? extraKmCharge;
+  final double? overtimeChargePerHour;
+  final double? securityDepositAmount;
+  final String? securityDepositDescription;
+  final String? cancellationTitle;
+  final String? cancellationDescription;
+  final List<String> mileagePolicies;
+  final List<String> rentalRequirements;
+  final List<String> includedItems;
+  final List<ProtectionPlanModel> protectionPlans;
+  final List<RentalAddonModel> rentalAddons;
+  final List<UnavailableDateModel> unavailableDates;
 
   const VehicleModel({
     required this.id,
@@ -48,7 +82,38 @@ class VehicleModel {
     required this.description,
     this.categoryId,
     this.serviceType,
+    this.currency = '',
+    this.dailyRateFormatted = '',
+    this.totalPrice = 0.0,
+    this.totalPriceFormatted = '',
+    this.plateNumber,
+    this.mileage,
+    this.color,
+    this.gallery = const [],
+    this.dailyRate,
+    this.weeklyRate,
+    this.monthlyRate,
+    this.chauffeurRatePerDay,
+    this.extraKmCharge,
+    this.overtimeChargePerHour,
+    this.securityDepositAmount,
+    this.securityDepositDescription,
+    this.cancellationTitle,
+    this.cancellationDescription,
+    this.mileagePolicies = const [],
+    this.rentalRequirements = const [],
+    this.includedItems = const [],
+    this.protectionPlans = const [],
+    this.rentalAddons = const [],
+    this.unavailableDates = const [],
   });
+
+  bool get hasDiscount => totalPrice > pricePerDay;
+
+  int get discountPercentage {
+    if (totalPrice <= 0 || pricePerDay <= 0 || totalPrice <= pricePerDay) return 0;
+    return (((totalPrice - pricePerDay) / totalPrice) * 100).round();
+  }
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
     double _parseDouble(dynamic v) {
@@ -85,8 +150,13 @@ class VehicleModel {
         ? json['pricing'] as Map<String, dynamic>
         : null;
 
+    // pricing_details: {daily_rate, weekly_rate, monthly_rate, ...}
+    final pricingDetailsMap = json['pricing_details'] is Map<String, dynamic>
+        ? json['pricing_details'] as Map<String, dynamic>
+        : null;
+
     // ── Images ────────────────────────────────────────────────────
-    // Real API: single top-level 'image' URL string
+    // Real API: single top-level 'image' URL string or list in gallery
     // Fallback: 'images' array (mock data)
     List<String> parseImages(dynamic v) {
       if (v == null) return [];
@@ -95,7 +165,13 @@ class VehicleModel {
       return [];
     }
 
-    final images = parseImages(json['images'] ?? json['image']);
+    var images = parseImages(json['gallery'] ?? json['images'] ?? json['image']);
+    if (images.isEmpty && json['image'] != null) {
+      final imgStr = json['image'].toString();
+      if (imgStr.isNotEmpty) {
+        images = [imgStr];
+      }
+    }
 
     // ── Features ──────────────────────────────────────────────────
     // Real API: [{id, name, icon}, ...]  →  extract 'name'
@@ -135,13 +211,24 @@ class VehicleModel {
         ?? json['fuel_type'] as String?
         ?? 'Petrol';
 
-    // Pricing: prefer pricing.daily_rate, then flat daily_rate
+    // Pricing: prefer pricing_details.daily_rate, pricing.daily_rate, then flat daily_rate
+    final currency = pricingMap?['currency'] as String? ?? pricingDetailsMap?['currency'] as String? ?? json['currency'] as String? ?? '';
+    final dailyRateFormatted = pricingMap?['daily_rate_formatted'] as String? ?? pricingDetailsMap?['daily_rate_formatted'] as String? ?? json['daily_rate_formatted'] as String? ?? '';
+    final isUsd = currency.toUpperCase() == 'USD';
+    final double scale = isUsd ? 1600.0 : 1.0;
+
     final pricePerDay = _parseDouble(
-        pricingMap?['daily_rate'] ?? json['daily_rate'] ?? json['price_per_day']);
+        pricingDetailsMap?['daily_rate'] ?? pricingMap?['daily_rate'] ?? json['daily_rate'] ?? json['price_per_day']) * scale;
+    final totalPrice = _parseDouble(
+        pricingMap?['total_price'] ?? json['total_price'] ?? pricingDetailsMap?['total_price'] ?? json['price_per_day']) * scale;
+    final totalPriceFormatted = pricingMap?['total_price_formatted'] as String?
+        ?? pricingDetailsMap?['total_price_formatted'] as String?
+        ?? json['total_price_formatted'] as String?
+        ?? '';
     final pricePerWeek = _parseDouble(
-        pricingMap?['weekly_rate'] ?? json['weekly_rate'] ?? json['price_per_week']);
+        pricingDetailsMap?['weekly_rate'] ?? pricingMap?['weekly_rate'] ?? json['weekly_rate'] ?? json['price_per_week']) * scale;
     final pricePerMonth = _parseDouble(
-        pricingMap?['monthly_rate'] ?? json['monthly_rate'] ?? json['price_per_month']);
+        pricingDetailsMap?['monthly_rate'] ?? pricingMap?['monthly_rate'] ?? json['monthly_rate'] ?? json['price_per_month']) * scale;
 
     // Rating: prefer rating.average
     final rating = _parseDouble(
@@ -163,6 +250,95 @@ class VehicleModel {
     final location = json['location'] as String?
         ?? json['pickup_location'] as String?
         ?? '';
+
+    // Plate & mileage & color
+    final plateNumber = json['plate_number'] as String?;
+    final mileage = specsMap != null
+        ? _parseInt(specsMap['mileage'] ?? json['mileage'])
+        : _parseInt(json['mileage']);
+    final color = json['color'] as String?;
+
+    // Gallery
+    final List<String> galleryList = [];
+    if (json['gallery'] is List) {
+      galleryList.addAll((json['gallery'] as List).map((e) => e.toString()));
+    }
+
+    // Pricing details mapping
+    final chauffeurRatePerDay = pricingDetailsMap != null && pricingDetailsMap['chauffeur_rate_per_day'] != null
+        ? _parseDouble(pricingDetailsMap['chauffeur_rate_per_day']) * scale
+        : null;
+    final extraKmCharge = pricingDetailsMap != null && pricingDetailsMap['extra_km_charge'] != null
+        ? _parseDouble(pricingDetailsMap['extra_km_charge']) * scale
+        : null;
+    final overtimeChargePerHour = pricingDetailsMap != null && pricingDetailsMap['overtime_charge_per_hour'] != null
+        ? _parseDouble(pricingDetailsMap['overtime_charge_per_hour']) * scale
+        : null;
+
+    // Security deposit details
+    final secDepMap = json['security_deposit'] is Map<String, dynamic>
+        ? json['security_deposit'] as Map<String, dynamic>
+        : null;
+    final securityDepositAmount = secDepMap != null && secDepMap['amount'] != null
+        ? _parseDouble(secDepMap['amount'])
+        : (pricingDetailsMap != null && pricingDetailsMap['security_deposit'] != null
+            ? _parseDouble(pricingDetailsMap['security_deposit']) * scale
+            : null);
+    final securityDepositDescription = secDepMap?['description'] as String?;
+
+    // Cancellation details
+    final cancellationMap = json['cancellation'] is Map<String, dynamic>
+        ? json['cancellation'] as Map<String, dynamic>
+        : null;
+    final cancellationTitle = cancellationMap?['title'] as String?;
+    final cancellationDescription = cancellationMap?['description'] as String?;
+
+    // Lists of strings/objects
+    List<String> parseStringList(dynamic v) {
+      if (v is List) {
+        return v
+            .map((e) => e is Map<String, dynamic>
+                ? (e['title'] ?? e['name'] ?? '').toString()
+                : e.toString())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
+      return [];
+    }
+
+    final mileagePolicies = parseStringList(json['mileage_policies']);
+    final rentalRequirements = parseStringList(json['rental_requirements']);
+    final includedItems = parseStringList(json['included_items']);
+
+    // Protection plans
+    final List<ProtectionPlanModel> protectionPlans = [];
+    if (json['protection_plans'] is List) {
+      for (final item in json['protection_plans'] as List) {
+        if (item is Map<String, dynamic>) {
+          protectionPlans.add(ProtectionPlanModel.fromJson(item));
+        }
+      }
+    }
+
+    // Rental Addons
+    final List<RentalAddonModel> rentalAddons = [];
+    if (json['rental_addons'] is List) {
+      for (final item in json['rental_addons'] as List) {
+        if (item is Map<String, dynamic>) {
+          rentalAddons.add(RentalAddonModel.fromJson(item));
+        }
+      }
+    }
+
+    // Unavailable dates
+    final List<UnavailableDateModel> unavailableDates = [];
+    if (json['unavailable_dates'] is List) {
+      for (final item in json['unavailable_dates'] as List) {
+        if (item is Map<String, dynamic>) {
+          unavailableDates.add(UnavailableDateModel.fromJson(item));
+        }
+      }
+    }
 
     return VehicleModel(
       id: (json['id'] ?? '').toString(),
@@ -191,6 +367,30 @@ class VehicleModel {
       description: json['description'] as String? ?? '',
       categoryId: categoryId,
       serviceType: serviceType,
+      plateNumber: plateNumber,
+      mileage: mileage,
+      color: color,
+      gallery: galleryList,
+      dailyRate: pricePerDay,
+      weeklyRate: pricePerWeek,
+      monthlyRate: pricePerMonth,
+      chauffeurRatePerDay: chauffeurRatePerDay,
+      extraKmCharge: extraKmCharge,
+      overtimeChargePerHour: overtimeChargePerHour,
+      securityDepositAmount: securityDepositAmount,
+      securityDepositDescription: securityDepositDescription,
+      cancellationTitle: cancellationTitle,
+      cancellationDescription: cancellationDescription,
+      mileagePolicies: mileagePolicies,
+      rentalRequirements: rentalRequirements,
+      includedItems: includedItems,
+      protectionPlans: protectionPlans,
+      rentalAddons: rentalAddons,
+      unavailableDates: unavailableDates,
+      currency: currency,
+      dailyRateFormatted: dailyRateFormatted,
+      totalPrice: totalPrice,
+      totalPriceFormatted: totalPriceFormatted,
     );
   }
 
@@ -217,6 +417,27 @@ class VehicleModel {
         'description': description,
         'category_id': categoryId,
         'service_type': serviceType,
+        'currency': currency,
+        'daily_rate_formatted': dailyRateFormatted,
+        'total_price': totalPrice,
+        'total_price_formatted': totalPriceFormatted,
+        'plate_number': plateNumber,
+        'mileage': mileage,
+        'color': color,
+        'gallery': gallery,
+        'chauffeur_rate_per_day': chauffeurRatePerDay,
+        'extra_km_charge': extraKmCharge,
+        'overtime_charge_per_hour': overtimeChargePerHour,
+        'security_deposit_amount': securityDepositAmount,
+        'security_deposit_description': securityDepositDescription,
+        'cancellation_title': cancellationTitle,
+        'cancellation_description': cancellationDescription,
+        'mileage_policies': mileagePolicies,
+        'rental_requirements': rentalRequirements,
+        'included_items': includedItems,
+        'protection_plans': protectionPlans.map((e) => e.toJson()).toList(),
+        'rental_addons': rentalAddons.map((e) => e.toJson()).toList(),
+        'unavailable_dates': unavailableDates.map((e) => e.toJson()).toList(),
       };
 }
 

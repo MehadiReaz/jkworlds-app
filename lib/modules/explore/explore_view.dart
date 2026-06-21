@@ -596,14 +596,41 @@ class ExploreView extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          currencyService.formatPrice(vehicle.pricePerDay),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: cs.primary, // Orange primary color
+                        if (vehicle.hasDiscount) ...[
+                          Text(
+                            vehicle.totalPriceFormatted.isNotEmpty
+                                ? vehicle.totalPriceFormatted
+                                : currencyService.formatPrice(vehicle.totalPrice),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                              decoration: TextDecoration.lineThrough,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          Text(
+                            vehicle.dailyRateFormatted.isNotEmpty
+                                ? vehicle.dailyRateFormatted
+                                : currencyService.formatPrice(vehicle.pricePerDay),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ] else ...[
+                          Text(
+                            vehicle.dailyRateFormatted.isNotEmpty
+                                ? vehicle.dailyRateFormatted
+                                : currencyService.formatPrice(vehicle.pricePerDay),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ],
                         Text(
                           '/DAY',
                           style: TextStyle(

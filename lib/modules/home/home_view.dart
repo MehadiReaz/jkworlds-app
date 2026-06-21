@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'home_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
@@ -46,8 +47,8 @@ class HomeView extends StatelessWidget {
               // ── 6. Featured Vehicles Carousel ──────────────────────
               _buildFeaturedSection(ctrl, theme, cs, isLight, currencyService),
 
-              // ── 7. Popular Near You ────────────────────────────────
-              _buildPopularSection(ctrl, theme, cs, isLight, currencyService),
+              // ── 7. Top Rated ──────────────────────────────────────
+              _buildTopRatedSection(ctrl, theme, cs, isLight, currencyService),
 
               // ── 8. Trust Badges ────────────────────────────────────
               _buildTrustBadges(theme, cs, isLight),
@@ -105,7 +106,7 @@ class HomeView extends StatelessWidget {
           ),
           // Notification bell
           IconButton(
-            onPressed: () {},
+            onPressed: ctrl.navigateToNotifications,
             icon: Stack(
               children: [
                 Icon(
@@ -134,12 +135,7 @@ class HomeView extends StatelessWidget {
             final auth = Get.find<AuthService>();
             final photoUrl = auth.userPhotoUrl.value;
             return GestureDetector(
-              onTap: () {
-                // Navigate to profile
-                try {
-                  final navCtrl = Get.find<dynamic>();
-                } catch (_) {}
-              },
+              onTap: ctrl.navigateToProfile,
               child: Container(
                 width: 42,
                 height: 42,
@@ -310,129 +306,132 @@ class HomeView extends StatelessWidget {
             onPageChanged: (index) => ctrl.setPromoIndex(index),
             itemBuilder: (context, index) {
               final promo = promos[index];
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: promo.gradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              return GestureDetector(
+                onTap: ctrl.navigateToExplore,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: promo.gradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: promo.gradient[0].withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: promo.gradient[0].withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    // Background decorative circles
-                    Positioned(
-                      right: -20,
-                      top: -20,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.08),
+                  child: Stack(
+                    children: [
+                      // Background decorative circles
+                      Positioned(
+                        right: -20,
+                        top: -20,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      right: 30,
-                      bottom: -30,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                      Positioned(
+                        right: 30,
+                        bottom: -30,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
                         ),
                       ),
-                    ),
-                    // Content
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  promo.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  promo.subtitle,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.85),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'book_now_short'.tr,
+                      // Content
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    promo.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.3,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    promo.subtitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'book_now_short'.tr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(14),
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                promo.icon,
+                                color: Colors.white,
+                                size: 28,
+                              ),
                             ),
-                            child: Icon(
-                              promo.icon,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -662,13 +661,18 @@ class HomeView extends StatelessWidget {
           const SizedBox(height: 12),
           SizedBox(
             height: 80,
-            child: Obx(() => ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: ctrl.categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final category = ctrl.categories[index];
-                    final icon = getCategoryIcon(category);
+            child: Obx(() {
+              if (ctrl.isLoadingCategories.value) {
+                return _buildCategoryShimmer(theme, cs);
+              }
+              return ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: ctrl.categories.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final category = ctrl.categories[index];
+                  final icon = getCategoryIcon(category);
+                  return Obx(() {
                     final isSelected = ctrl.selectedCategory.value == category;
                     return GestureDetector(
                       onTap: () => ctrl.selectCategory(category),
@@ -722,11 +726,66 @@ class HomeView extends StatelessWidget {
                         ),
                       ),
                     );
-                  },
-                )),
+                  });
+                },
+              );
+            }),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCategoryShimmer(ThemeData theme, ColorScheme cs) {
+    final baseColor = theme.brightness == Brightness.light
+        ? Colors.grey.shade300
+        : Colors.grey.shade800;
+    final highlightColor = theme.brightness == Brightness.light
+        ? Colors.grey.shade100
+        : Colors.grey.shade700;
+
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: 5,
+      separatorBuilder: (_, _) => const SizedBox(width: 12),
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          child: Container(
+            width: 72,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -875,39 +934,65 @@ class HomeView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Chauffeur badge
-                    if (vehicle.hasChauffeur)
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cs.primary,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.person_rounded,
-                                  color: Colors.white, size: 12),
-                              SizedBox(width: 3),
-                              Text(
-                                'CHAUFFEUR',
-                                style: TextStyle(
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (vehicle.discountPercentage > 0) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935), // Sleek discount red
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${vehicle.discountPercentage}% OFF',
+                                style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 9,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          if (vehicle.hasChauffeur)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.person_rounded,
+                                      color: Colors.white, size: 12),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'CHAUFFEUR',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -972,8 +1057,21 @@ class HomeView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              currencyService
-                                  .formatPrice(vehicle.pricePerDay),
+                              vehicle.totalPriceFormatted.isNotEmpty
+                                  ? vehicle.totalPriceFormatted
+                                  : currencyService.formatPrice(vehicle.totalPrice > 0 ? vehicle.totalPrice : vehicle.pricePerDay),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              vehicle.dailyRateFormatted.isNotEmpty
+                                  ? vehicle.dailyRateFormatted
+                                  : currencyService.formatPrice(vehicle.pricePerDay),
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w900,
@@ -1004,9 +1102,9 @@ class HomeView extends StatelessWidget {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // 7. POPULAR NEAR YOU
+  // 7. TOP RATED VEHICLES
   // ══════════════════════════════════════════════════════════════════
-  Widget _buildPopularSection(
+  Widget _buildTopRatedSection(
     HomeController ctrl,
     ThemeData theme,
     ColorScheme cs,
@@ -1018,17 +1116,17 @@ class HomeView extends StatelessWidget {
       child: Column(
         children: [
           _buildSectionHeader(
-            'popular_vehicles'.tr,
+            'top_rated_vehicles'.tr,
             () => ctrl.navigateToExplore(),
             theme,
             cs,
           ),
           const SizedBox(height: 12),
           Obx(() {
-            final vehicles = ctrl.popularVehicles.take(4).toList();
+            final vehicles = ctrl.topRatedVehicles.take(5).toList();
             return Column(
               children: vehicles
-                  .map((v) => _buildPopularCard(
+                  .map((v) => _buildTopRatedCard(
                       v, ctrl, theme, cs, isLight, currencyService))
                   .toList(),
             );
@@ -1068,7 +1166,7 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildPopularCard(
+  Widget _buildTopRatedCard(
     VehicleModel vehicle,
     HomeController ctrl,
     ThemeData theme,
@@ -1188,14 +1286,41 @@ class HomeView extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  currencyService.formatPrice(vehicle.pricePerDay),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    color: cs.primary,
+                if (vehicle.hasDiscount) ...[
+                  Text(
+                    vehicle.totalPriceFormatted.isNotEmpty
+                        ? vehicle.totalPriceFormatted
+                        : currencyService.formatPrice(vehicle.totalPrice),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      decoration: TextDecoration.lineThrough,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    vehicle.dailyRateFormatted.isNotEmpty
+                        ? vehicle.dailyRateFormatted
+                        : currencyService.formatPrice(vehicle.pricePerDay),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: cs.primary,
+                    ),
+                  ),
+                ] else ...[
+                  Text(
+                    vehicle.dailyRateFormatted.isNotEmpty
+                        ? vehicle.dailyRateFormatted
+                        : currencyService.formatPrice(vehicle.pricePerDay),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: cs.primary,
+                    ),
+                  ),
+                ],
                 Text(
                   '/DAY',
                   style: TextStyle(

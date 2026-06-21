@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
@@ -62,26 +61,20 @@ void main() {
     await tester.pumpWidget(const GetMaterialApp(home: VerifyOtpView()));
     await tester.pumpAndSettle();
 
-    // Check timer is initially 0 (shows "Resend OTP" button) since we haven't started it yet
-    expect(find.text('Resend OTP'), findsOneWidget);
+    // Check timer is initially 0 (shows "Resend Code" button) since we haven't started it yet
+    expect(find.text('Resend Code'), findsOneWidget);
 
     // Start timer manually
     controller.startOtpTimer();
     await tester.pump(); // trigger rebuild
 
-    // Now it should show "Didn't receive code? Resend in 120s"
-    final richTextFinder = find.byWidgetPredicate(
-      (widget) => widget is RichText && widget.text.toPlainText().contains("Didn't receive code?"),
-    );
-    expect(richTextFinder, findsOneWidget);
-    RichText richText = tester.element(richTextFinder).widget as RichText;
-    expect(richText.text.toPlainText(), contains("Didn't receive code? Resend in 120s"));
+    // Now it should show "Didn't receive the code?" and "Resend available in 120s"
+    expect(find.text("Didn't receive the code?"), findsOneWidget);
+    expect(find.text("Resend available in 120s"), findsOneWidget);
 
     // Pump to verify it ticks down
     await tester.pump(const Duration(seconds: 1));
-    expect(richTextFinder, findsOneWidget);
-    richText = tester.element(richTextFinder).widget as RichText;
-    expect(richText.text.toPlainText(), contains("Didn't receive code? Resend in 119s"));
+    expect(find.text("Resend available in 119s"), findsOneWidget);
 
     // Clean up
     await Get.delete<AuthController>();

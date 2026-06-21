@@ -162,11 +162,11 @@ class CheckoutController extends GetxController {
     );
 
     // Insert to global mockBookings
-    // mockBookings.insert(0, newBooking);
+    mockBookings.insert(0, newBooking);
 
     // Trigger OrdersController reactive refresh
     if (Get.isRegistered<OrdersController>()) {
-      // Get.find<OrdersController>().allBookings.value = List.from(mockBookings);
+      Get.find<OrdersController>().allBookings.value = List.from(mockBookings);
     }
 
     isLoading.value = false;

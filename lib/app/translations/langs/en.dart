@@ -31,6 +31,7 @@ const Map<String, String> en = {
   'search_vehicles': 'Search for vehicles...',
   'featured_vehicles': 'Featured Vehicles',
   'popular_vehicles': 'Popular Near You',
+  'top_rated_vehicles': 'Top Rated',
   'categories': 'Categories',
   'promo_title': '20% Off First Ride',
   'promo_subtitle': 'Use code JKFIRST for your first premium rental',

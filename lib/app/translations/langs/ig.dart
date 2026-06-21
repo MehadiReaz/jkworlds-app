@@ -32,6 +32,7 @@ const Map<String, String> ig = {
   'search_vehicles': 'Chọọ ụgbọala...',
   'featured_vehicles': 'Ụgbọala Pụrụ Iche',
   'popular_vehicles': 'Ndị A Masịrị',
+  'top_rated_vehicles': 'Kacha Mma',
   'categories': 'Ụdị',
   'promo_title': '20% Mbelata na Njem Mbụ',
   'promo_subtitle': 'Jiri koodu JKFIRST maka ego ole ị ga-ebelata',

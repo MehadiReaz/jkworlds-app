@@ -6,6 +6,7 @@ import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/category_model.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
+import 'package:jkworlds/data/models/review_model.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 
 class CategoryService extends GetxService {
@@ -29,6 +30,7 @@ class CategoryService extends GetxService {
       final result = list
           .whereType<Map<String, dynamic>>()
           .map(CategoryModel.fromJson)
+          .where((c) => c.status)
           .toList();
 
       categories.value = result;
@@ -63,10 +65,24 @@ class CategoryService extends GetxService {
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (category != null && category.isNotEmpty) queryParams['category'] = category;
     if (serviceType != null && serviceType.isNotEmpty) queryParams['service_type'] = serviceType;
-    if (transmission != null && transmission.isNotEmpty) queryParams['transmission'] = transmission;
-    if (fuelType != null && fuelType.isNotEmpty) queryParams['fuel_type'] = fuelType;
-    if (featured != null && featured.isNotEmpty) queryParams['featured'] = featured;
-    if (sort != null && sort.isNotEmpty) queryParams['sort'] = sort;
+    
+    if (transmission != null && transmission.isNotEmpty) {
+      final norm = transmission.toLowerCase();
+      queryParams['transmission'] = norm.startsWith('auto') ? 'auto' : 'manual';
+    }
+    if (fuelType != null && fuelType.isNotEmpty) {
+      queryParams['fuel_type'] = fuelType.toLowerCase();
+    }
+    if (featured != null && featured.isNotEmpty) {
+      queryParams['featured'] = featured;
+    }
+    if (sort != null && sort.isNotEmpty) {
+      String normSort = sort.toLowerCase();
+      if (normSort == 'price_asc') normSort = 'price_low';
+      if (normSort == 'price_desc') normSort = 'price_high';
+      if (normSort == 'rating') normSort = 'top_rated';
+      queryParams['sort'] = normSort;
+    }
 
     try {
       final response = await _api.get(
@@ -90,8 +106,7 @@ class CategoryService extends GetxService {
     }
   }
 
-  /// Fetch vehicles across ALL categories.
-  /// Aggregates vehicles concurrently across all categories and deduplicates by ID.
+  /// Fetch vehicles across ALL categories using the global /api/vehicles endpoint.
   Future<List<VehicleModel>> fetchAllVehicles({
     String? search,
     String? serviceType,
@@ -100,43 +115,104 @@ class CategoryService extends GetxService {
     String? featured,
     String? sort,
   }) async {
-    // If no categories are loaded yet, load them first
-    if (categories.isEmpty) {
-      try {
-        await fetchCategories();
-      } catch (_) {}
-    }
-
-    if (categories.isEmpty) return [];
-
     try {
-      final List<Future<List<VehicleModel>>> futures = categories.map((cat) {
-        return fetchVehiclesByCategory(
-          cat.id,
-          search: search,
-          serviceType: serviceType,
-          transmission: transmission,
-          fuelType: fuelType,
-          featured: featured,
-          sort: sort,
-        );
-      }).toList();
+      final queryParams = <String, dynamic>{};
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (serviceType != null && serviceType.isNotEmpty) queryParams['service_type'] = serviceType;
+      
+      if (transmission != null && transmission.isNotEmpty) {
+        final norm = transmission.toLowerCase();
+        queryParams['transmission'] = norm.startsWith('auto') ? 'auto' : 'manual';
+      }
+      if (fuelType != null && fuelType.isNotEmpty) {
+        queryParams['fuel_type'] = fuelType.toLowerCase();
+      }
+      if (featured != null && featured.isNotEmpty) {
+        queryParams['featured'] = featured;
+      }
+      if (sort != null && sort.isNotEmpty) {
+        String normSort = sort.toLowerCase();
+        if (normSort == 'price_asc') normSort = 'price_low';
+        if (normSort == 'price_desc') normSort = 'price_high';
+        if (normSort == 'rating') normSort = 'top_rated';
+        queryParams['sort'] = normSort;
+      }
 
-      final List<List<VehicleModel>> resultsList = await Future.wait(futures);
+      final response = await _api.get(
+        ApiConstants.vehicles,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
 
-      final Set<String> seenIds = {};
-      final List<VehicleModel> allVehicles = [];
-      for (final list in resultsList) {
-        for (final vehicle in list) {
-          if (seenIds.add(vehicle.id)) {
-            allVehicles.add(vehicle);
+      final body = response.data;
+      if (body == null) return [];
+
+      final list = _extractList(body);
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(VehicleModel.fromJson)
+          .toList();
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[CategoryService] fetchAllVehicles error using /api/vehicles', error: e, stackTrace: st);
+      return [];
+    }
+  }
+
+  // ── Vehicle Detail ──────────────────────────────────────────────
+
+  /// Fetch a single vehicle's full details from GET /api/vehicles/{id}.
+  /// Returns a [VehicleDetailResult] containing the vehicle, similar vehicles,
+  /// and reviews as provided by the VehicleDetailResource on the backend.
+  Future<VehicleDetailResult> fetchVehicleDetail(dynamic vehicleId) async {
+    try {
+      final response = await _api.get(ApiConstants.vehicleDetail(vehicleId));
+      final body = response.data;
+      if (body == null) {
+        throw const ServerException('Empty response from server');
+      }
+
+      // The API responds with: { "status": true, "message": "...", "data": { ... } }
+      final data = body is Map<String, dynamic> ? body['data'] : body;
+      if (data == null || data is! Map<String, dynamic>) {
+        throw const ServerException('Invalid vehicle detail response');
+      }
+
+      // Parse main vehicle
+      final vehicle = VehicleModel.fromJson(data);
+
+      // Parse similar vehicles (may be nested under 'similar_vehicles')
+      final similarVehiclesRaw = data['similar_vehicles'];
+      final List<VehicleModel> similarVehicles = [];
+      if (similarVehiclesRaw is List) {
+        for (final item in similarVehiclesRaw) {
+          if (item is Map<String, dynamic>) {
+            similarVehicles.add(VehicleModel.fromJson(item));
           }
         }
       }
-      return allVehicles;
+
+      // Parse reviews (may be nested under 'reviews')
+      final reviewsRaw = data['reviews'];
+      final List<ReviewModel> reviews = [];
+      if (reviewsRaw is List) {
+        for (final item in reviewsRaw) {
+          if (item is Map<String, dynamic>) {
+            reviews.add(ReviewModel.fromJson(item));
+          }
+        }
+      }
+
+      return VehicleDetailResult(
+        vehicle: vehicle,
+        similarVehicles: similarVehicles,
+        reviews: reviews,
+      );
+    } on AppException {
+      rethrow;
     } catch (e, st) {
-      logger.e('[CategoryService] fetchAllVehicles error', error: e, stackTrace: st);
-      return [];
+      logger.e('[CategoryService] fetchVehicleDetail error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
     }
   }
 
@@ -161,3 +237,17 @@ class CategoryService extends GetxService {
     return [];
   }
 }
+
+/// Result object for vehicle detail API call.
+class VehicleDetailResult {
+  final VehicleModel vehicle;
+  final List<VehicleModel> similarVehicles;
+  final List<ReviewModel> reviews;
+
+  const VehicleDetailResult({
+    required this.vehicle,
+    required this.similarVehicles,
+    required this.reviews,
+  });
+}
+

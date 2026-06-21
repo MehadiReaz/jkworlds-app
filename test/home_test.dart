@@ -5,11 +5,14 @@ import 'package:get/get.dart';
 import 'package:jkworlds/app/routes/app_pages.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/data/services/category_service.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 import 'package:jkworlds/modules/home/home_view.dart';
 import 'package:jkworlds/modules/home/home_controller.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 import 'package:jkworlds/app/translations/app_translations.dart';
+import 'mocks.dart';
 
 void main() {
   testWidgets(
@@ -33,8 +36,9 @@ void main() {
       Get.put<SharedPreferences>(prefs, permanent: true);
       Get.put(CurrencyService(), permanent: true);
       Get.put(AuthService(), permanent: true);
+      Get.put<CategoryService>(MockCategoryService(), permanent: true);
+      Get.put<BookingService>(MockBookingService(), permanent: true);
       Get.put(MainNavController(), permanent: true);
-      final ctrl = Get.put(HomeController(), permanent: true);
 
       // 2. Pump app — use pump() instead of pumpAndSettle() since the promo
       //    carousel has a periodic auto-scroll timer that never "settles".
@@ -79,14 +83,13 @@ void main() {
       final featuredCount = mockVehicles.where((v) => v.isFeatured).length;
       expect(featuredCount, greaterThan(0));
 
-      // 9. Verify popular vehicles section
-      expect(find.text('Popular Near You'), findsOneWidget);
+      // 9. Verify top rated vehicles section
       expect(find.text('View All'), findsOneWidget);
 
-      // 10. Verify trust badges
+      // 10. Verify trust badges and section header
       expect(find.text('Why Choose JKWorlds'), findsOneWidget);
       expect(find.text('Fully Insured'), findsOneWidget);
-      expect(find.text('Top Rated'), findsOneWidget);
+      expect(find.text('Top Rated'), findsNWidgets(2));
       expect(find.text('Premium Fleet'), findsOneWidget);
 
       // 11. Test category filtering — tap "SUV"
@@ -94,18 +97,19 @@ void main() {
       await tester.tap(suvChip);
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(ctrl.selectedCategory.value, 'SUV');
-      expect(
-        ctrl.popularVehicles.every((v) => v.type == 'SUV'),
-        isTrue,
-      );
+      final navCtrl = Get.find<MainNavController>();
+      expect(navCtrl.currentIndex.value, 1);
+
+      // Reset index back to 0 to test search bar navigation next
+      navCtrl.changePage(0);
+      await tester.pump(const Duration(milliseconds: 300));
 
       // 12. Test search bar navigation
       final searchBar = find.text('Search by brand, model, or location...');
       await tester.tap(searchBar);
       await tester.pump(const Duration(milliseconds: 300));
 
-      final navCtrl = Get.find<MainNavController>();
+      Get.find<MainNavController>();
       expect(navCtrl.currentIndex.value, 1);
 
       // Clean up: delete the controller to cancel its timer, then reset GetX
