@@ -22,122 +22,122 @@ class PreferencesView extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
           // ── Language Section ─────────────────────────────────────
-          Container(
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: cs.outlineVariant.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Expansible(
-              controller: expansibleLanguageCtrl,
-              headerBuilder: (context, animation) {
-                return InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    expansibleLanguageCtrl.isExpanded
-                        ? expansibleLanguageCtrl.collapse()
-                        : expansibleLanguageCtrl.expand();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: cs.primaryContainer,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Icons.language,
-                            size: 20,
-                            color: cs.onPrimaryContainer,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'language'.tr,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _currentLanguageName(profileCtrl),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          expansibleLanguageCtrl.isExpanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-              bodyBuilder: (context, animation) {
-                return Padding(
-                  padding: const EdgeInsets.only(
-                    left: 8,
-                    right: 8,
-                    bottom: 8,
-                  ),
-                  child: Column(
-                    children: profileCtrl.locales.map((item) {
-                      final locale = item['locale'] as Locale;
-                      final name = item['name'] as String;
-                      final isSelected =
-                          Get.locale?.languageCode == locale.languageCode;
-                      return ListTile(
-                        dense: true,
-                        title: Text(
-                          name,
-                          style: TextStyle(
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color:
-                                isSelected
-                                    ? cs.primary
-                                    : cs.onSurface,
-                          ),
-                        ),
-                        trailing:
-                            isSelected
-                                ? Icon(
-                                  Icons.check_circle_rounded,
-                                  color: cs.primary,
-                                  size: 20,
-                                )
-                                : null,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        onTap: () => profileCtrl.changeLocale(locale),
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
-            ),
-          ),
+          // Container(
+          //   decoration: BoxDecoration(
+          //     color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+          //     borderRadius: BorderRadius.circular(16),
+          //     border: Border.all(
+          //       color: cs.outlineVariant.withValues(alpha: 0.2),
+          //     ),
+          //   ),
+          //   child: Expansible(
+          //     controller: expansibleLanguageCtrl,
+          //     headerBuilder: (context, animation) {
+          //       return InkWell(
+          //         borderRadius: BorderRadius.circular(16),
+          //         onTap: () {
+          //           expansibleLanguageCtrl.isExpanded
+          //               ? expansibleLanguageCtrl.collapse()
+          //               : expansibleLanguageCtrl.expand();
+          //         },
+          //         child: Padding(
+          //           padding: const EdgeInsets.symmetric(
+          //             horizontal: 16,
+          //             vertical: 14,
+          //           ),
+          //           child: Row(
+          //             children: [
+          //               Container(
+          //                 padding: const EdgeInsets.all(8),
+          //                 decoration: BoxDecoration(
+          //                   color: cs.primaryContainer,
+          //                   borderRadius: BorderRadius.circular(10),
+          //                 ),
+          //                 child: Icon(
+          //                   Icons.language,
+          //                   size: 20,
+          //                   color: cs.onPrimaryContainer,
+          //                 ),
+          //               ),
+          //               const SizedBox(width: 12),
+          //               Expanded(
+          //                 child: Column(
+          //                   crossAxisAlignment: CrossAxisAlignment.start,
+          //                   children: [
+          //                     Text(
+          //                       'language'.tr,
+          //                       style: theme.textTheme.titleSmall?.copyWith(
+          //                         fontWeight: FontWeight.w600,
+          //                       ),
+          //                     ),
+          //                     const SizedBox(height: 2),
+          //                     Text(
+          //                       _currentLanguageName(profileCtrl),
+          //                       style: theme.textTheme.bodySmall?.copyWith(
+          //                         color: cs.onSurfaceVariant,
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 ),
+          //               ),
+          //               Icon(
+          //                 expansibleLanguageCtrl.isExpanded
+          //                     ? Icons.keyboard_arrow_up_rounded
+          //                     : Icons.keyboard_arrow_down_rounded,
+          //                 color: cs.onSurfaceVariant,
+          //               ),
+          //             ],
+          //           ),
+          //         ),
+          //       );
+          //     },
+          //     bodyBuilder: (context, animation) {
+          //       return Padding(
+          //         padding: const EdgeInsets.only(
+          //           left: 8,
+          //           right: 8,
+          //           bottom: 8,
+          //         ),
+          //         child: Column(
+          //           children: profileCtrl.locales.map((item) {
+          //             final locale = item['locale'] as Locale;
+          //             final name = item['name'] as String;
+          //             final isSelected =
+          //                 Get.locale?.languageCode == locale.languageCode;
+          //             return ListTile(
+          //               dense: true,
+          //               title: Text(
+          //                 name,
+          //                 style: TextStyle(
+          //                   fontWeight:
+          //                       isSelected ? FontWeight.w600 : FontWeight.w400,
+          //                   color:
+          //                       isSelected
+          //                           ? cs.primary
+          //                           : cs.onSurface,
+          //                 ),
+          //               ),
+          //               trailing:
+          //                   isSelected
+          //                       ? Icon(
+          //                         Icons.check_circle_rounded,
+          //                         color: cs.primary,
+          //                         size: 20,
+          //                       )
+          //                       : null,
+          //               shape: RoundedRectangleBorder(
+          //                 borderRadius: BorderRadius.circular(10),
+          //               ),
+          //               onTap: () => profileCtrl.changeLocale(locale),
+          //             );
+          //           }).toList(),
+          //         ),
+          //       );
+          //     },
+          //   ),
+          // ),
 
-          const SizedBox(height: 16),
+          // const SizedBox(height: 16),
 
           // ── Currency Section ────────────────────────────────────
           Container(

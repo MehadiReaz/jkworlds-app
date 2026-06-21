@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
 
 class OrdersController extends GetxController {
   final allBookings  = <BookingModel>[].obs;
@@ -17,6 +18,11 @@ class OrdersController extends GetxController {
   }
 
   Future<void> loadBookings() async {
+    final auth = Get.find<AuthService>();
+    if (!auth.isLoggedIn.value) {
+      allBookings.clear();
+      return;
+    }
     isLoading.value = true;
     errorMessage.value = '';
     try {

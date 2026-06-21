@@ -6,16 +6,24 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/app/translations/app_translations.dart';
 import 'package:jkworlds/modules/orders/orders_view.dart';
 import 'package:jkworlds/modules/orders/orders_controller.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
+import 'mocks.dart';
 
 void main() {
   testWidgets('OrdersView renders filter chips and bookings table correctly', (WidgetTester tester) async {
     // Mock SharedPreferences
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'auth_token': 'mock_token',
+      'auth_user_name': 'Mehadi',
+      'auth_user_email': 'mehadi@test.com',
+    });
     final prefs = await SharedPreferences.getInstance();
     Get.put<SharedPreferences>(prefs, permanent: true);
 
-    // Initialize CurrencyService
     Get.put(CurrencyService(), permanent: true);
+    Get.put(AuthService(), permanent: true);
+    Get.put<BookingService>(MockBookingService(), permanent: true);
 
     // Initialize OrdersController
     Get.put(OrdersController());

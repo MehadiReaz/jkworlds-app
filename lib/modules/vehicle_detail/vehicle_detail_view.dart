@@ -16,29 +16,6 @@ class VehicleDetailView extends StatelessWidget {
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
 
-    final List<String> timeOptions = [
-      '00:00', '00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '03:30',
-      '04:00', '04:30', '05:00', '05:30', '06:00', '06:30', '07:00', '07:30',
-      '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-      '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-      '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
-      '20:00', '20:30', '21:00', '21:30', '22:00', '22:30', '23:00', '23:30',
-    ];
-
-    String formatTimeString(String val) {
-      if (val.isEmpty) return 'Select Time';
-      final parts = val.split(':');
-      if (parts.length < 2) return val;
-      final hour = int.tryParse(parts[0]) ?? 0;
-      final minute = int.tryParse(parts[1]) ?? 0;
-      final period = hour >= 12 ? 'PM' : 'AM';
-      final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-      final displayHourStr = displayHour.toString().padLeft(2, '0');
-      final displayMinuteStr = minute.toString().padLeft(2, '0');
-      return '$displayHourStr:$displayMinuteStr $period';
-    }
-
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -67,35 +44,89 @@ class VehicleDetailView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Car Image Top Portion
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: SizedBox(
-                  height: 240,
-                  width: double.infinity,
-                  child: vehicle.images.isNotEmpty
-                      ? Image.network(
-                          vehicle.images[0],
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: cs.primary,
+              // 1. Car Image Top Portion with Gallery & Dot Indicator
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: SizedBox(
+                      height: 240,
+                      width: double.infinity,
+                      child: vehicle.gallery.isNotEmpty && vehicle.gallery.length > 1
+                          ? PageView.builder(
+                              onPageChanged: (index) {
+                                ctrl.currentGalleryIndex.value = index;
+                              },
+                              itemCount: vehicle.gallery.length,
+                              itemBuilder: (context, index) {
+                                return Image.network(
+                                  vehicle.gallery[index],
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: cs.primary,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    color: cs.surfaceContainerHighest,
+                                    child: Icon(Icons.directions_car_rounded, size: 80, color: cs.primary),
+                                  ),
+                                );
+                              },
+                            )
+                          : vehicle.images.isNotEmpty
+                              ? Image.network(
+                                  vehicle.images[0],
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: cs.primary,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    color: cs.surfaceContainerHighest,
+                                    child: Icon(Icons.directions_car_rounded, size: 80, color: cs.primary),
+                                  ),
+                                )
+                              : Container(
+                                  color: cs.surfaceContainerHighest,
+                                  child: Icon(Icons.directions_car_rounded, size: 80, color: cs.primary),
+                                ),
+                    ),
+                  ),
+                  // Dot Indicator at Bottom
+                  if (vehicle.gallery.isNotEmpty && vehicle.gallery.length > 1)
+                    Positioned(
+                      bottom: 12,
+                      left: 0,
+                      right: 0,
+                      child: Obx(() => Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              vehicle.gallery.length,
+                              (index) => Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: ctrl.currentGalleryIndex.value == index
+                                      ? cs.primary
+                                      : cs.onSurface.withValues(alpha: 0.4),
+                                ),
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: cs.surfaceContainerHighest,
-                            child: Icon(Icons.directions_car_rounded, size: 80, color: cs.primary),
-                          ),
-                        )
-                      : Container(
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(Icons.directions_car_rounded, size: 80, color: cs.primary),
-                        ),
-                ),
+                            ),
+                          )),
+                    ),
+                ],
               ),
               const SizedBox(height: 16),
 
@@ -238,31 +269,47 @@ class VehicleDetailView extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Plate & Mileage Card
-              Row(
-                children: [
-                  Icon(Icons.directions_car_filled_outlined, size: 18, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Plate: ',
-                    style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
-                  ),
-                  Text(
-                    vehicle.plateNumber ?? 'N/A',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 24),
-                  Icon(Icons.speed_rounded, size: 18, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Mileage: ',
-                    style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
-                  ),
-                  Text(
-                    vehicle.mileage != null ? '${NumberFormat('#,###').format(vehicle.mileage)} km' : 'N/A',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
+              // Plate & Mileage & Color Card
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Icon(Icons.directions_car_filled_outlined, size: 18, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Plate: ',
+                      style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
+                    ),
+                    Text(
+                      vehicle.plateNumber ?? 'N/A',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 24),
+                    Icon(Icons.speed_rounded, size: 18, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mileage: ',
+                      style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
+                    ),
+                    Text(
+                      vehicle.mileage != null ? '${NumberFormat('#,###').format(vehicle.mileage)} km' : 'N/A',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    if (vehicle.color != null && vehicle.color!.isNotEmpty) ...[
+                      const SizedBox(width: 24),
+                      Icon(Icons.palette_outlined, size: 18, color: cs.onSurfaceVariant),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Color: ',
+                        style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
+                      ),
+                      Text(
+                        vehicle.color!,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -565,6 +612,69 @@ class VehicleDetailView extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
 
+                    // Booked Dates Section
+                    if (vehicle.unavailableDates.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50.withValues(alpha: isLight ? 1.0 : 0.05),
+                          border: Border.all(color: Colors.red.shade300, width: 1.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today_rounded, color: Colors.red.shade400, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'booked_dates'.tr,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isLight ? Colors.red.shade900 : Colors.red.shade200,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: vehicle.unavailableDates.map((d) {
+                                String formatStr(String dateString) {
+                                  try {
+                                    final date = DateTime.parse(dateString);
+                                    return DateFormat('MMM d, yyyy').format(date);
+                                  } catch (_) {
+                                    return dateString;
+                                  }
+                                }
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isLight ? Colors.white : Colors.red.shade900.withValues(alpha: 0.2),
+                                    border: Border.all(color: Colors.red.shade200, width: 1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${formatStr(d.from)} - ${formatStr(d.to)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isLight ? Colors.red.shade900 : Colors.red.shade100,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // Pickup & Return inputs side-by-side
                     Row(
                       children: [
@@ -604,30 +714,27 @@ class VehicleDetailView extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Obx(() => Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    decoration: BoxDecoration(
-                                      color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: ctrl.pickupTime.value.isEmpty ? null : ctrl.pickupTime.value,
-                                        hint: Text('Select Time', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
-                                        isExpanded: true,
-                                        items: timeOptions.map((time) {
-                                          return DropdownMenuItem<String>(
-                                            value: time,
-                                            child: Text(formatTimeString(time), style: const TextStyle(fontSize: 14)),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) {
-                                          if (val != null) ctrl.pickupTime.value = val;
-                                        },
-                                      ),
-                                    ),
-                                  )),
+                              InkWell(
+                                onTap: () => ctrl.selectPickupTime(context),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Obx(() => Text(
+                                        ctrl.pickupTime.value.isEmpty
+                                            ? 'Select Time'
+                                            : _formatTimeDisplay(ctrl.pickupTime.value),
+                                        style: TextStyle(
+                                          fontWeight: ctrl.pickupTime.value.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                          color: ctrl.pickupTime.value.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                        ),
+                                      )),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -668,30 +775,27 @@ class VehicleDetailView extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Obx(() => Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    decoration: BoxDecoration(
-                                      color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: ctrl.returnTime.value.isEmpty ? null : ctrl.returnTime.value,
-                                        hint: Text('Select Time', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
-                                        isExpanded: true,
-                                        items: timeOptions.map((time) {
-                                          return DropdownMenuItem<String>(
-                                            value: time,
-                                            child: Text(formatTimeString(time), style: const TextStyle(fontSize: 14)),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) {
-                                          if (val != null) ctrl.returnTime.value = val;
-                                        },
-                                      ),
-                                    ),
-                                  )),
+                              InkWell(
+                                onTap: () => ctrl.selectReturnTime(context),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Obx(() => Text(
+                                        ctrl.returnTime.value.isEmpty
+                                            ? 'Select Time'
+                                            : _formatTimeDisplay(ctrl.returnTime.value),
+                                        style: TextStyle(
+                                          fontWeight: ctrl.returnTime.value.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                          color: ctrl.returnTime.value.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                        ),
+                                      )),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -786,34 +890,60 @@ class VehicleDetailView extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Column(
-                      children: [
-                        _buildAddonCheckbox(
-                          labelRx: ctrl.gpsAddon,
-                          title: 'GPS Navigation',
-                          desc: 'Turn-by-turn navigation',
-                          price: '+${currencyService.formatPrice(ctrl.gpsAddonPrice)} /day',
-                          theme: theme,
-                          cs: cs,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildAddonCheckbox(
-                          labelRx: ctrl.additionalDriverAddon,
-                          title: 'Additional Driver',
-                          desc: 'Add another licensed driver',
-                          price: '+${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)} /day',
-                          theme: theme,
-                          cs: cs,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildAddonCheckbox(
-                          labelRx: ctrl.childSeatAddon,
-                          title: 'Child Seat',
-                          desc: 'Safety seat for children',
-                          price: '+${currencyService.formatPrice(ctrl.childSeatAddonPrice)} /day',
-                          theme: theme,
-                          cs: cs,
-                        ),
-                      ],
+                      children: vehicle.rentalAddons.isNotEmpty
+                          ? vehicle.rentalAddons.asMap().entries.map((entry) {
+                              final addon = entry.value;
+                              final isLast = entry.key == vehicle.rentalAddons.length - 1;
+                              
+                              // Determine which controller to bind based on addon title keywords
+                              final labelRx = addon.title.toLowerCase().contains('gps')
+                                  ? ctrl.gpsAddon
+                                  : addon.title.toLowerCase().contains('driver')
+                                      ? ctrl.additionalDriverAddon
+                                      : addon.title.toLowerCase().contains('seat') || addon.title.toLowerCase().contains('child')
+                                          ? ctrl.childSeatAddon
+                                          : ctrl.gpsAddon; // Default fallback
+
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+                                child: _buildAddonCheckbox(
+                                  labelRx: labelRx,
+                                  title: addon.title,
+                                  desc: addon.description,
+                                  price: '${addon.priceLabel}',
+                                  theme: theme,
+                                  cs: cs,
+                                ),
+                              );
+                            }).toList()
+                          : [
+                              _buildAddonCheckbox(
+                                labelRx: ctrl.gpsAddon,
+                                title: 'GPS Navigation',
+                                desc: 'Turn-by-turn navigation',
+                                price: '${currencyService.formatPrice(ctrl.gpsAddonPrice)} /day',
+                                theme: theme,
+                                cs: cs,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildAddonCheckbox(
+                                labelRx: ctrl.additionalDriverAddon,
+                                title: 'Additional Driver',
+                                desc: 'Add another licensed driver',
+                                price: '${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)} /day',
+                                theme: theme,
+                                cs: cs,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildAddonCheckbox(
+                                labelRx: ctrl.childSeatAddon,
+                                title: 'Child Seat',
+                                desc: 'Safety seat for children',
+                                price: '${currencyService.formatPrice(ctrl.childSeatAddonPrice)} /day',
+                                theme: theme,
+                                cs: cs,
+                              ),
+                            ],
                     ),
                     const SizedBox(height: 24),
 
@@ -1414,5 +1544,18 @@ class VehicleDetailView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatTimeDisplay(String timeStr) {
+    if (timeStr.isEmpty) return 'Select Time';
+    final parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final displayHourStr = displayHour.toString().padLeft(2, '0');
+    final displayMinuteStr = minute.toString().padLeft(2, '0');
+    return '$displayHourStr:$displayMinuteStr $period';
   }
 }

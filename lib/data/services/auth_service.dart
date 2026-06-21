@@ -301,6 +301,7 @@ class AuthService extends GetxService {
   /// Fetch the authenticated user's profile from the server
   /// and refresh local state and persisted cache.
   Future<void> fetchProfile() async {
+    if (!isLoggedIn.value) return;
     try {
       final response = await _api.get(ApiConstants.user);
 

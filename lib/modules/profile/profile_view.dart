@@ -7,7 +7,6 @@ import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
-import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 import 'package:jkworlds/core/utils/dialog_helper.dart';
 
 class ProfileView extends StatelessWidget {
@@ -38,15 +37,6 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 8),
           _buildMenuCard(context, [
             _MenuItem(
-              icon: Icons.receipt_long_rounded,
-              iconBg: cs.primaryContainer,
-              iconColor: cs.onPrimaryContainer,
-              title: 'my_bookings_menu'.tr,
-              onTap: () {
-                Get.find<MainNavController>().changePage(2);
-              },
-            ),
-            _MenuItem(
               icon: Icons.local_offer_rounded,
               iconBg: cs.tertiaryContainer,
               iconColor: cs.onTertiaryContainer,
@@ -72,7 +62,7 @@ class ProfileView extends StatelessWidget {
               icon: Icons.tune_rounded,
               iconBg: cs.primaryContainer,
               iconColor: cs.onPrimaryContainer,
-              title: 'language_currency'.tr,
+              title: 'currency'.tr,
               onTap: () => Get.toNamed(AppRoutes.preferences),
             ),
             _MenuToggleItem(

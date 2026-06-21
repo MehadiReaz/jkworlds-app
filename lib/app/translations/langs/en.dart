@@ -128,6 +128,8 @@ const Map<String, String> en = {
   'select_pickup_date': 'Select pickup date',
   'select_return_date': 'Select return date',
   'days': 'days',
+  'booked_dates': 'Booked Dates (Unavailable)',
+  'selected_range_contains_booked_dates': 'The selected range contains booked dates. Please choose other dates.',
 
   // ── Bookings Tab ────────────────────────────────────────────
   'my_bookings': 'My Bookings',
@@ -199,6 +201,8 @@ const Map<String, String> en = {
   'name': 'Full Name',
   'login_prompt': 'Sign in to access all features',
   'signup_prompt': 'Create your account to get started',
+  'view_bookings_prompt': 'Log in to view bookings',
+  'view_bookings_prompt_desc': 'Track your active rides and manage bookings easily.',
   'forgot_password_prompt': 'Enter your email and we\'ll send you a link to reset your password.',
   'continue_as_guest': 'Continue as Guest',
   'reset_email_sent': 'Reset link sent!',

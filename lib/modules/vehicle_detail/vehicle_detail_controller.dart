@@ -18,6 +18,7 @@ class VehicleDetailController extends GetxController {
   final selectedPriceTab = 0.obs; // 0=daily, 1=weekly, 2=monthly
   final isSelfDrive = true.obs;
   final isWishlisted = false.obs;
+  final currentGalleryIndex = 0.obs; // Track gallery page index
 
   // ── Loading / Error States ──────────────────────────────────────
   final isLoadingDetail = true.obs;
@@ -218,36 +219,271 @@ class VehicleDetailController extends GetxController {
         totalDays > 0;
   }
 
-  Future<void> selectPickupDate(BuildContext context) async {
-    final date = await showDatePicker(
+  /// Validates if a date is selectable based on unavailable dates
+  bool isDateSelectable(DateTime date) {
+    final v = vehicleRx.value ?? vehicle;
+    
+    // Normalize the date to midnight
+    final dateNormalized = DateTime(date.year, date.month, date.day);
+    
+    // Check against all unavailable date ranges
+    for (final unavailableRange in v.unavailableDates) {
+      final fromDate = DateTime.tryParse(unavailableRange.from);
+      final toDate = DateTime.tryParse(unavailableRange.to);
+      if (fromDate == null || toDate == null) continue;
+      
+      // Normalize to midnight for comparison
+      final fromNormalized = DateTime(fromDate.year, fromDate.month, fromDate.day);
+      final toNormalized = DateTime(toDate.year, toDate.month, toDate.day);
+      
+      // Check if date falls within the unavailable range (inclusive)
+      if (!dateNormalized.isBefore(fromNormalized) &&
+          !dateNormalized.isAfter(toNormalized)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  Future<void> selectDateRange(BuildContext context) async {
+    final initialRange = pickupDate.value != null && returnDate.value != null
+        ? DateTimeRange(start: pickupDate.value!, end: returnDate.value!)
+        : null;
+
+    final pickedRange = await showDateRangePicker(
       context: context,
-      initialDate: pickupDate.value ?? DateTime.now(),
+      initialDateRange: initialRange,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      selectableDayPredicate: (date, start, end) => isDateSelectable(date),
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              secondaryContainer: theme.colorScheme.primary.withValues(alpha: 0.15),
+              onSecondaryContainer: theme.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
-    if (date != null) {
-      pickupDate.value = date;
-      // Reset return date if before or same as pickup
-      if (returnDate.value != null && !returnDate.value!.isAfter(date)) {
-        returnDate.value = null;
+
+    if (pickedRange != null) {
+      // Validate that all dates in the range are selectable
+      bool allSelectable = true;
+      for (int i = 0; i <= pickedRange.end.difference(pickedRange.start).inDays; i++) {
+        final date = pickedRange.start.add(Duration(days: i));
+        if (!isDateSelectable(date)) {
+          allSelectable = false;
+          break;
+        }
+      }
+
+      if (allSelectable) {
+        pickupDate.value = pickedRange.start;
+        returnDate.value = pickedRange.end;
+      } else {
+        SnackbarHelper.showError('selected_range_contains_booked_dates'.tr);
       }
     }
   }
 
+  Future<void> selectPickupDate(BuildContext context) async {
+    await selectDateRange(context);
+  }
+
   Future<void> selectReturnDate(BuildContext context) async {
-    if (pickupDate.value == null) {
-      SnackbarHelper.showWarning('Please select a pick-up date first.');
-      return;
+    await selectDateRange(context);
+  }
+
+  Future<void> selectPickupTime(BuildContext context) async {
+    _showTimeListBottomSheet(context, pickupTime);
+  }
+
+  Future<void> selectReturnTime(BuildContext context) async {
+    _showTimeListBottomSheet(context, returnTime);
+  }
+
+  void _showTimeListBottomSheet(BuildContext context, RxString timeRx) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    
+    final categories = {
+      'Early Morning': [
+        const TimeOfDay(hour: 6, minute: 0),
+        const TimeOfDay(hour: 6, minute: 30),
+        const TimeOfDay(hour: 7, minute: 0),
+        const TimeOfDay(hour: 7, minute: 30),
+      ],
+      'Morning - Afternoon': [
+        const TimeOfDay(hour: 8, minute: 0),
+        const TimeOfDay(hour: 8, minute: 30),
+        const TimeOfDay(hour: 9, minute: 0),
+        const TimeOfDay(hour: 9, minute: 30),
+        const TimeOfDay(hour: 10, minute: 0),
+        const TimeOfDay(hour: 10, minute: 30),
+        const TimeOfDay(hour: 11, minute: 0),
+        const TimeOfDay(hour: 11, minute: 30),
+        const TimeOfDay(hour: 12, minute: 0),
+        const TimeOfDay(hour: 12, minute: 30),
+        const TimeOfDay(hour: 13, minute: 0),
+        const TimeOfDay(hour: 13, minute: 30),
+        const TimeOfDay(hour: 14, minute: 0),
+        const TimeOfDay(hour: 14, minute: 30),
+        const TimeOfDay(hour: 15, minute: 0),
+        const TimeOfDay(hour: 15, minute: 30),
+        const TimeOfDay(hour: 16, minute: 0),
+        const TimeOfDay(hour: 16, minute: 30),
+      ],
+      'Evening - Night': [
+        const TimeOfDay(hour: 17, minute: 0),
+        const TimeOfDay(hour: 17, minute: 30),
+        const TimeOfDay(hour: 18, minute: 0),
+        const TimeOfDay(hour: 18, minute: 30),
+        const TimeOfDay(hour: 19, minute: 0),
+        const TimeOfDay(hour: 19, minute: 30),
+        const TimeOfDay(hour: 20, minute: 0),
+        const TimeOfDay(hour: 20, minute: 30),
+        const TimeOfDay(hour: 21, minute: 0),
+        const TimeOfDay(hour: 21, minute: 30),
+        const TimeOfDay(hour: 22, minute: 0),
+        const TimeOfDay(hour: 22, minute: 30),
+        const TimeOfDay(hour: 23, minute: 0),
+        const TimeOfDay(hour: 23, minute: 30),
+        const TimeOfDay(hour: 0, minute: 0),
+      ],
+    };
+
+    String formatTimeOfDay(TimeOfDay time) {
+      final hour = time.hour;
+      final minute = time.minute;
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final minuteStr = minute.toString().padLeft(2, '0');
+      return '$displayHour:$minuteStr $period';
     }
-    final date = await showDatePicker(
+
+    showModalBottomSheet(
       context: context,
-      initialDate: returnDate.value ?? pickupDate.value!.add(const Duration(days: 1)),
-      firstDate: pickupDate.value!.add(const Duration(days: 1)),
-      lastDate: pickupDate.value!.add(const Duration(days: 365)),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time_rounded, size: 20, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Opening Times: 6:00 AM - 12:00 AM',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(
+                height: 1,
+                color: cs.outlineVariant.withValues(alpha: 0.4),
+              ),
+              
+              // Scrollable list of categories
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: categories.entries.map((entry) {
+                      final categoryTitle = entry.key;
+                      final times = entry.value;
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            categoryTitle,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 2.8,
+                            children: times.map((t) {
+                              return Obx(() {
+                                final timeStr = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+                                final isSelected = timeRx.value == timeStr;
+                                
+                                return InkWell(
+                                  onTap: () {
+                                    timeRx.value = timeStr;
+                                    Get.back(); // Close bottom sheet
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? cs.primary
+                                          : (isLight ? Colors.grey.shade100 : const Color(0xFF161A22)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      formatTimeOfDay(t),
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : cs.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              });
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (date != null) {
-      returnDate.value = date;
-    }
   }
 
   Future<void> confirmBooking() async {

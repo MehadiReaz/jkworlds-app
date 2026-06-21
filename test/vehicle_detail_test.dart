@@ -12,6 +12,8 @@ import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_controller.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_binding.dart';
 import 'package:jkworlds/modules/booking/checkout_view.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/data/services/category_service.dart';
+import 'mocks.dart';
 
 void main() {
   testWidgets(
@@ -30,9 +32,9 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       Get.put<SharedPreferences>(prefs, permanent: true);
 
-      // 2. Initialize CurrencyService and AuthService
       Get.put(CurrencyService(), permanent: true);
       Get.put(AuthService(), permanent: true);
+      Get.put<CategoryService>(MockCategoryService(), permanent: true);
 
       // 3. Pump the GetMaterialApp registering AppPages.pages
       await tester.pumpWidget(

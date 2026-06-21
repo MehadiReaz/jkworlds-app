@@ -9,6 +9,9 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
+import 'package:jkworlds/modules/explore/explore_controller.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
+import 'package:jkworlds/app/routes/app_routes.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -33,7 +36,7 @@ class HomeView extends StatelessWidget {
               _buildGreetingHeader(ctrl, theme, cs, isLight),
 
               // ── 2. Quick Search Bar ────────────────────────────────
-              _buildSearchBar(ctrl, theme, cs, isLight),
+              _buildBookingFormSection(ctrl, theme, cs, isLight, context),
 
               // ── 3. Promotional Banner Carousel ─────────────────────
               _buildPromoCarousel(ctrl, theme, cs, isLight),
@@ -190,66 +193,1014 @@ class HomeView extends StatelessWidget {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // 2. QUICK SEARCH BAR
+  // 2. BOOKING FORM SECTION
   // ══════════════════════════════════════════════════════════════════
-  Widget _buildSearchBar(
+  Widget _buildBookingFormSection(
     HomeController ctrl,
     ThemeData theme,
     ColorScheme cs,
     bool isLight,
+    BuildContext context,
   ) {
+    final exploreCtrl = Get.find<ExploreController>();
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: GestureDetector(
-        onTap: ctrl.navigateToExplore,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Obx(() {
+        final activeTab = ctrl.selectedBookingTab.value;
+        return Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isLight ? Colors.white : const Color(0xFF1A1C22),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.4),
+              color: cs.primary.withValues(alpha: 0.8),
+              width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isLight ? 0.04 : 0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: isLight ? 0.06 : 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
-                Icons.search_rounded,
-                color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                size: 22,
+              // ── Tab Selectors ──────────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTabButton(
+                      title: 'Cars',
+                      isActive: activeTab == 'Cars',
+                      onTap: () {
+                        ctrl.selectedBookingTab.value = 'Cars';
+                      },
+                      cs: cs,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildTabButton(
+                      title: 'Airport Transfer',
+                      isActive: activeTab == 'Airport Transfer',
+                      onTap: () {
+                        ctrl.selectedBookingTab.value = 'Airport Transfer';
+                      },
+                      cs: cs,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'search_brand_model'.tr,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+              const SizedBox(height: 16),
+
+              // ── COMPACT PICK-UP LOCATION BUTTON ────────────────────
+              _buildInputLabel(
+                activeTab == 'Cars' ? 'PICK-UP LOCATION' : 'PICKUP LOCATION',
+                cs,
+              ),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () => _showFullBookingBottomSheet(context, ctrl, exploreCtrl, theme, cs, isLight),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        activeTab == 'Cars' ? Icons.location_on_rounded : Icons.flight_takeoff_rounded,
+                        color: cs.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Obx(() => Text(
+                              exploreCtrl.pickupLocation.value.isEmpty
+                                  ? (activeTab == 'Cars' ? 'Enter pick-up location' : 'Enter pickup location')
+                                  : exploreCtrl.pickupLocation.value,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: exploreCtrl.pickupLocation.value.isEmpty
+                                    ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                    : cs.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  void _showFullBookingBottomSheet(
+    BuildContext context,
+    HomeController ctrl,
+    ExploreController exploreCtrl,
+    ThemeData theme,
+    ColorScheme cs,
+    bool isLight,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.88,
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
                 ),
-                child: Icon(
-                  Icons.tune_rounded,
-                  color: cs.primary,
-                  size: 18,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── HEADER WITH CLOSE BUTTON ──────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Book Your Ride',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Get.back(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: cs.outlineVariant.withValues(alpha: 0.4),
+                ),
+                
+                // ── SCROLLABLE CONTAINER FOR THE FORM ─────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    child: Obx(() {
+                      final activeTab = ctrl.selectedBookingTab.value;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTabButton(
+                                  title: 'Cars',
+                                  isActive: activeTab == 'Cars',
+                                  onTap: () {
+                                    ctrl.selectedBookingTab.value = 'Cars';
+                                  },
+                                  cs: cs,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildTabButton(
+                                  title: 'Airport Transfer',
+                                  isActive: activeTab == 'Airport Transfer',
+                                  onTap: () {
+                                    ctrl.selectedBookingTab.value = 'Airport Transfer';
+                                  },
+                                  cs: cs,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          if (activeTab == 'Cars') ...[
+                            // ── CARS FORM ────────────────────────────────
+                            _buildInputLabel('PICK-UP LOCATION', cs),
+                            const SizedBox(height: 6),
+                            _buildLocationField(
+                              controller: exploreCtrl.pickupLocationCtrl,
+                              hint: 'Enter pick-up location',
+                              icon: Icons.location_on_rounded,
+                              onChanged: (val) {
+                                exploreCtrl.pickupLocation.value = val;
+                              },
+                              isLoading: exploreCtrl.isLoadingPickup.value,
+                              cs: cs,
+                              isLight: isLight,
+                            ),
+                            _buildSuggestionsList(
+                              suggestions: exploreCtrl.pickupSuggestions,
+                              onSelect: (val) => exploreCtrl.selectPickupSuggestion(val),
+                              theme: theme,
+                              cs: cs,
+                            ),
+                            const SizedBox(height: 14),
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Different drop-off location?',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: cs.onSurface,
+                                  ),
+                                ),
+                                Obx(() => Switch(
+                                      value: exploreCtrl.isDifferentDropoff.value,
+                                      activeColor: cs.primary,
+                                      activeTrackColor: cs.primary.withValues(alpha: 0.35),
+                                      inactiveThumbColor: isLight ? Colors.grey.shade100 : Colors.grey.shade400,
+                                      inactiveTrackColor: isLight ? Colors.grey.shade300 : Colors.grey.shade700,
+                                      onChanged: (val) {
+                                        exploreCtrl.isDifferentDropoff.value = val;
+                                        if (!val) {
+                                          exploreCtrl.dropoffLocation.value = '';
+                                          exploreCtrl.dropoffLocationCtrl.clear();
+                                        }
+                                      },
+                                    )),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+
+                            Obx(() {
+                              if (!exploreCtrl.isDifferentDropoff.value) return const SizedBox.shrink();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildInputLabel('DROP-OFF LOCATION', cs),
+                                  const SizedBox(height: 6),
+                                  _buildLocationField(
+                                    controller: exploreCtrl.dropoffLocationCtrl,
+                                    hint: 'Enter drop-off location',
+                                    icon: Icons.location_on_rounded,
+                                    onChanged: (val) {
+                                      exploreCtrl.dropoffLocation.value = val;
+                                    },
+                                    isLoading: exploreCtrl.isLoadingDropoff.value,
+                                    cs: cs,
+                                    isLight: isLight,
+                                  ),
+                                  _buildSuggestionsList(
+                                    suggestions: exploreCtrl.dropoffSuggestions,
+                                    onSelect: (val) => exploreCtrl.selectDropoffSuggestion(val),
+                                    theme: theme,
+                                    cs: cs,
+                                  ),
+                                  const SizedBox(height: 14),
+                                ],
+                              );
+                            }),
+
+                            _buildDateTimeRow(
+                              label: 'PICK-UP DATE & TIME',
+                              dateTimeRx: exploreCtrl.pickupDateTime,
+                              exploreCtrl: exploreCtrl,
+                              theme: theme,
+                              cs: cs,
+                              isLight: isLight,
+                              context: context,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildDateTimeRow(
+                              label: 'DROP-OFF DATE & TIME',
+                              dateTimeRx: exploreCtrl.dropoffDateTime,
+                              exploreCtrl: exploreCtrl,
+                              theme: theme,
+                              cs: cs,
+                              isLight: isLight,
+                              context: context,
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSubmitButton(
+                              title: 'Show Vehicles',
+                              onTap: () {
+                                Get.back(); // Dismiss bottom sheet
+                                exploreCtrl.selectedServiceType.value = 'All';
+                                exploreCtrl.isChauffeurRequired.value = false;
+                                if (exploreCtrl.dropoffLocation.value.isNotEmpty) {
+                                  exploreCtrl.isDifferentDropoff.value = true;
+                                } else {
+                                  exploreCtrl.isDifferentDropoff.value = false;
+                                }
+                                exploreCtrl.applyFilters();
+                                ctrl.navigateToExplore(resetToAll: false);
+                              },
+                              cs: cs,
+                            ),
+                          ] else ...[
+                            // ── AIRPORT TRANSFER FORM ────────────────────
+                            Text(
+                              'Ride your way',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: cs.onSurface,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            _buildInputLabel('PICKUP LOCATION', cs),
+                            const SizedBox(height: 6),
+                            _buildLocationField(
+                              controller: exploreCtrl.pickupLocationCtrl,
+                              hint: 'Enter pickup location',
+                              icon: Icons.flight_takeoff_rounded,
+                              onChanged: (val) {
+                                exploreCtrl.pickupLocation.value = val;
+                              },
+                              isLoading: exploreCtrl.isLoadingPickup.value,
+                              cs: cs,
+                              isLight: isLight,
+                            ),
+                            _buildSuggestionsList(
+                              suggestions: exploreCtrl.pickupSuggestions,
+                              onSelect: (val) => exploreCtrl.selectPickupSuggestion(val),
+                              theme: theme,
+                              cs: cs,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildInputLabel('DESTINATION', cs),
+                            const SizedBox(height: 6),
+                            _buildLocationField(
+                              controller: exploreCtrl.dropoffLocationCtrl,
+                              hint: 'Enter destination',
+                              icon: Icons.flight_land_rounded,
+                              onChanged: (val) {
+                                exploreCtrl.dropoffLocation.value = val;
+                              },
+                              isLoading: exploreCtrl.isLoadingDropoff.value,
+                              cs: cs,
+                              isLight: isLight,
+                            ),
+                            _buildSuggestionsList(
+                              suggestions: exploreCtrl.dropoffSuggestions,
+                              onSelect: (val) => exploreCtrl.selectDropoffSuggestion(val),
+                              theme: theme,
+                              cs: cs,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildInputLabel('PICKUP DATE', cs),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () => _selectSingleDate(context, exploreCtrl.pickupDateTime, exploreCtrl),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_month_rounded, color: cs.primary, size: 20),
+                                    const SizedBox(width: 10),
+                                    Obx(() => Text(
+                                          exploreCtrl.pickupDateTime.value == null
+                                              ? 'Select date'
+                                              : DateFormat('EEEE, MMMM d, yyyy').format(exploreCtrl.pickupDateTime.value!),
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: exploreCtrl.pickupDateTime.value == null
+                                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                                : cs.onSurface,
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildInputLabel('PICKUP TIME', cs),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () => _selectTime(context, exploreCtrl.pickupDateTime, exploreCtrl),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.access_time_rounded, color: cs.primary, size: 20),
+                                    const SizedBox(width: 10),
+                                    Obx(() => Text(
+                                          exploreCtrl.pickupDateTime.value == null
+                                              ? 'Select time'
+                                              : DateFormat('h:mm a').format(exploreCtrl.pickupDateTime.value!),
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: exploreCtrl.pickupDateTime.value == null
+                                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                                : cs.onSurface,
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSubmitButton(
+                              title: 'Show Cars',
+                              onTap: () {
+                                Get.back(); // Dismiss bottom sheet
+                                exploreCtrl.selectedServiceType.value = 'Chauffeur';
+                                exploreCtrl.isChauffeurRequired.value = true;
+                                exploreCtrl.isDifferentDropoff.value = true;
+                                exploreCtrl.dropoffLocation.value = exploreCtrl.dropoffLocationCtrl.text;
+                                exploreCtrl.applyFilters();
+                                ctrl.navigateToExplore(resetToAll: false);
+                              },
+                              cs: cs,
+                            ),
+                          ],
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabButton({
+    required String title,
+    required bool isActive,
+    required VoidCallback onTap,
+    required ColorScheme cs,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? cs.primary : (Get.isDarkMode ? const Color(0xFF161A22) : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.white : (Get.isDarkMode ? Colors.white70 : Colors.black87),
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputLabel(String text, ColorScheme cs) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+        letterSpacing: 0.6,
+      ),
+    );
+  }
+
+  Widget _buildLocationField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required ValueChanged<String> onChanged,
+    required bool isLoading,
+    required ColorScheme cs,
+    required bool isLight,
+  }) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: cs.primary, size: 20),
+        hintText: hint,
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.5), fontSize: 13),
+        filled: true,
+        fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        suffixIcon: isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(12.0),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+    );
+  }
+
+  Widget _buildSuggestionsList({
+    required List<dynamic> suggestions,
+    required ValueChanged<dynamic> onSelect,
+    required ThemeData theme,
+    required ColorScheme cs,
+  }) {
+    return Obx(() {
+      if (suggestions.isEmpty) return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.only(top: 4, bottom: 4),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: suggestions.length,
+          itemBuilder: (context, index) {
+            final suggestion = suggestions[index];
+            return ListTile(
+              leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 18),
+              title: Text(
+                suggestion.description,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+              dense: true,
+              onTap: () => onSelect(suggestion),
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  Widget _buildDateTimeRow({
+    required String label,
+    required Rxn<DateTime> dateTimeRx,
+    required ExploreController exploreCtrl,
+    required ThemeData theme,
+    required ColorScheme cs,
+    required bool isLight,
+    required BuildContext context,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInputLabel(label, cs),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _selectDateRange(context, exploreCtrl),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Obx(() => Text(
+                        dateTimeRx.value == null
+                            ? 'Select Date'
+                            : DateFormat('MMM d, yyyy').format(dateTimeRx.value!),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: dateTimeRx.value == null
+                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                              : cs.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      )),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: InkWell(
+                onTap: () => _selectTime(context, dateTimeRx, exploreCtrl),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Obx(() => Text(
+                        dateTimeRx.value == null
+                            ? 'Select Time'
+                            : DateFormat('h:mm a').format(dateTimeRx.value!),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: dateTimeRx.value == null
+                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                              : cs.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      )),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton({
+    required String title,
+    required VoidCallback onTap,
+    required ColorScheme cs,
+  }) {
+    return FilledButton(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+        minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectSingleDate(BuildContext context, Rxn<DateTime> rxDateTime, ExploreController ctrl) async {
+    final isPickup = rxDateTime == ctrl.pickupDateTime;
+    
+    // Determine bounds
+    DateTime firstDate = DateTime.now();
+    DateTime lastDate = DateTime.now().add(const Duration(days: 365));
+    
+    if (isPickup) {
+      // Pick-up date
+      if (ctrl.dropoffDateTime.value != null) {
+        // Must be lower than dropoff date
+        final maxSelectable = ctrl.dropoffDateTime.value!.subtract(const Duration(days: 1));
+        if (maxSelectable.isAfter(firstDate)) {
+          lastDate = maxSelectable;
+        } else {
+          lastDate = firstDate;
+        }
+      }
+    } else {
+      // Drop-off date
+      if (ctrl.pickupDateTime.value == null) {
+        SnackbarHelper.showWarning('Please select a pick-up date first.');
+        return;
+      }
+      firstDate = ctrl.pickupDateTime.value!.add(const Duration(days: 1));
+      if (lastDate.isBefore(firstDate)) {
+        lastDate = firstDate.add(const Duration(days: 365));
+      }
+    }
+
+    final current = rxDateTime.value ?? (isPickup ? DateTime.now() : ctrl.pickupDateTime.value!.add(const Duration(days: 1)));
+    
+    // Ensure initialDate is within firstDate and lastDate bounds
+    DateTime initialDate = current;
+    if (initialDate.isBefore(firstDate)) {
+      initialDate = firstDate;
+    }
+    if (initialDate.isAfter(lastDate)) {
+      initialDate = lastDate;
+    }
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (date == null) return;
+
+    rxDateTime.value = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      current.hour,
+      current.minute,
+    );
+
+    // If pickup date was selected, check if drop-off date needs to be reset
+    if (isPickup) {
+      if (ctrl.dropoffDateTime.value != null && !ctrl.dropoffDateTime.value!.isAfter(rxDateTime.value!)) {
+        ctrl.dropoffDateTime.value = null;
+      }
+    }
+
+    ctrl.applyFilters();
+  }
+
+  Future<void> _selectDateRange(BuildContext context, ExploreController ctrl) async {
+    final initialRange = ctrl.pickupDateTime.value != null && ctrl.dropoffDateTime.value != null
+        ? DateTimeRange(start: ctrl.pickupDateTime.value!, end: ctrl.dropoffDateTime.value!)
+        : null;
+
+    final pickedRange = await showDateRangePicker(
+      context: context,
+      initialDateRange: initialRange,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              secondaryContainer: theme.colorScheme.primary.withValues(alpha: 0.15),
+              onSecondaryContainer: theme.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedRange != null) {
+      final pickupCurrent = ctrl.pickupDateTime.value;
+      final dropoffCurrent = ctrl.dropoffDateTime.value;
+
+      ctrl.pickupDateTime.value = DateTime(
+        pickedRange.start.year,
+        pickedRange.start.month,
+        pickedRange.start.day,
+        pickupCurrent?.hour ?? 9,
+        pickupCurrent?.minute ?? 0,
+      );
+
+      ctrl.dropoffDateTime.value = DateTime(
+        pickedRange.end.year,
+        pickedRange.end.month,
+        pickedRange.end.day,
+        dropoffCurrent?.hour ?? 17,
+        dropoffCurrent?.minute ?? 0,
+      );
+
+      ctrl.applyFilters();
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context, Rxn<DateTime> rxDateTime, ExploreController ctrl) async {
+    _showTimeListBottomSheet(context, rxDateTime, ctrl);
+  }
+
+  void _showTimeListBottomSheet(BuildContext context, Rxn<DateTime> rxDateTime, ExploreController ctrl) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    
+    final categories = {
+      'Early Morning': [
+        const TimeOfDay(hour: 6, minute: 0),
+        const TimeOfDay(hour: 6, minute: 30),
+        const TimeOfDay(hour: 7, minute: 0),
+        const TimeOfDay(hour: 7, minute: 30),
+      ],
+      'Morning - afternoon': [
+        const TimeOfDay(hour: 8, minute: 0),
+        const TimeOfDay(hour: 8, minute: 30),
+        const TimeOfDay(hour: 9, minute: 0),
+        const TimeOfDay(hour: 9, minute: 30),
+        const TimeOfDay(hour: 10, minute: 0),
+        const TimeOfDay(hour: 10, minute: 30),
+        const TimeOfDay(hour: 11, minute: 0),
+        const TimeOfDay(hour: 11, minute: 30),
+        const TimeOfDay(hour: 12, minute: 0),
+        const TimeOfDay(hour: 12, minute: 30),
+        const TimeOfDay(hour: 13, minute: 0),
+        const TimeOfDay(hour: 13, minute: 30),
+        const TimeOfDay(hour: 14, minute: 0),
+        const TimeOfDay(hour: 14, minute: 30),
+        const TimeOfDay(hour: 15, minute: 0),
+        const TimeOfDay(hour: 15, minute: 30),
+        const TimeOfDay(hour: 16, minute: 0),
+        const TimeOfDay(hour: 16, minute: 30),
+      ],
+      'Evening - Night': [
+        const TimeOfDay(hour: 17, minute: 0),
+        const TimeOfDay(hour: 17, minute: 30),
+        const TimeOfDay(hour: 18, minute: 0),
+        const TimeOfDay(hour: 18, minute: 30),
+        const TimeOfDay(hour: 19, minute: 0),
+        const TimeOfDay(hour: 19, minute: 30),
+        const TimeOfDay(hour: 20, minute: 0),
+        const TimeOfDay(hour: 20, minute: 30),
+        const TimeOfDay(hour: 21, minute: 0),
+        const TimeOfDay(hour: 21, minute: 30),
+        const TimeOfDay(hour: 22, minute: 0),
+        const TimeOfDay(hour: 22, minute: 30),
+        const TimeOfDay(hour: 23, minute: 0),
+        const TimeOfDay(hour: 23, minute: 30),
+        const TimeOfDay(hour: 0, minute: 0),
+      ],
+    };
+
+    String formatTimeOfDay(TimeOfDay time) {
+      final hour = time.hour;
+      final minute = time.minute;
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final minuteStr = minute.toString().padLeft(2, '0');
+      return '$displayHour:$minuteStr $period';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time_rounded, size: 20, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Opening Times: 6:00 AM - 12:00 AM',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(
+                height: 1,
+                color: cs.outlineVariant.withValues(alpha: 0.4),
+              ),
+              
+              // Scrollable list of categories
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: categories.entries.map((entry) {
+                      final categoryTitle = entry.key;
+                      final times = entry.value;
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            categoryTitle,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 2.8,
+                            children: times.map((t) {
+                              return Obx(() {
+                                final isSelected = rxDateTime.value != null &&
+                                    rxDateTime.value!.hour == t.hour &&
+                                    rxDateTime.value!.minute == t.minute;
+                                
+                                return InkWell(
+                                  onTap: () {
+                                    final current = rxDateTime.value ?? DateTime.now();
+                                    rxDateTime.value = DateTime(
+                                      current.year,
+                                      current.month,
+                                      current.day,
+                                      t.hour,
+                                      t.minute,
+                                    );
+                                    ctrl.applyFilters();
+                                    Get.back(); // Close bottom sheet
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? (isLight ? const Color(0xFF161A22) : cs.primary)
+                                          : (isLight ? Colors.grey.shade100 : const Color(0xFF161A22)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      formatTimeOfDay(t),
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : cs.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              });
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -473,6 +1424,96 @@ class HomeView extends StatelessWidget {
     CurrencyService currencyService,
   ) {
     return Obx(() {
+      final auth = Get.find<AuthService>();
+      final isLoggedIn = auth.isLoggedIn.value;
+
+      if (!isLoggedIn) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('your_active_ride'.tr, null, theme, cs),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isLight ? Colors.white : const Color(0xFF1A1C22),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: cs.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isLight ? 0.04 : 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Icon container
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.lock_open_rounded, color: cs.primary, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    // Prompt text and button
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'view_bookings_prompt'.tr,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'view_bookings_prompt_desc'.tr,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 36,
+                            child: FilledButton(
+                              onPressed: () => Get.toNamed(AppRoutes.login),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: cs.primary,
+                                foregroundColor: cs.onPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                'login'.tr.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       final booking = ctrl.activeBooking.value;
       if (booking == null) return const SizedBox.shrink();
 
@@ -844,8 +1885,6 @@ class HomeView extends StatelessWidget {
     bool isLight,
     CurrencyService currencyService,
   ) {
-    final cleanName = '${vehicle.brand} ${vehicle.name}'
-        .replaceAll(RegExp(r'\s*\(.*\)'), '');
 
     return GestureDetector(
       onTap: () => ctrl.navigateToVehicleDetail(vehicle),
@@ -940,28 +1979,6 @@ class HomeView extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (vehicle.discountPercentage > 0) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE53935), // Sleek discount red
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${vehicle.discountPercentage}% OFF',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                          ],
                           if (vehicle.hasChauffeur)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -1008,8 +2025,14 @@ class HomeView extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(vehicle.brand,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                          ),),
+                        const SizedBox(height: 3),
                         Text(
-                          cleanName,
+                          vehicle.name,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w800,
                             fontSize: 15,
@@ -1018,56 +2041,39 @@ class HomeView extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_rounded,
-                                size: 12,
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                vehicle.location,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                                  fontSize: 11,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
                     ),
                     Row(
                       children: [
                         // Specs
-                        _buildMiniSpec(Icons.people_outline_rounded,
-                            '${vehicle.seats}', cs),
-                        const SizedBox(width: 10),
-                        _buildMiniSpec(
-                            Icons.settings_input_component_rounded,
-                            vehicle.transmission == 'Automatic'
-                                ? 'Auto'
-                                : 'Manual',
-                            cs),
-                        const Spacer(),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildMiniSpec(Icons.people_outline_rounded,
+                                    '${vehicle.seats}', cs),
+                                const SizedBox(width: 8),
+                                _buildMiniSpec(
+                                    Icons.settings_input_component_rounded,
+                                    vehicle.transmission == 'Automatic'
+                                        ? 'Auto'
+                                        : 'Manual',
+                                    cs),
+                                const SizedBox(width: 8),
+                                _buildMiniSpec(
+                                    Icons.ev_station,
+                                    vehicle.fuelType,
+                                    cs),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         // Price
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(
-                              vehicle.totalPriceFormatted.isNotEmpty
-                                  ? vehicle.totalPriceFormatted
-                                  : currencyService.formatPrice(vehicle.totalPrice > 0 ? vehicle.totalPrice : vehicle.pricePerDay),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                decoration: TextDecoration.lineThrough,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
                             Text(
                               vehicle.dailyRateFormatted.isNotEmpty
                                   ? vehicle.dailyRateFormatted
@@ -1236,26 +2242,6 @@ class HomeView extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_rounded,
-                          size: 12,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
-                      const SizedBox(width: 3),
-                      Expanded(
-                        child: Text(
-                          vehicle.location,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -1286,19 +2272,6 @@ class HomeView extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (vehicle.hasDiscount) ...[
-                  Text(
-                    vehicle.totalPriceFormatted.isNotEmpty
-                        ? vehicle.totalPriceFormatted
-                        : currencyService.formatPrice(vehicle.totalPrice),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
                   Text(
                     vehicle.dailyRateFormatted.isNotEmpty
                         ? vehicle.dailyRateFormatted
@@ -1309,18 +2282,7 @@ class HomeView extends StatelessWidget {
                       color: cs.primary,
                     ),
                   ),
-                ] else ...[
-                  Text(
-                    vehicle.dailyRateFormatted.isNotEmpty
-                        ? vehicle.dailyRateFormatted
-                        : currencyService.formatPrice(vehicle.pricePerDay),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: cs.primary,
-                    ),
-                  ),
-                ],
+                
                 Text(
                   '/DAY',
                   style: TextStyle(

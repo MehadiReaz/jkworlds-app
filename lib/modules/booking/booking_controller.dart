@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
-import 'package:jkworlds/data/models/booking_model.dart';
-import 'package:jkworlds/data/mock/mock_bookings.dart';
 
 class BookingController extends GetxController {
   late final VehicleModel vehicle;
@@ -36,36 +34,42 @@ class BookingController extends GetxController {
       returnDate.value != null &&
       totalDays > 0;
 
-  Future<void> selectPickupDate(BuildContext context) async {
-    final date = await showDatePicker(
+  Future<void> selectDateRange(BuildContext context) async {
+    final initialRange = pickupDate.value != null && returnDate.value != null
+        ? DateTimeRange(start: pickupDate.value!, end: returnDate.value!)
+        : null;
+
+    final pickedRange = await showDateRangePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDateRange: initialRange,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              secondaryContainer: theme.colorScheme.primary.withValues(alpha: 0.15),
+              onSecondaryContainer: theme.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
-    if (date != null) {
-      pickupDate.value = date;
-      // Reset return date if before pickup
-      if (returnDate.value != null && returnDate.value!.isBefore(date)) {
-        returnDate.value = null;
-      }
+
+    if (pickedRange != null) {
+      pickupDate.value = pickedRange.start;
+      returnDate.value = pickedRange.end;
     }
   }
 
+  Future<void> selectPickupDate(BuildContext context) async {
+    await selectDateRange(context);
+  }
+
   Future<void> selectReturnDate(BuildContext context) async {
-    if (pickupDate.value == null) {
-      SnackbarHelper.showWarning('select_pickup_date'.tr);
-      return;
-    }
-    final date = await showDatePicker(
-      context: context,
-      initialDate: pickupDate.value!.add(const Duration(days: 1)),
-      firstDate: pickupDate.value!.add(const Duration(days: 1)),
-      lastDate: pickupDate.value!.add(const Duration(days: 365)),
-    );
-    if (date != null) {
-      returnDate.value = date;
-    }
+    await selectDateRange(context);
   }
 
   Future<void> confirmBooking() async {

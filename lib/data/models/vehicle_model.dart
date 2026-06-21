@@ -108,13 +108,6 @@ class VehicleModel {
     this.unavailableDates = const [],
   });
 
-  bool get hasDiscount => totalPrice > pricePerDay;
-
-  int get discountPercentage {
-    if (totalPrice <= 0 || pricePerDay <= 0 || totalPrice <= pricePerDay) return 0;
-    return (((totalPrice - pricePerDay) / totalPrice) * 100).round();
-  }
-
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
     double _parseDouble(dynamic v) {
       if (v == null) return 0.0;

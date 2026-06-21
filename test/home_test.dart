@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jkworlds/data/services/location_service.dart';
+import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/app/routes/app_pages.dart';
@@ -38,7 +40,10 @@ void main() {
       Get.put(AuthService(), permanent: true);
       Get.put<CategoryService>(MockCategoryService(), permanent: true);
       Get.put<BookingService>(MockBookingService(), permanent: true);
+      Get.put<LocationService>(MockLocationService(), permanent: true);
       Get.put(MainNavController(), permanent: true);
+      Get.put(ExploreController(), permanent: true);
+      Get.put(HomeController(), permanent: true);
 
       // 2. Pump app — use pump() instead of pumpAndSettle() since the promo
       //    carousel has a periodic auto-scroll timer that never "settles".
@@ -57,10 +62,11 @@ void main() {
       expect(find.textContaining('Mehadi'), findsOneWidget);
       expect(find.text('Find your perfect ride today'), findsOneWidget);
 
-      // 4. Verify search bar
-      expect(find.text('Search by brand, model, or location...'), findsOneWidget);
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      // 4. Verify booking form preview states
+      expect(find.text('Cars'), findsOneWidget);
+      expect(find.text('Airport Transfer'), findsOneWidget);
+      expect(find.text('Enter pick-up location'), findsOneWidget);
+      expect(find.text('Show Vehicles'), findsNothing);
 
       // 5. Verify promo carousel — first promo should be visible
       expect(find.text('20% Off First Ride'), findsOneWidget);
@@ -104,12 +110,19 @@ void main() {
       navCtrl.changePage(0);
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 12. Test search bar navigation
-      final searchBar = find.text('Search by brand, model, or location...');
-      await tester.tap(searchBar);
-      await tester.pump(const Duration(milliseconds: 300));
+      // 12. Test Show Vehicles navigation to Explore via Bottom Sheet
+      final enterPickupBtn = find.text('Enter pick-up location');
+      await tester.tap(enterPickupBtn);
+      await tester.pump(const Duration(milliseconds: 500)); // wait for bottom sheet to open
 
-      Get.find<MainNavController>();
+      // Scroll bottom sheet to bring 'Show Vehicles' into view
+      await tester.drag(find.byType(SingleChildScrollView).last, const Offset(0, -600));
+      await tester.pumpAndSettle();
+
+      final showVehiclesBtn = find.text('Show Vehicles');
+      await tester.tap(showVehiclesBtn);
+      await tester.pump(const Duration(milliseconds: 500)); // wait for bottom sheet to close & navigate
+
       expect(navCtrl.currentIndex.value, 1);
 
       // Clean up: delete the controller to cancel its timer, then reset GetX

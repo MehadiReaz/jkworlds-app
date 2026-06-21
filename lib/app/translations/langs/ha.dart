@@ -129,6 +129,8 @@ const Map<String, String> ha = {
   'select_pickup_date': 'Zaɓi ranar ɗauka',
   'select_return_date': 'Zaɓi ranar mayarwa',
   'days': 'kwanaki',
+  'booked_dates': 'Kwanakin da aka ajiye (Babu shi)',
+  'selected_range_contains_booked_dates': 'Kwanakin da aka zaba sun hada da kwanakin da aka riga aka ajiye.',
 
   // ── Bookings Tab ────────────────────────────────────────────
   'my_bookings': 'Ajiyoyina',
@@ -200,6 +202,8 @@ const Map<String, String> ha = {
   'name': 'Cikakken Suna',
   'login_prompt': 'Shiga don samun dukkan fasaloli',
   'signup_prompt': 'Ƙirƙiri asusun ku don farawa',
+  'view_bookings_prompt': 'Shiga don duba rajista',
+  'view_bookings_prompt_desc': 'Bincika rajistar ku mai aiki kuma sarrafa rajista cikin sauƙi.',
   'forgot_password_prompt': 'Shigar da imel ɗin ku, za mu aiko muku da hanyar saita sabuwar kalmar sirri.',
   'continue_as_guest': 'Ci gaba a matsayin Baƙo',
   'reset_email_sent': 'An aika hanyar sake saita!',

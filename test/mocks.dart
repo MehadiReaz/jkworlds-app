@@ -32,7 +32,41 @@ class MockCategoryService extends CategoryService {
     String? featured,
     String? sort,
   }) async {
-    return mockVehicles;
+    var results = List<VehicleModel>.from(mockVehicles);
+    
+    if (search != null && search.trim().isNotEmpty) {
+      final loc = search.toLowerCase();
+      results = results.where((v) =>
+          v.location.toLowerCase().contains(loc) ||
+          v.brand.toLowerCase().contains(loc) ||
+          v.name.toLowerCase().contains(loc)).toList();
+    }
+    
+    if (serviceType != null && serviceType.isNotEmpty) {
+      if (serviceType == 'chauffeur') {
+        results = results.where((v) => v.hasChauffeur).toList();
+      }
+    }
+    
+    if (transmission != null && transmission.isNotEmpty) {
+      results = results.where((v) => v.transmission.toLowerCase() == transmission.toLowerCase()).toList();
+    }
+    
+    if (fuelType != null && fuelType.isNotEmpty) {
+      results = results.where((v) => v.fuelType.toLowerCase() == fuelType.toLowerCase()).toList();
+    }
+    
+    if (sort != null) {
+      if (sort == 'rating') {
+        results.sort((a, b) => b.rating.compareTo(a.rating));
+      } else if (sort == 'price_asc') {
+        results.sort((a, b) => a.pricePerDay.compareTo(b.pricePerDay));
+      } else if (sort == 'price_desc') {
+        results.sort((a, b) => b.pricePerDay.compareTo(a.pricePerDay));
+      }
+    }
+    
+    return results;
   }
 
   @override
@@ -53,7 +87,41 @@ class MockCategoryService extends CategoryService {
             : categoryId == 3
                 ? 'Luxury'
                 : 'Van';
-    return mockVehicles.where((v) => v.type.toLowerCase() == catName.toLowerCase()).toList();
+    var results = mockVehicles.where((v) => v.type.toLowerCase() == catName.toLowerCase()).toList();
+    
+    if (search != null && search.trim().isNotEmpty) {
+      final loc = search.toLowerCase();
+      results = results.where((v) =>
+          v.location.toLowerCase().contains(loc) ||
+          v.brand.toLowerCase().contains(loc) ||
+          v.name.toLowerCase().contains(loc)).toList();
+    }
+    
+    if (serviceType != null && serviceType.isNotEmpty) {
+      if (serviceType == 'chauffeur') {
+        results = results.where((v) => v.hasChauffeur).toList();
+      }
+    }
+    
+    if (transmission != null && transmission.isNotEmpty) {
+      results = results.where((v) => v.transmission.toLowerCase() == transmission.toLowerCase()).toList();
+    }
+    
+    if (fuelType != null && fuelType.isNotEmpty) {
+      results = results.where((v) => v.fuelType.toLowerCase() == fuelType.toLowerCase()).toList();
+    }
+    
+    if (sort != null) {
+      if (sort == 'rating') {
+        results.sort((a, b) => b.rating.compareTo(a.rating));
+      } else if (sort == 'price_asc') {
+        results.sort((a, b) => a.pricePerDay.compareTo(b.pricePerDay));
+      } else if (sort == 'price_desc') {
+        results.sort((a, b) => b.pricePerDay.compareTo(a.pricePerDay));
+      }
+    }
+    
+    return results;
   }
 
   @override
@@ -62,8 +130,56 @@ class MockCategoryService extends CategoryService {
       (v) => v.id.toString() == vehicleId.toString(),
       orElse: () => mockVehicles.first,
     );
+    final detailedVehicle = VehicleModel(
+      id: vehicle.id,
+      name: vehicle.name,
+      brand: vehicle.brand,
+      type: vehicle.type,
+      year: vehicle.year,
+      transmission: vehicle.transmission,
+      seats: vehicle.seats,
+      fuelType: vehicle.fuelType,
+      pricePerDay: vehicle.pricePerDay,
+      pricePerWeek: vehicle.pricePerWeek,
+      pricePerMonth: vehicle.pricePerMonth,
+      images: vehicle.images,
+      features: vehicle.features,
+      rating: vehicle.rating,
+      reviewCount: vehicle.reviewCount,
+      isAvailable: vehicle.isAvailable,
+      isFeatured: vehicle.isFeatured,
+      hasChauffeur: vehicle.hasChauffeur,
+      location: vehicle.location,
+      description: vehicle.description,
+      categoryId: vehicle.categoryId,
+      serviceType: vehicle.serviceType,
+      currency: vehicle.currency,
+      dailyRateFormatted: vehicle.dailyRateFormatted,
+      totalPrice: vehicle.totalPrice,
+      totalPriceFormatted: vehicle.totalPriceFormatted,
+      plateNumber: vehicle.plateNumber ?? 'LG-890-IKJ',
+      mileage: vehicle.mileage ?? 9500,
+      color: vehicle.color ?? 'Black',
+      gallery: vehicle.gallery,
+      dailyRate: vehicle.dailyRate,
+      weeklyRate: vehicle.weeklyRate,
+      monthlyRate: vehicle.monthlyRate,
+      chauffeurRatePerDay: vehicle.chauffeurRatePerDay,
+      extraKmCharge: vehicle.extraKmCharge,
+      overtimeChargePerHour: vehicle.overtimeChargePerHour,
+      securityDepositAmount: vehicle.securityDepositAmount,
+      securityDepositDescription: vehicle.securityDepositDescription,
+      cancellationTitle: vehicle.cancellationTitle,
+      cancellationDescription: vehicle.cancellationDescription,
+      mileagePolicies: vehicle.mileagePolicies,
+      rentalRequirements: vehicle.rentalRequirements,
+      includedItems: vehicle.includedItems,
+      protectionPlans: vehicle.protectionPlans,
+      rentalAddons: vehicle.rentalAddons,
+      unavailableDates: vehicle.unavailableDates,
+    );
     return VehicleDetailResult(
-      vehicle: vehicle,
+      vehicle: detailedVehicle,
       similarVehicles: mockVehicles.where((v) => v.type == vehicle.type && v.id != vehicle.id).toList(),
       reviews: [],
     );

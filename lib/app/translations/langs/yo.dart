@@ -129,6 +129,8 @@ const Map<String, String> yo = {
   'select_pickup_date': 'Yan ọjọ́ ìgbà',
   'select_return_date': 'Yan ọjọ́ ìdápadà',
   'days': 'ọjọ́',
+  'booked_dates': 'Awọn Ọjọ ti a ti Gba (Ko si)',
+  'selected_range_contains_booked_dates': 'Awọn ọjọ ti o yan ni awọn ọjọ ti a ti gba tẹlẹ.',
 
   // ── Bookings Tab ────────────────────────────────────────────
   'my_bookings': 'Ìpèsè Mi',
@@ -200,6 +202,8 @@ const Map<String, String> yo = {
   'name': 'Orúkọ Kíkún',
   'login_prompt': 'Wọlé láti lo gbogbo ẹ̀yà',
   'signup_prompt': 'Ṣẹ̀dá àkọọ́lẹ̀ rẹ',
+  'view_bookings_prompt': 'Wọle lati wo awọn iwe rẹ',
+  'view_bookings_prompt_desc': 'Tọpinpin awọn irin-ajo rẹ ki o ṣakoso awọn iwe rẹ ni irọrun.',
   'forgot_password_prompt': 'Tẹ ímeèlì rẹ sí, àwa yóò fi ìjápọ̀ ránṣẹ́.',
   'continue_as_guest': 'Tẹ̀síwájú Bí Àlejò',
   'reset_email_sent': 'Ìjápọ̀ àtúnṣe ti ránṣẹ́!',

@@ -19,6 +19,7 @@ class HomeController extends GetxController {
   final selectedCategory = 'All'.obs;
   final isLoading        = false.obs;
   final errorMessage     = ''.obs;
+  final selectedBookingTab = 'Cars'.obs; // 'Cars' or 'Airport Transfer'
 
   final categories = <String>[].obs;
 
@@ -79,6 +80,11 @@ class HomeController extends GetxController {
   }
 
   Future<void> _loadActiveBooking() async {
+    final auth = Get.find<AuthService>();
+    if (!auth.isLoggedIn.value) {
+      activeBooking.value = null;
+      return;
+    }
     try {
       final bookings = await _bookingService.fetchBookings();
       final active = bookings.where(

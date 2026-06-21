@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'orders_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/app/routes/app_routes.dart';
 
 class OrdersView extends StatelessWidget {
   const OrdersView({super.key});
@@ -13,6 +15,7 @@ class OrdersView extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = Get.find<OrdersController>();
     final currencyService = Get.find<CurrencyService>();
+    final auth = Get.find<AuthService>();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
@@ -32,220 +35,285 @@ class OrdersView extends StatelessWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Filter Chips Option Row ─────────────────────────────────
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: List.generate(filterOptions.length, (index) {
-                  final label = filterOptions[index];
-                  return Obx(() {
-                    final isSelected = ctrl.selectedTab.value == index;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(label),
-                        selected: isSelected,
-                        onSelected: (val) {
-                          if (val) ctrl.changeTab(index);
-                        },
-                        selectedColor: cs.primary,
-                        labelStyle: TextStyle(
-                          color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 13,
-                        ),
-                        backgroundColor: theme.cardColor,
-                        side: BorderSide(
-                          color: isSelected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.5),
-                          width: 1,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
-                  });
-                }),
-              ),
-            ),
+        child: Obx(() {
+          final isLoggedIn = auth.isLoggedIn.value;
 
-            // ── Bookings Table Card ──────────────────────────────────────
-            Expanded(
+          if (!isLoggedIn) {
+            return Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: cs.outlineVariant.withValues(alpha: 0.5),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isLight ? 0.02 : 0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Table Headers
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        child: Row(
-                          children: [
-                            Expanded(flex: 4, child: _buildTableHeaderText('Car', cs)),
-                            Expanded(flex: 3, child: _buildTableHeaderText('Date', cs)),
-                            Expanded(flex: 2, child: _buildTableHeaderText('Status', cs, textAlign: TextAlign.center)),
-                            Expanded(flex: 2, child: _buildTableHeaderText('Amount', cs, textAlign: TextAlign.right)),
-                          ],
+                      child: Icon(
+                        Icons.lock_outline_rounded,
+                        size: 64,
+                        color: cs.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'view_bookings_prompt'.tr,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'view_bookings_prompt_desc'.tr,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    FilledButton(
+                      onPressed: () => Get.toNamed(AppRoutes.login),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
+                        minimumSize: const Size(200, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.5)),
+                      child: Text(
+                        'login'.tr.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
-                      // Table Rows
-                      Obx(() {
-                        final bookings = ctrl.filteredBookings;
-                        if (bookings.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 48),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.receipt_long_rounded,
-                                    size: 48,
-                                    color: cs.onSurfaceVariant.withValues(alpha: 0.3),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'no_results'.tr,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: cs.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: bookings.length,
-                          separatorBuilder: (context, index) => Divider(
-                            height: 1,
-                            color: cs.outlineVariant.withValues(alpha: 0.5),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Filter Chips Option Row ─────────────────────────────────
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: List.generate(filterOptions.length, (index) {
+                    final label = filterOptions[index];
+                    return Obx(() {
+                      final isSelected = ctrl.selectedTab.value == index;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(label),
+                          selected: isSelected,
+                          onSelected: (val) {
+                            if (val) ctrl.changeTab(index);
+                          },
+                          selectedColor: cs.primary,
+                          labelStyle: TextStyle(
+                            color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 13,
                           ),
-                          itemBuilder: (context, index) {
-                            final booking = bookings[index];
+                          backgroundColor: theme.cardColor,
+                          side: BorderSide(
+                            color: isSelected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    });
+                  }),
+                ),
+              ),
+
+              // ── Bookings Table Card ──────────────────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.5),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isLight ? 0.02 : 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Table Headers
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          child: Row(
+                            children: [
+                              Expanded(flex: 4, child: _buildTableHeaderText('Car', cs)),
+                              Expanded(flex: 3, child: _buildTableHeaderText('Date', cs)),
+                              Expanded(flex: 2, child: _buildTableHeaderText('Status', cs, textAlign: TextAlign.center)),
+                              Expanded(flex: 2, child: _buildTableHeaderText('Amount', cs, textAlign: TextAlign.right)),
+                            ],
+                          ),
+                        ),
+                        Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.5)),
+
+                        // Table Rows
+                        Obx(() {
+                          final bookings = ctrl.filteredBookings;
+                          if (bookings.isEmpty) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Car Column (Photo + Name)
-                                  Expanded(
-                                    flex: 4,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 36,
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(8),
-                                            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
-                                            child: (booking.vehicle?.images.isNotEmpty ?? false)
-                                                ? Image.asset(
-                                                    booking.vehicle!.images[0],
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) => Icon(
+                              padding: const EdgeInsets.symmetric(vertical: 48),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.receipt_long_rounded,
+                                      size: 48,
+                                      color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'no_results'.tr,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: cs.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          return ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: bookings.length,
+                            separatorBuilder: (context, index) => Divider(
+                              height: 1,
+                              color: cs.outlineVariant.withValues(alpha: 0.5),
+                            ),
+                            itemBuilder: (context, index) {
+                              final booking = bookings[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Car Column (Photo + Name)
+                                    Expanded(
+                                      flex: 4,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(8),
+                                              color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: (booking.vehicle?.images.isNotEmpty ?? false)
+                                                  ? Image.asset(
+                                                      booking.vehicle!.images[0],
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Icon(
+                                                        Icons.directions_car_rounded,
+                                                        size: 20,
+                                                        color: cs.primary,
+                                                      ),
+                                                    )
+                                                  : Icon(
                                                       Icons.directions_car_rounded,
                                                       size: 20,
                                                       color: cs.primary,
                                                     ),
-                                                  )
-                                                : Icon(
-                                                    Icons.directions_car_rounded,
-                                                    size: 20,
-                                                    color: cs.primary,
-                                                  ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            '${booking.vehicle?.brand ?? ''} ${booking.vehicle?.name ?? 'Booking #${booking.id}'}'.trim().replaceAll(RegExp(r'\s*\(.*\)'), ''),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: cs.onSurface,
                                             ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              '${booking.vehicle?.brand ?? ''} ${booking.vehicle?.name ?? 'Booking #${booking.id}'}'.trim().replaceAll(RegExp(r'\s*\(.*\)'), ''),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: cs.onSurface,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Date Column
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(
+                                        _formatDateRange(booking.pickupDate, booking.returnDate),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: cs.onSurfaceVariant,
                                         ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Date Column
-                                  Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      _formatDateRange(booking.pickupDate, booking.returnDate),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: cs.onSurfaceVariant,
                                       ),
                                     ),
-                                  ),
 
-                                  // Status Column
-                                  Expanded(
-                                    flex: 2,
-                                    child: Center(
-                                      child: _buildStatusWidget(booking.status, cs),
-                                    ),
-                                  ),
-
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      currencyService.formatPrice(booking.totalPrice),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                        color: cs.onSurface,
+                                    // Status Column
+                                    Expanded(
+                                      flex: 2,
+                                      child: Center(
+                                        child: _buildStatusWidget(booking.status, cs),
                                       ),
-                                      textAlign: TextAlign.right,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      }),
-                    ],
+
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                        currencyService.formatPrice(booking.totalPrice),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w900,
+                                          color: cs.onSurface,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        }),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        }),
       ),
     );
   }

@@ -129,6 +129,8 @@ const Map<String, String> ig = {
   'select_pickup_date': 'Họrọ ụbọchị ịnara',
   'select_return_date': 'Họrọ ụbọchị ịlaghachi',
   'days': 'ụbọchị',
+  'booked_dates': 'Ụbọchị Echekwara (Adịghị)',
+  'selected_range_contains_booked_dates': 'Ụbọchị ndị a họọrọ nwere ụbọchị ndị echekwara mbụ.',
 
   // ── Bookings Tab ────────────────────────────────────────────
   'my_bookings': 'Ndekọ M',
@@ -200,6 +202,8 @@ const Map<String, String> ig = {
   'name': 'Aha Zuru Ezu',
   'login_prompt': 'Banye iji nweta ihe niile',
   'signup_prompt': 'Mepụta akaụntụ gị iji malite',
+  'view_bookings_prompt': 'Banye ka lee ntinye akwụkwọ gị',
+  'view_bookings_prompt_desc': 'Mee nsuso nke njem gị ma jikwaa ntinye akwụkwọ gị ngwa ngwa.',
   'forgot_password_prompt': 'Tinye email gị, anyị ga-ezitere gị njikọ iji tọgharia okwuntụghe gị.',
   'continue_as_guest': 'Gaa Dịka Ọbịa',
   'reset_email_sent': 'Ezigara njikọ ntọgharia!',
