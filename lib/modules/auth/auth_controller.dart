@@ -49,11 +49,6 @@ class AuthController extends GetxController {
   @override
   void onClose() {
     _otpTimer?.cancel();
-    nameCtrl.dispose();
-    emailCtrl.dispose();
-    passwordCtrl.dispose();
-    confirmPasswordCtrl.dispose();
-    otpCtrl.dispose();
     super.onClose();
   }
 

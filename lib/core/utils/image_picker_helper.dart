@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 /// Reusable utility helper for picking images using [image_picker].
@@ -63,6 +64,11 @@ class ImagePickerHelper {
       return mockPickImage!(source: source);
     }
 
+    final bool hasPermission = await _requestImageSourcePermission(source);
+    if (!hasPermission) {
+      return null;
+    }
+
     try {
       final XFile? file = await _picker.pickImage(
         source: source,
@@ -76,6 +82,59 @@ class ImagePickerHelper {
       SnackbarHelper.showError('failed_to_pick_image'.tr);
       return null;
     }
+  }
+
+  static Future<bool> _requestImageSourcePermission(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      final status = await Permission.camera.request();
+      if (status.isGranted) return true;
+      if (status.isPermanentlyDenied) {
+        _showPermissionDeniedDialog(
+          title: 'camera_permission_title'.tr,
+          message: 'camera_permission_message'.tr,
+        );
+      } else {
+        SnackbarHelper.showError('camera_permission_denied'.tr);
+      }
+      return false;
+    } else {
+      final status = await Permission.photos.request();
+      if (status.isGranted || status.isLimited) return true;
+      if (status.isPermanentlyDenied) {
+        _showPermissionDeniedDialog(
+          title: 'photos_permission_title'.tr,
+          message: 'photos_permission_message'.tr,
+        );
+      } else {
+        SnackbarHelper.showError('photos_permission_denied'.tr);
+      }
+      return false;
+    }
+  }
+
+  static void _showPermissionDeniedDialog({
+    required String title,
+    required String message,
+  }) {
+    Get.dialog(
+      AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              openAppSettings();
+            },
+            child: Text('settings'.tr),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Displays the interactive bottom sheet dialog for picking the image source.

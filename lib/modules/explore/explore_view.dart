@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../data/services/category_service.dart';
 import 'explore_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
@@ -704,13 +705,15 @@ class ExploreView extends StatelessWidget {
     return Container(
       height: 48,
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListView.builder(
+      child: Obx(() => ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: ctrl.categories.length,
         itemBuilder: (context, index) {
           final cat = ctrl.categories[index];
           final icon = categoryIcons[cat] ?? Icons.directions_car_rounded;
+          final catModel = Get.find<CategoryService>().categories.firstWhereOrNull((c) => c.name.toLowerCase() == cat.toLowerCase());
+          final imageUrl = catModel?.image;
 
           return Obx(() {
             final isSelected = ctrl.selectedCategory.value == cat;
@@ -747,11 +750,25 @@ class ExploreView extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        icon,
-                        size: 16,
-                        color: isSelected ? Colors.white : cs.onSurfaceVariant,
-                      ),
+                      if (imageUrl != null && imageUrl.isNotEmpty)
+                        Image.network(
+                          imageUrl,
+                          width: 16,
+                          height: 16,
+                          fit: BoxFit.contain,
+                          color: isSelected ? Colors.white : cs.onSurfaceVariant,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            icon,
+                            size: 16,
+                            color: isSelected ? Colors.white : cs.onSurfaceVariant,
+                          ),
+                        )
+                      else
+                        Icon(
+                          icon,
+                          size: 16,
+                          color: isSelected ? Colors.white : cs.onSurfaceVariant,
+                        ),
                       const SizedBox(width: 8),
                       Text(
                         cat,
@@ -768,7 +785,7 @@ class ExploreView extends StatelessWidget {
             );
           });
         },
-      ),
+      )),
     );
   }
 

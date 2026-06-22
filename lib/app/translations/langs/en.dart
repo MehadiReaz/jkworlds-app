@@ -306,6 +306,12 @@ const Map<String, String> en = {
   'camera': 'Camera',
   'gallery': 'Gallery',
   'failed_to_pick_image': 'Failed to pick image',
+  'camera_permission_title': 'Camera Permission',
+  'camera_permission_message': 'This app requires access to your camera to take a photo. Please enable it in Settings.',
+  'camera_permission_denied': 'Camera permission denied',
+  'photos_permission_title': 'Gallery Permission',
+  'photos_permission_message': 'This app requires access to your photo library to pick images. Please enable it in Settings.',
+  'photos_permission_denied': 'Gallery permission denied',
 
   // ── Dialogs ──────────────────────────────────────────────────
   'logout_confirm_title': 'Logout',

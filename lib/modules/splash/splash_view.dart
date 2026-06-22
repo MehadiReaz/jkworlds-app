@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'splash_controller.dart';
@@ -75,12 +76,25 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SplashController>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
 
-    // Deep colors for a premium automotive startup feel
-    final bgColors = [
-      const Color(0xFF071B10), // Deep emerald
-      const Color(0xFF030705), // Near pitch black green
-    ];
+    // Dynamic background colors matching the theme
+    final bgColors = isDark
+        ? [
+            const Color(0xFF1E1E24), // Rich dark warm grey-black
+            const Color(0xFF0C0C0E), // Near pitch black
+          ]
+        : [
+            const Color(0xFFFFF6F0), // Very light soft warm orange-white
+            const Color(0xFFEBEBEF), // Clean light grey
+          ];
+
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final subtitleColor = isDark ? Colors.white54 : const Color(0xFF636366);
+    final badgeBgStart = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final badgeBgEnd = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
 
     return Scaffold(
       body: Container(
@@ -101,85 +115,83 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Glowing Brand Circle with Monogram
+                      // Glowing Brand Circle with Monogram and Car Icon
                       Opacity(
                         opacity: _logoOpacity.value,
                         child: Transform.scale(
                           scale: _logoScale.value,
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFD4A843).withValues(alpha: 0.25 * _glowPulse.value),
-                                  blurRadius: 35 * _glowPulse.value,
-                                  spreadRadius: 2,
-                                ),
-                                BoxShadow(
-                                  color: const Color(0xFF1B6B3E).withValues(alpha: 0.3 * _glowPulse.value),
-                                  blurRadius: 60 * _glowPulse.value,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF1B6B3E),
-                                    Color(0xFF092E16),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                border: Border.all(
-                                  color: const Color(0xFFD4A843).withValues(alpha: 0.8),
-                                  width: 2,
-                                ),
-                              ),
+                          child: SizedBox(
+                            width: 150,
+                            height: 150,
+                            child: Stack(
                               alignment: Alignment.center,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Subtle spinning inner ring
-                                  Transform.rotate(
-                                    angle: _animCtrl.value * 2 * 3.14159265,
-                                    child: Container(
-                                      width: 115,
-                                      height: 115,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: const Color(0xFFD4A843).withValues(alpha: 0.15),
-                                          width: 1.5,
-                                          style: BorderStyle.solid,
+                              children: [
+                                // Rotating Speedometer Dial Ring
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: SpeedometerDialPainter(
+                                      color: primaryColor,
+                                      progress: _animCtrl.value,
+                                    ),
+                                  ),
+                                ),
+                                // Glowing background shadow
+                                Container(
+                                  width: 106,
+                                  height: 106,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: primaryColor.withValues(alpha: 0.3 * _glowPulse.value),
+                                        blurRadius: 25 * _glowPulse.value,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Inner Badge Container
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        badgeBgStart,
+                                        badgeBgEnd,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    border: Border.all(
+                                      color: primaryColor.withValues(alpha: 0.8),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.directions_car_rounded,
+                                        size: 32,
+                                        color: primaryColor,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'JKW',
+                                        style: TextStyle(
+                                          fontFamily: 'Roboto',
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w900,
+                                          color: textColor,
+                                          letterSpacing: 1.5,
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                  // Monogram JKW
-                                  const Text(
-                                    'JKW',
-                                    style: TextStyle(
-                                      fontFamily: 'Roboto',
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFFD4A843), // Gold monogram
-                                      letterSpacing: 2,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          offset: Offset(2, 2),
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -196,10 +208,10 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
                             letterSpacing: _textSpacing.value,
-                            color: Colors.white,
+                            color: textColor,
                             shadows: [
                               Shadow(
-                                color: const Color(0xFFD4A843).withValues(alpha: 0.3),
+                                color: primaryColor.withValues(alpha: isDark ? 0.3 : 0.15),
                                 offset: const Offset(0, 0),
                                 blurRadius: 8,
                               ),
@@ -213,13 +225,13 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                       Opacity(
                         opacity: _textOpacity.value,
                         child: Text(
-                          'PREMIUM MOBILITY',
+                          'PREMIUM CAR RENTALS',
                           style: TextStyle(
                             fontFamily: 'Roboto',
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                             letterSpacing: _textSpacing.value * 0.5,
-                            color: Colors.white54,
+                            color: subtitleColor,
                           ),
                         ),
                       ),
@@ -243,18 +255,18 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                       child: Container(
                         height: 2.5,
                         width: double.infinity,
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: textColor.withValues(alpha: 0.08),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: FractionallySizedBox(
                             widthFactor: controller.progress.value,
                             child: Container(
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    Color(0xFF1B6B3E),
-                                    Color(0xFFD4A843),
-                                    Color(0xFFFFF3D6),
+                                    primaryColor.withValues(alpha: 0.7),
+                                    primaryColor,
+                                    primaryColor.withValues(alpha: 0.9),
                                   ],
                                 ),
                               ),
@@ -266,13 +278,13 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                   }),
                   const SizedBox(height: 16),
                   // Initializing indicator text
-                  const Text(
-                    'INITIALIZING SYSTEM',
+                  Text(
+                    'PREPARING YOUR RIDE...',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2.5,
-                      color: Colors.white38,
+                      color: subtitleColor,
                     ),
                   ),
                 ],
@@ -282,5 +294,47 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
         ),
       ),
     );
+  }
+}
+
+class SpeedometerDialPainter extends CustomPainter {
+  final Color color;
+  final double progress;
+
+  SpeedometerDialPainter({required this.color, required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    const tickCount = 24;
+    for (int i = 0; i < tickCount; i++) {
+      final angle = (i * 2 * math.pi / tickCount) + (progress * 2 * math.pi);
+      final isAccent = i % 4 == 0;
+      final tickLength = isAccent ? 8.0 : 4.0;
+
+      final start = Offset(
+        center.dx + (radius - tickLength) * math.cos(angle),
+        center.dy + (radius - tickLength) * math.sin(angle),
+      );
+      final end = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      paint.color = isAccent ? color : color.withOpacity(0.3);
+      paint.strokeWidth = isAccent ? 2.5 : 1.5;
+      canvas.drawLine(start, end, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant SpeedometerDialPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
   }
 }

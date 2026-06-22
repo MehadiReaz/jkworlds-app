@@ -1690,43 +1690,52 @@ class HomeView extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader(
-            'categories'.tr,
-            () => ctrl.navigateToExplore(),
-            theme,
-            cs,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildSectionHeader(
+              'categories'.tr,
+              () => ctrl.navigateToExplore(),
+              theme,
+              cs,
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 80,
+            height: 48,
             child: Obx(() {
               if (ctrl.isLoadingCategories.value) {
                 return _buildCategoryShimmer(theme, cs);
               }
               return ListView.separated(
                 scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: ctrl.categories.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   final category = ctrl.categories[index];
                   final icon = getCategoryIcon(category);
+                  final catModel = ctrl.apiCategories.firstWhereOrNull((c) => c.name == category);
+                  final imageUrl = catModel?.image;
+
                   return Obx(() {
                     final isSelected = ctrl.selectedCategory.value == category;
                     return GestureDetector(
                       onTap: () => ctrl.selectCategory(category),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: 72,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: isSelected
                               ? cs.primary
                               : (theme.brightness == Brightness.light
                                   ? Colors.white
                                   : const Color(0xFF1A1C22)),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
                                 ? cs.primary
@@ -1736,31 +1745,50 @@ class HomeView extends StatelessWidget {
                               ? [
                                   BoxShadow(
                                     color: cs.primary.withValues(alpha: 0.25),
-                                    blurRadius: 10,
+                                    blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
                                 ]
                               : null,
                         ),
-                        child: Column(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              icon,
-                              size: 26,
-                              color: isSelected
-                                  ? cs.onPrimary
-                                  : cs.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              category,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                            if (imageUrl != null && imageUrl.isNotEmpty)
+                              Image.network(
+                                imageUrl,
+                                width: 20,
+                                height: 20,
+                                fit: BoxFit.contain,
+                                color: isSelected
+                                    ? cs.onPrimary
+                                    : cs.primary,
+                                errorBuilder: (context, error, stackTrace) => Icon(
+                                  icon,
+                                  size: 20,
+                                  color: isSelected
+                                      ? cs.onPrimary
+                                      : cs.onSurfaceVariant,
+                                ),
+                              )
+                            else
+                              Icon(
+                                icon,
+                                size: 20,
                                 color: isSelected
                                     ? cs.onPrimary
                                     : cs.onSurfaceVariant,
+                              ),
+                            const SizedBox(width: 8),
+                            Text(
+                              category,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? cs.onPrimary
+                                    : cs.onSurface,
                               ),
                             ),
                           ],
@@ -1787,36 +1815,38 @@ class HomeView extends StatelessWidget {
 
     return ListView.separated(
       scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: 5,
-      separatorBuilder: (_, _) => const SizedBox(width: 12),
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
           child: Container(
-            width: 72,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 48,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: cs.outlineVariant.withValues(alpha: 0.4),
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 26,
-                  height: 26,
+                  width: 20,
+                  height: 20,
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(width: 8),
                 Container(
-                  width: 42,
-                  height: 10,
+                  width: 50,
+                  height: 12,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(4),

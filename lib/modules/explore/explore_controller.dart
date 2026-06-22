@@ -40,7 +40,7 @@ class ExploreController extends GetxController {
 
   // ── Filter Lists ────────────────────────────────────────────────
   final serviceTypes = const ['All', 'Self-Drive', 'Chauffeur'];
-  final categories = const ['All', 'Sedan', 'SUV', 'Luxury', 'Van'];
+  final categories = <String>[].obs;
   final transmissions = const ['All', 'Automatic', 'Manual'];
   final fuelTypes = const ['All', 'Petrol', 'Diesel', 'Hybrid', 'Electric'];
   final sortTypes = const ['Top Rated', 'Price: Low to High', 'Price: High to Low'];
@@ -50,6 +50,12 @@ class ExploreController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Populate categories dynamically from CategoryService
+    categories.assignAll(['All', ..._categoryService.categories.map((c) => c.name)]);
+    ever(_categoryService.categories, (catsList) {
+      categories.assignAll(['All', ...catsList.map((c) => c.name)]);
+    });
 
     // Debounce location search queries to avoid hitting API too frequently
     debounce(pickupLocation, (val) => _fetchPickupSuggestions(val), time: const Duration(milliseconds: 500));

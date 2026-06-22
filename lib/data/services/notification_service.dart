@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 
@@ -93,13 +94,16 @@ class NotificationService extends GetxService {
   /// Returns `true` if granted.
   Future<bool> requestPermission() async {
     try {
-      final settings = await FirebaseMessaging.instance.requestPermission(
+      final status = await Permission.notification.request();
+      final granted = status.isGranted || status.isLimited;
+
+      // Also trigger Firebase messaging permission request to align settings
+      await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
-      final granted = settings.authorizationStatus == AuthorizationStatus.authorized ||
-                      settings.authorizationStatus == AuthorizationStatus.provisional;
+
       permissionStatus.value = granted ? 'granted' : 'denied';
       return granted;
     } catch (_) {
