@@ -24,4 +24,9 @@ abstract class AppRoutes {
   static const terms           = '/terms';
   static const privacy         = '/privacy';
   static const helpSupport     = '/help-support';
+
+  // ── Support Tickets ──────────────────────────────────────────
+  static const supportTickets       = '/support-tickets';
+  static const createSupportTicket = '/support-tickets/create';
+  static const supportTicketChat   = '/support-tickets/chat';
 }

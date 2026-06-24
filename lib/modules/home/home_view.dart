@@ -412,7 +412,7 @@ class HomeView extends StatelessWidget {
                               hint: 'Enter pick-up location',
                               icon: Icons.location_on_rounded,
                               onChanged: (val) {
-                                exploreCtrl.pickupLocation.value = val;
+                                exploreCtrl.updatePickupLocation(val);
                               },
                               isLoading: exploreCtrl.isLoadingPickup.value,
                               cs: cs,
@@ -466,7 +466,7 @@ class HomeView extends StatelessWidget {
                                     hint: 'Enter drop-off location',
                                     icon: Icons.location_on_rounded,
                                     onChanged: (val) {
-                                      exploreCtrl.dropoffLocation.value = val;
+                                      exploreCtrl.updateDropoffLocation(val);
                                     },
                                     isLoading: exploreCtrl.isLoadingDropoff.value,
                                     cs: cs,
@@ -540,7 +540,7 @@ class HomeView extends StatelessWidget {
                               hint: 'Enter pickup location',
                               icon: Icons.flight_takeoff_rounded,
                               onChanged: (val) {
-                                exploreCtrl.pickupLocation.value = val;
+                                exploreCtrl.updatePickupLocation(val);
                               },
                               isLoading: exploreCtrl.isLoadingPickup.value,
                               cs: cs,
@@ -561,7 +561,7 @@ class HomeView extends StatelessWidget {
                               hint: 'Enter destination',
                               icon: Icons.flight_land_rounded,
                               onChanged: (val) {
-                                exploreCtrl.dropoffLocation.value = val;
+                                exploreCtrl.updateDropoffLocation(val);
                               },
                               isLoading: exploreCtrl.isLoadingDropoff.value,
                               cs: cs,

@@ -6,6 +6,7 @@ import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
+import 'package:jkworlds/data/models/location_coverage_model.dart';
 
 class LocationService extends GetxService {
   ApiProvider get _api => Get.find<ApiProvider>();
@@ -83,6 +84,48 @@ class LocationService extends GetxService {
       rethrow;
     } catch (e, st) {
       logger.e('[LocationService] fetchLocationDetails error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Validate that a coordinate falls within an active service area coverage zone.
+  /// POST /api/location/check-coverage
+  Future<LocationCoverageModel> checkCoverage({
+    required double lat,
+    required double lng,
+    required String serviceType, // self_drive, chauffeur, airport_transfer
+  }) async {
+    try {
+      final response = await _api.post(
+        ApiConstants.locationCheckCoverage,
+        data: {
+          'lat': lat,
+          'lng': lng,
+          'service_type': serviceType,
+        },
+      );
+
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid coverage check response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to check location coverage';
+        throw ServerException(msg);
+      }
+
+      final data = body['data'];
+      if (data == null || data is! Map<String, dynamic>) {
+        throw const ServerException('Response missing or invalid "data" node');
+      }
+
+      return LocationCoverageModel.fromJson(data);
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[LocationService] checkCoverage error', error: e, stackTrace: st);
       throw UnknownException(e.toString());
     }
   }

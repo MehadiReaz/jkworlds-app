@@ -9,6 +9,7 @@ import 'package:jkworlds/data/services/network_service.dart';
 import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
+import 'package:jkworlds/data/services/support_ticket_service.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/services/app_data_service.dart';
 
@@ -28,5 +29,6 @@ class InitialBinding extends Bindings {
     Get.put(CategoryService(), permanent: true);
     Get.put(BookingService(), permanent: true);
     Get.put(LocationService(), permanent: true);
+    Get.put(SupportTicketService(), permanent: true);
   }
 }

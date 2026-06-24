@@ -904,7 +904,7 @@ class ExploreView extends StatelessWidget {
                       TextField(
                         controller: ctrl.pickupLocationCtrl,
                         onChanged: (val) {
-                          ctrl.pickupLocation.value = val;
+                          ctrl.updatePickupLocation(val);
                         },
                         decoration: InputDecoration(
                           prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
@@ -988,7 +988,7 @@ class ExploreView extends StatelessWidget {
                                   TextField(
                                     controller: ctrl.dropoffLocationCtrl,
                                     onChanged: (val) {
-                                      ctrl.dropoffLocation.value = val;
+                                      ctrl.updateDropoffLocation(val);
                                     },
                                     decoration: InputDecoration(
                                       prefixIcon: Icon(Icons.location_off_rounded, color: cs.primary),

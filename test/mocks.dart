@@ -5,6 +5,7 @@ import 'package:jkworlds/data/models/category_model.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
+import 'package:jkworlds/data/models/location_coverage_model.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
 
@@ -228,5 +229,14 @@ class MockLocationService extends LocationService {
         .where((p) => p.description.toLowerCase().contains(query.toLowerCase()))
         .take(limit ?? 5)
         .toList();
+  }
+
+  @override
+  Future<LocationCoverageModel> checkCoverage({
+    required double lat,
+    required double lng,
+    required String serviceType,
+  }) async {
+    return const LocationCoverageModel(covered: true);
   }
 }

@@ -35,6 +35,16 @@ class ApiConstants {
   // ── Location Endpoints ───────────────────────────────────────
   static const String locationSearch = '/api/location/search';
   static const String locationDetails = '/api/location/details';
+  static const String locationCheckCoverage = '/api/location/check-coverage';
+
+  // ── Support Tickets Endpoints ────────────────────────────────
+  static const String supportTickets = '/api/support-tickets';
+  static const String supportTicketsUnreadSummary = '/api/support-tickets/unread-summary';
+  static const String supportTicketsSync = '/api/support-tickets/sync';
+  static String supportTicketDetails(int ticketId) => '/api/support-tickets/$ticketId';
+  static String supportTicketMessages(int ticketId) => '/api/support-tickets/$ticketId/messages';
+  static String supportTicketSendMessage(int ticketId) => '/api/support-tickets/$ticketId/messages';
+  static String supportTicketMarkAsRead(int ticketId) => '/api/support-tickets/$ticketId/read';
 
   // ── App Data Endpoint ────────────────────────────────────────
   static const String appData = '/api/app-data';

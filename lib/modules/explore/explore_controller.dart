@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
@@ -18,6 +19,10 @@ class ExploreController extends GetxController {
   // Controllers for text inputs
   final pickupLocationCtrl = TextEditingController();
   final dropoffLocationCtrl = TextEditingController();
+
+  // Timers for search debouncing
+  Timer? _pickupDebounceTimer;
+  Timer? _dropoffDebounceTimer;
 
   // ── Location Autocomplete States ──────────────────────────────
   final pickupSuggestions = <LocationPrediction>[].obs;
@@ -69,9 +74,7 @@ class ExploreController extends GetxController {
       _categoryService.fetchCategories();
     }
 
-    // Debounce location search queries to avoid hitting API too frequently
-    debounce(pickupLocation, (val) => _fetchPickupSuggestions(val), time: const Duration(milliseconds: 500));
-    debounce(dropoffLocation, (val) => _fetchDropoffSuggestions(val), time: const Duration(milliseconds: 500));
+
 
     // Scroll listener for pagination
     scrollController.addListener(() {
@@ -91,6 +94,8 @@ class ExploreController extends GetxController {
 
   @override
   void onClose() {
+    _pickupDebounceTimer?.cancel();
+    _dropoffDebounceTimer?.cancel();
     pickupLocationCtrl.dispose();
     dropoffLocationCtrl.dispose();
     scrollController.dispose();
@@ -325,6 +330,22 @@ class ExploreController extends GetxController {
     } finally {
       isLoadingDropoff.value = false;
     }
+  }
+
+  void updatePickupLocation(String val) {
+    pickupLocation.value = val;
+    _pickupDebounceTimer?.cancel();
+    _pickupDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _fetchPickupSuggestions(val);
+    });
+  }
+
+  void updateDropoffLocation(String val) {
+    dropoffLocation.value = val;
+    _dropoffDebounceTimer?.cancel();
+    _dropoffDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _fetchDropoffSuggestions(val);
+    });
   }
 
   void selectPickupSuggestion(LocationPrediction suggestion) {

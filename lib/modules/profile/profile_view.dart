@@ -81,6 +81,19 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 8),
           _buildMenuCard(context, [
             _MenuItem(
+              icon: Icons.chat_bubble_outline_rounded,
+              iconBg: cs.tertiaryContainer,
+              iconColor: cs.onTertiaryContainer,
+              title: 'Support Messages',
+              onTap: () {
+                if (auth.isLoggedIn.value) {
+                  Get.toNamed(AppRoutes.supportTickets);
+                } else {
+                  Get.toNamed(AppRoutes.login);
+                }
+              },
+            ),
+            _MenuItem(
               icon: Icons.help_outline_rounded,
               iconBg: cs.secondaryContainer,
               iconColor: cs.onSecondaryContainer,

@@ -26,6 +26,10 @@ import 'package:jkworlds/modules/static_pages/about_us_view.dart';
 import 'package:jkworlds/modules/static_pages/terms_conditions_view.dart';
 import 'package:jkworlds/modules/static_pages/privacy_policy_view.dart';
 import 'package:jkworlds/modules/static_pages/help_support_view.dart';
+import 'package:jkworlds/modules/support_tickets/support_tickets_list_view.dart';
+import 'package:jkworlds/modules/support_tickets/create_support_ticket_view.dart';
+import 'package:jkworlds/modules/support_tickets/support_ticket_chat_view.dart';
+import 'package:jkworlds/modules/support_tickets/support_tickets_binding.dart';
 
 import 'app_routes.dart';
 
@@ -115,6 +119,21 @@ class AppPages {
     GetPage(
       name: AppRoutes.helpSupport,
       page: () => const HelpSupportView(),
+    ),
+    GetPage(
+      name: AppRoutes.supportTickets,
+      page: () => const SupportTicketsListView(),
+      binding: SupportTicketsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.createSupportTicket,
+      page: () => const CreateSupportTicketView(),
+      binding: SupportTicketsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.supportTicketChat,
+      page: () => const SupportTicketChatView(),
+      binding: SupportTicketsBinding(),
     ),
   ];
 }

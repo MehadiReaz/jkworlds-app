@@ -38,6 +38,10 @@ class SnackbarHelper {
     required Color color,
     required IconData icon,
   }) {
+    if (Get.key.currentState == null) {
+      debugPrint('[SnackbarHelper] $title: $message');
+      return;
+    }
     Get.snackbar(
       '',
       '',

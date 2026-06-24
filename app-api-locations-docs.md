@@ -171,6 +171,96 @@ If the external geocoding API provider (e.g., Nominatim, Google Maps, Mapbox) is
   }
 }
 ```
+---
+
+### 3. Check Location Coverage
+Validate that a specific coordinate (latitude/longitude) falls within an active service area coverage zone for a given service type. This is typically used by client applications to verify address feasibility before booking creation.
+
+* **URL:** `/api/location/check-coverage`
+* **Method:** `POST`
+* **Headers:**
+  * `Accept: application/json`
+  * `Content-Type: application/json`
+
+#### Request Body Parameters
+| Parameter | Type | Required | Description | Constraints / Examples |
+| :--- | :--- | :--- | :--- | :--- |
+| `lat` | float | Yes | Latitude coordinate of the location. | Must be between `-90` and `90`. |
+| `lng` | float | Yes | Longitude coordinate of the location. | Must be between `-180` and `180`. |
+| `service_type` | string | Yes | The service type to verify coverage for. | Must be one of: `self_drive`, `chauffeur`, `airport_transfer`. |
+
+#### Example Request
+```http
+POST /api/location/check-coverage HTTP/1.1
+Host: api.jkworlds.com
+Content-Type: application/json
+Accept: application/json
+
+{
+  "lat": 25.1973406,
+  "lng": 55.2796101,
+  "service_type": "self_drive"
+}
+```
+
+#### Response Format: Covered (200 OK)
+When the location lies within an active coverage zone:
+```json
+{
+  "status": true,
+  "message": "Location is covered.",
+  "data": {
+    "covered": true,
+    "zone": {
+      "id": 5,
+      "name": "Dubai Downtown Area",
+      "type": "city"
+    }
+  }
+}
+```
+
+#### Response Format: Outside Service Area (200 OK)
+When the platform has active coverage restrictions configured, but the coordinate falls outside all active zones:
+```json
+{
+  "status": true,
+  "message": "Location is outside our service area.",
+  "data": {
+    "covered": false
+  }
+}
+```
+
+#### Response Format: No Zones Configured (200 OK)
+If no active coverage zones have been defined by administrators for the requested service type, the API automatically permits bookings globally (returns covered: true with a null zone):
+```json
+{
+  "status": true,
+  "message": "No coverage restrictions configured.",
+  "data": {
+    "covered": true,
+    "zone": null
+  }
+}
+```
+
+#### Validation Error (422 Unprocessable Content)
+If any of the parameters are missing or out of bounds:
+```json
+{
+  "status": false,
+  "message": "Validation failed",
+  "data": {
+    "lat": [
+      "The lat field must be between -90 and 90."
+    ],
+    "service_type": [
+      "The selected service type is invalid."
+    ]
+  }
+}
+```
 
 ---
 
