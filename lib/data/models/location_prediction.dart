@@ -12,6 +12,7 @@ class LocationPrediction {
     final String idValue = (json['place_id'] ?? json['id'] ?? json['key'] ?? '').toString();
     
     final String descValue = (json['description'] ?? 
+                              json['address'] ??
                               json['place_name'] ?? 
                               json['formatted_address'] ?? 
                               json['name'] ?? 

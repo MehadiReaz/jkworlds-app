@@ -169,26 +169,12 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                                       width: 2,
                                     ),
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.directions_car_rounded,
-                                        size: 32,
-                                        color: primaryColor,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'JKW',
-                                        style: TextStyle(
-                                          fontFamily: 'Roboto',
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w900,
-                                          color: textColor,
-                                          letterSpacing: 1.5,
-                                        ),
-                                      ),
-                                    ],
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Image.asset(
+                                      'assets/pictures/logo.png',
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
                                 ),
                               ],

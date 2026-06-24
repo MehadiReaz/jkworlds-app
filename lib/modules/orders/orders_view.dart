@@ -235,15 +235,25 @@ class OrdersView extends StatelessWidget {
                                             child: ClipRRect(
                                               borderRadius: BorderRadius.circular(8),
                                               child: (booking.vehicle?.images.isNotEmpty ?? false)
-                                                  ? Image.asset(
-                                                      booking.vehicle!.images[0],
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => Icon(
-                                                        Icons.directions_car_rounded,
-                                                        size: 20,
-                                                        color: cs.primary,
-                                                      ),
-                                                    )
+                                                  ? (booking.vehicle!.images[0].startsWith('http://') || booking.vehicle!.images[0].startsWith('https://'))
+                                                      ? Image.network(
+                                                          booking.vehicle!.images[0],
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (context, error, stackTrace) => Icon(
+                                                            Icons.directions_car_rounded,
+                                                            size: 20,
+                                                            color: cs.primary,
+                                                          ),
+                                                        )
+                                                      : Image.asset(
+                                                          booking.vehicle!.images[0],
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (context, error, stackTrace) => Icon(
+                                                            Icons.directions_car_rounded,
+                                                            size: 20,
+                                                            color: cs.primary,
+                                                          ),
+                                                        )
                                                   : Icon(
                                                       Icons.directions_car_rounded,
                                                       size: 20,

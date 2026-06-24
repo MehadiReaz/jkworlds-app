@@ -46,8 +46,13 @@ class BookingModel {
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     BookingStatus _parseStatus(dynamic v) {
-      final s = v?.toString().toLowerCase() ?? '';
-      if (s == 'active') return BookingStatus.active;
+      String s = '';
+      if (v is Map<String, dynamic>) {
+        s = v['value']?.toString().toLowerCase() ?? '';
+      } else {
+        s = v?.toString().toLowerCase() ?? '';
+      }
+      if (s == 'active' || s == 'ongoing') return BookingStatus.active;
       if (s == 'upcoming' || s == 'confirmed' || s == 'pending') return BookingStatus.upcoming;
       if (s == 'completed' || s == 'past') return BookingStatus.past;
       if (s == 'cancelled' || s == 'canceled') return BookingStatus.cancelled;
@@ -55,7 +60,12 @@ class BookingModel {
     }
 
     RentalType _parseRentalType(dynamic v) {
-      final s = v?.toString().toLowerCase() ?? '';
+      String s = '';
+      if (v is Map<String, dynamic>) {
+        s = v['value']?.toString().toLowerCase() ?? '';
+      } else {
+        s = v?.toString().toLowerCase() ?? '';
+      }
       return s == 'chauffeur' ? RentalType.chauffeur : RentalType.selfDrive;
     }
 
@@ -76,24 +86,31 @@ class BookingModel {
         ? VehicleModel.fromJson(vehicleData)
         : null;
 
+    final pickupMap = json['pickup'] is Map<String, dynamic> ? json['pickup'] as Map<String, dynamic> : null;
+    final dropoffMap = json['dropoff'] is Map<String, dynamic> ? json['dropoff'] as Map<String, dynamic> : null;
+    final pricingMap = json['pricing'] is Map<String, dynamic> ? json['pricing'] as Map<String, dynamic> : null;
+    final paymentMap = json['payment'] is Map<String, dynamic> ? json['payment'] as Map<String, dynamic> : null;
+
+    final subtotal = _parseDouble(pricingMap?['base_amount'] ?? json['subtotal'] ?? json['sub_total']);
+
     return BookingModel(
       id: (json['id'] ?? '').toString(),
       vehicle: vehicle,
       vehicleId: json['vehicle_id'] is int
           ? json['vehicle_id'] as int
-          : int.tryParse(json['vehicle_id']?.toString() ?? ''),
-      bookingNumber: json['booking_number'] as String?,
-      pickupDate: _parseDate(json['pickup_date'] ?? json['start_date']),
-      returnDate: _parseDate(json['return_date'] ?? json['end_date']),
-      pickupLocation: json['pickup_location'] as String? ?? '',
+          : (int.tryParse(json['vehicle_id']?.toString() ?? '') ?? int.tryParse(vehicle?.id ?? '')),
+      bookingNumber: (json['booking_code'] ?? json['booking_number']) as String?,
+      pickupDate: _parseDate(pickupMap?['datetime'] ?? json['pickup_date'] ?? json['start_date']),
+      returnDate: _parseDate(dropoffMap?['datetime'] ?? json['return_date'] ?? json['end_date']),
+      pickupLocation: (pickupMap?['address'] ?? json['pickup_location'] ?? '').toString(),
       status: _parseStatus(json['status']),
       rentalType: _parseRentalType(json['rental_type'] ?? json['service_type']),
-      subtotal: _parseDouble(json['subtotal'] ?? json['sub_total']),
-      serviceFee: _parseDouble(json['service_fee']),
-      securityDeposit: _parseDouble(json['security_deposit']),
-      totalPrice: _parseDouble(json['total'] ?? json['total_price'] ?? json['amount']),
+      subtotal: subtotal,
+      serviceFee: _parseDouble(json['service_fee'] ?? (subtotal * 0.05)),
+      securityDeposit: _parseDouble(pricingMap?['deposit_amount'] ?? json['security_deposit']),
+      totalPrice: _parseDouble(pricingMap?['total_amount'] ?? pricingMap?['payable_amount'] ?? json['total'] ?? json['total_price'] ?? json['amount']),
       createdAt: _parseDate(json['created_at']),
-      paymentStatus: json['payment_status'] as String?,
+      paymentStatus: (paymentMap?['status'] ?? json['payment_status'])?.toString(),
     );
   }
 

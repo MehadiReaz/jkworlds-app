@@ -38,6 +38,13 @@ class ExploreController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = ''.obs;
 
+  // ── Pagination States ───────────────────────────────────────────
+  final currentPage = 1.obs;
+  final hasNextPage = true.obs;
+  final isLoadMoreLoading = false.obs;
+  static const int _perPage = 10;
+  final scrollController = ScrollController();
+
   // ── Filter Lists ────────────────────────────────────────────────
   final serviceTypes = const ['All', 'Self-Drive', 'Chauffeur'];
   final categories = <String>[].obs;
@@ -57,9 +64,20 @@ class ExploreController extends GetxController {
       categories.assignAll(['All', ...catsList.map((c) => c.name)]);
     });
 
+    if (_categoryService.categories.isEmpty) {
+      _categoryService.fetchCategories();
+    }
+
     // Debounce location search queries to avoid hitting API too frequently
     debounce(pickupLocation, (val) => _fetchPickupSuggestions(val), time: const Duration(milliseconds: 500));
     debounce(dropoffLocation, (val) => _fetchDropoffSuggestions(val), time: const Duration(milliseconds: 500));
+
+    // Scroll listener for pagination
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >= scrollController.position.maxScrollExtent - 200) {
+        applyFilters(isLoadMore: true);
+      }
+    });
 
     applyFilters();
   }
@@ -68,6 +86,7 @@ class ExploreController extends GetxController {
   void onClose() {
     pickupLocationCtrl.dispose();
     dropoffLocationCtrl.dispose();
+    scrollController.dispose();
     super.onClose();
   }
 
@@ -94,78 +113,111 @@ class ExploreController extends GetxController {
   }
 
   /// Trigger the filtering rules — fetches from API with server-side filter
-  /// params, then applies any remaining client-side filters.
-  Future<void> applyFilters() async {
-    isLoading.value = true;
+  /// params, then applies any remaining client-side filters. Support pagination.
+  Future<void> applyFilters({bool isLoadMore = false}) async {
+    if (isLoadMore) {
+      if (isLoadMoreLoading.value || !hasNextPage.value) return;
+      isLoadMoreLoading.value = true;
+    } else {
+      isLoading.value = true;
+      currentPage.value = 1;
+      hasNextPage.value = true;
+    }
     errorMessage.value = '';
 
     try {
       final cats = _categoryService.categories;
 
-      if (cats.isNotEmpty) {
-        // Build query params for the API
-        final serviceType = selectedServiceType.value == 'All'
-            ? null
-            : selectedServiceType.value.toLowerCase().replaceAll('-', '_');
-        final transmission = selectedTransmission.value == 'All'
-            ? null
-            : selectedTransmission.value;
-        final fuelType = selectedFuelType.value == 'All'
-            ? null
-            : selectedFuelType.value;
-        final sort = _buildSortParam(selectedSortType.value);
-        final search = pickupLocation.value.isNotEmpty ? pickupLocation.value : null;
+      // Build query params for the API
+      final serviceType = selectedServiceType.value == 'All'
+          ? null
+          : selectedServiceType.value.toLowerCase().replaceAll('-', '_');
+      final transmission = selectedTransmission.value == 'All'
+          ? null
+          : selectedTransmission.value;
+      final fuelType = selectedFuelType.value == 'All'
+          ? null
+          : selectedFuelType.value;
+      final sort = _buildSortParam(selectedSortType.value);
+      final search = pickupLocation.value.isNotEmpty ? pickupLocation.value : null;
 
-        // Determine target category and fetch appropriately
-        List<VehicleModel> results;
-        if (selectedCategory.value != 'All') {
-          final targetCat = cats.firstWhereOrNull(
-            (c) => c.name.toLowerCase() == selectedCategory.value.toLowerCase(),
+      // Determine target category and fetch appropriately
+      List<VehicleModel> results;
+      if (selectedCategory.value != 'All' && cats.isNotEmpty) {
+        final targetCat = cats.firstWhereOrNull(
+          (c) => c.name.toLowerCase() == selectedCategory.value.toLowerCase(),
+        );
+        if (targetCat != null) {
+          results = await _categoryService.fetchVehiclesByCategory(
+            targetCat.id,
+            search: search,
+            serviceType: serviceType,
+            transmission: transmission,
+            fuelType: fuelType,
+            sort: sort,
+            page: currentPage.value,
+            perPage: _perPage,
           );
-          if (targetCat != null) {
-            results = await _categoryService.fetchVehiclesByCategory(
-              targetCat.id,
-              search: search,
-              serviceType: serviceType,
-              transmission: transmission,
-              fuelType: fuelType,
-              sort: sort,
-            );
-          } else {
-            // Fallback to fetch all and filter by type client-side
-            results = await _categoryService.fetchAllVehicles(
-              search: search,
-              serviceType: serviceType,
-              transmission: transmission,
-              fuelType: fuelType,
-              sort: sort,
-            );
-            results = results
-                .where((v) => v.type.toLowerCase() == selectedCategory.value.toLowerCase())
-                .toList();
-          }
         } else {
+          // Fallback to fetch all and filter by type client-side
           results = await _categoryService.fetchAllVehicles(
             search: search,
             serviceType: serviceType,
             transmission: transmission,
             fuelType: fuelType,
             sort: sort,
+            page: currentPage.value,
+            perPage: _perPage,
           );
+          results = results
+              .where((v) => v.type.toLowerCase() == selectedCategory.value.toLowerCase())
+              .toList();
         }
+      } else {
+        results = await _categoryService.fetchAllVehicles(
+          search: search,
+          serviceType: serviceType,
+          transmission: transmission,
+          fuelType: fuelType,
+          sort: sort,
+          page: currentPage.value,
+          perPage: _perPage,
+        );
+      }
 
-        // Client-side chauffeur filter
-        if (isChauffeurRequired.value || selectedServiceType.value == 'Chauffeur') {
-          results = results.where((v) => v.hasChauffeur).toList();
+      // Client-side chauffeur filter
+      if (isChauffeurRequired.value || selectedServiceType.value == 'Chauffeur') {
+        results = results.where((v) => v.hasChauffeur).toList();
+      }
+
+      if (isLoadMore) {
+        if (results.isEmpty) {
+          hasNextPage.value = false;
+        } else {
+          filteredVehicles.addAll(results);
+          currentPage.value++;
+          if (results.length < _perPage) {
+            hasNextPage.value = false;
+          }
         }
-
-        filteredVehicles.value = results;
-      }} catch (_) {
-        
-      } finally {
+      } else {
+        filteredVehicles.assignAll(results);
+        if (results.length < _perPage) {
+          hasNextPage.value = false;
+        } else {
+          currentPage.value++;
+        }
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      if (isLoadMore) {
+        isLoadMoreLoading.value = false;
+      } else {
         isLoading.value = false;
       }
     }
+  }
   
 
   String? _buildSortParam(String sortType) {

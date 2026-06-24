@@ -60,11 +60,15 @@ class CategoryService extends GetxService {
     String? fuelType,      // Petrol | Diesel | Hybrid | Electric
     String? featured,      // 1 | 0
     String? sort,          // e.g. price_asc, price_desc, rating
+    int? page,
+    int? perPage,
   }) async {
     final queryParams = <String, dynamic>{};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (category != null && category.isNotEmpty) queryParams['category'] = category;
     if (serviceType != null && serviceType.isNotEmpty) queryParams['service_type'] = serviceType;
+    if (page != null) queryParams['page'] = page;
+    if (perPage != null) queryParams['per_page'] = perPage;
     
     if (transmission != null && transmission.isNotEmpty) {
       final norm = transmission.toLowerCase();
@@ -106,7 +110,6 @@ class CategoryService extends GetxService {
     }
   }
 
-  /// Fetch vehicles across ALL categories using the global /api/vehicles endpoint.
   Future<List<VehicleModel>> fetchAllVehicles({
     String? search,
     String? serviceType,
@@ -114,11 +117,15 @@ class CategoryService extends GetxService {
     String? fuelType,
     String? featured,
     String? sort,
+    int? page,
+    int? perPage,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (serviceType != null && serviceType.isNotEmpty) queryParams['service_type'] = serviceType;
+      if (page != null) queryParams['page'] = page;
+      if (perPage != null) queryParams['per_page'] = perPage;
       
       if (transmission != null && transmission.isNotEmpty) {
         final norm = transmission.toLowerCase();

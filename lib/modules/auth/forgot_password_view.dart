@@ -29,7 +29,16 @@ class ForgotPasswordView extends GetView<AuthController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // ── Header Title ─────────────────────────────────
+                        Center(
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            height: 64,
+                            child: Image.asset(
+                              'assets/pictures/logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
                         Text(
                           'forgot_password_title'.tr,
                           style: TextStyle(

@@ -31,6 +31,8 @@ class MockCategoryService extends CategoryService {
     String? fuelType,
     String? featured,
     String? sort,
+    int? page,
+    int? perPage,
   }) async {
     var results = List<VehicleModel>.from(mockVehicles);
     
@@ -65,6 +67,15 @@ class MockCategoryService extends CategoryService {
         results.sort((a, b) => b.pricePerDay.compareTo(a.pricePerDay));
       }
     }
+
+    if (page != null && perPage != null) {
+      final startIndex = (page - 1) * perPage;
+      if (startIndex >= results.length) {
+        return [];
+      }
+      final endIndex = (startIndex + perPage).clamp(0, results.length);
+      return results.sublist(startIndex, endIndex);
+    }
     
     return results;
   }
@@ -79,6 +90,8 @@ class MockCategoryService extends CategoryService {
     String? fuelType,
     String? featured,
     String? sort,
+    int? page,
+    int? perPage,
   }) async {
     final catName = categoryId == 1
         ? 'Sedan'
@@ -119,6 +132,15 @@ class MockCategoryService extends CategoryService {
       } else if (sort == 'price_desc') {
         results.sort((a, b) => b.pricePerDay.compareTo(a.pricePerDay));
       }
+    }
+
+    if (page != null && perPage != null) {
+      final startIndex = (page - 1) * perPage;
+      if (startIndex >= results.length) {
+        return [];
+      }
+      final endIndex = (startIndex + perPage).clamp(0, results.length);
+      return results.sublist(startIndex, endIndex);
     }
     
     return results;

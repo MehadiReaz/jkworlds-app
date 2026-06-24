@@ -10,6 +10,7 @@ import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
+import 'package:jkworlds/data/services/app_data_service.dart';
 
 /// Registers global-lifetime dependencies on app start.
 class InitialBinding extends Bindings {
@@ -20,6 +21,7 @@ class InitialBinding extends Bindings {
     Get.put(NetworkService(), permanent: true);
     Get.put(AuthService(), permanent: true);
     Get.put(CurrencyService(), permanent: true);
+    Get.put(AppDataService(), permanent: true);
     Get.put(NotificationService(), permanent: true);
     Get.put(ContactService(), permanent: true);
     Get.put(PromoService(), permanent: true);

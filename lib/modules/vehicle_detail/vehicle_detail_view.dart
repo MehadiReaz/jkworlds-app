@@ -910,7 +910,7 @@ class VehicleDetailView extends StatelessWidget {
                                   labelRx: labelRx,
                                   title: addon.title,
                                   desc: addon.description,
-                                  price: '${addon.priceLabel}',
+                                  price: addon.priceLabel,
                                   theme: theme,
                                   cs: cs,
                                 ),

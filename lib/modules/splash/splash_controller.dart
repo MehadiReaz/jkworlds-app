@@ -1,15 +1,28 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
+import 'package:jkworlds/data/services/app_data_service.dart';
 
 class SplashController extends GetxController {
   final progress = 0.0.obs;
   Timer? _timer;
+  final _appDataFetched = false.obs;
 
   @override
   void onInit() {
     super.onInit();
+    _fetchConfig();
     _startLoading();
+  }
+
+  Future<void> _fetchConfig() async {
+    try {
+      await Get.find<AppDataService>().fetchAppData().timeout(const Duration(seconds: 5));
+    } catch (e) {
+      // Silently catch error to use cached data and avoid blocking startup
+    } finally {
+      _appDataFetched.value = true;
+    }
   }
 
   void _startLoading() {
@@ -20,11 +33,18 @@ class SplashController extends GetxController {
 
     _timer = Timer.periodic(interval, (timer) {
       currentStep++;
-      progress.value = (currentStep / totalSteps).clamp(0.0, 1.0);
+      final targetProgress = currentStep / totalSteps;
 
-      if (currentStep >= totalSteps) {
-        timer.cancel();
-        _navigateToNext();
+      // Pause progress at 90% if API data is not fetched yet,
+      // but cap the wait time (3x the normal duration) to prevent freezing.
+      if (targetProgress >= 0.9 && !_appDataFetched.value && currentStep < totalSteps * 3) {
+        progress.value = 0.9;
+      } else {
+        progress.value = (currentStep / totalSteps).clamp(0.0, 1.0);
+        if (progress.value >= 1.0) {
+          timer.cancel();
+          _navigateToNext();
+        }
       }
     });
   }

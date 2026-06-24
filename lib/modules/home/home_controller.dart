@@ -58,7 +58,7 @@ class HomeController extends GetxController {
       apiCategories.value = activeCats;
 
       if (activeCats.isNotEmpty) {
-        categories.value = activeCats.map((c) => c.name).toList();
+        categories.value = ['All', ...activeCats.map((c) => c.name)];
       }
         
       // Load featured vehicles across all categories (with featured: '1')

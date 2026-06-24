@@ -35,4 +35,7 @@ class ApiConstants {
   // ── Location Endpoints ───────────────────────────────────────
   static const String locationSearch = '/api/location/search';
   static const String locationDetails = '/api/location/details';
+
+  // ── App Data Endpoint ────────────────────────────────────────
+  static const String appData = '/api/app-data';
 }

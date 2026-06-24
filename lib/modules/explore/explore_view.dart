@@ -26,6 +26,7 @@ class ExploreView extends StatelessWidget {
       ),
       body: SafeArea(
         child: CustomScrollView(
+          controller: ctrl.scrollController,
           slivers: [
             SliverToBoxAdapter(
               child: Column(
@@ -39,6 +40,17 @@ class ExploreView extends StatelessWidget {
 
             // ── Vehicles List ───────────────────────────────────────────
             Obx(() {
+              if (ctrl.isLoading.value && ctrl.filteredVehicles.isEmpty) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: cs.primary,
+                    ),
+                  ),
+                );
+              }
+
               final vehicles = ctrl.filteredVehicles;
               if (vehicles.isEmpty) {
                 return SliverFillRemaining(
@@ -71,6 +83,40 @@ class ExploreView extends StatelessWidget {
                   ),
                 ),
               );
+            }),
+
+            // ── Pagination Loading / End of List Indicator ──────────────
+            Obx(() {
+              if (ctrl.isLoadMoreLoading.value) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              if (!ctrl.hasNextPage.value && ctrl.filteredVehicles.isNotEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No more vehicles to display',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
             }),
           ],
         ),
@@ -859,7 +905,6 @@ class ExploreView extends StatelessWidget {
                         controller: ctrl.pickupLocationCtrl,
                         onChanged: (val) {
                           ctrl.pickupLocation.value = val;
-                          ctrl.applyFilters();
                         },
                         decoration: InputDecoration(
                           prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
@@ -944,7 +989,6 @@ class ExploreView extends StatelessWidget {
                                     controller: ctrl.dropoffLocationCtrl,
                                     onChanged: (val) {
                                       ctrl.dropoffLocation.value = val;
-                                      ctrl.applyFilters();
                                     },
                                     decoration: InputDecoration(
                                       prefixIcon: Icon(Icons.location_off_rounded, color: cs.primary),
