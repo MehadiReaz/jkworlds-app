@@ -7,6 +7,7 @@ import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/review_model.dart';
 import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
+import 'package:jkworlds/app/currency/currency_service.dart';
 
 class VehicleDetailController extends GetxController {
   // The vehicle starts as the list-page preview; replaced with full detail after fetch.
@@ -46,6 +47,12 @@ class VehicleDetailController extends GetxController {
 
     // Fetch full details from the API
     _fetchVehicleDetail();
+
+    if (Get.isRegistered<CurrencyService>()) {
+      ever(Get.find<CurrencyService>().selectedCurrency, (_) {
+        _fetchVehicleDetail();
+      });
+    }
   }
 
   /// Fetches the full vehicle detail from the API endpoint

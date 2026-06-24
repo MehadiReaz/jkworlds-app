@@ -97,7 +97,7 @@ class CheckoutView extends StatelessWidget {
 
                       // Breakdown rows
                       _buildSummaryRow(
-                        'Base (${ctrl.totalDays}d x ${currencyService.formatPrice(ctrl.vehicle.pricePerDay)})',
+                        'Base (${ctrl.totalDays}d x ${ctrl.vehicle.dailyRateFormatted.isNotEmpty ? ctrl.vehicle.dailyRateFormatted : currencyService.formatPrice(ctrl.vehicle.pricePerDay)})',
                         currencyService.formatPrice(ctrl.initialSubtotal),
                         cs,
                       ),

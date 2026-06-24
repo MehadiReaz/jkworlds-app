@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+import 'package:jkworlds/app/currency/currency_service.dart';
 import 'protection_plan_model.dart';
 import 'rental_addon_model.dart';
 import 'unavailable_date_model.dart';
@@ -207,8 +209,22 @@ class VehicleModel {
     // Pricing: prefer pricing_details.daily_rate, pricing.daily_rate, then flat daily_rate
     final currency = pricingMap?['currency'] as String? ?? pricingDetailsMap?['currency'] as String? ?? json['currency'] as String? ?? '';
     final dailyRateFormatted = pricingMap?['daily_rate_formatted'] as String? ?? pricingDetailsMap?['daily_rate_formatted'] as String? ?? json['daily_rate_formatted'] as String? ?? '';
-    final isUsd = currency.toUpperCase() == 'USD';
-    final double scale = isUsd ? 1600.0 : 1.0;
+    double scale = 1.0;
+    if (currency.isNotEmpty) {
+      if (Get.isRegistered<CurrencyService>()) {
+        final curService = Get.find<CurrencyService>();
+        final match = curService.currencies.firstWhereOrNull((c) => c.code.toUpperCase() == currency.toUpperCase());
+        if (match != null && match.exchangeRate > 0) {
+          scale = 1.0 / match.exchangeRate;
+        } else if (currency.toUpperCase() == 'USD') {
+          scale = 1600.0;
+        }
+      } else {
+        if (currency.toUpperCase() == 'USD') {
+          scale = 1600.0;
+        }
+      }
+    }
 
     final pricePerDay = _parseDouble(
         pricingDetailsMap?['daily_rate'] ?? pricingMap?['daily_rate'] ?? json['daily_rate'] ?? json['price_per_day']) * scale;
@@ -273,7 +289,7 @@ class VehicleModel {
         ? json['security_deposit'] as Map<String, dynamic>
         : null;
     final securityDepositAmount = secDepMap != null && secDepMap['amount'] != null
-        ? _parseDouble(secDepMap['amount'])
+        ? _parseDouble(secDepMap['amount']) * scale
         : (pricingDetailsMap != null && pricingDetailsMap['security_deposit'] != null
             ? _parseDouble(pricingDetailsMap['security_deposit']) * scale
             : null);

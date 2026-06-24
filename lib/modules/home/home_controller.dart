@@ -12,6 +12,8 @@ import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
+import 'package:jkworlds/app/currency/currency_service.dart';
+
 class HomeController extends GetxController {
   final featuredVehicles = <VehicleModel>[].obs;
   final topRatedVehicles  = <VehicleModel>[].obs;
@@ -40,6 +42,12 @@ class HomeController extends GetxController {
     super.onInit();
     _loadData();
     _startPromoAutoScroll();
+
+    if (Get.isRegistered<CurrencyService>()) {
+      ever(Get.find<CurrencyService>().selectedCurrency, (_) {
+        _loadData();
+      });
+    }
   }
 
   @override

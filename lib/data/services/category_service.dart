@@ -72,7 +72,13 @@ class CategoryService extends GetxService {
     
     if (transmission != null && transmission.isNotEmpty) {
       final norm = transmission.toLowerCase();
-      queryParams['transmission'] = norm.startsWith('auto') ? 'auto' : 'manual';
+      if (norm.startsWith('auto')) {
+        queryParams['transmission'] = 'auto';
+      } else if (norm == 'manual') {
+        queryParams['transmission'] = 'manual';
+      } else {
+        queryParams['transmission'] = norm;
+      }
     }
     if (fuelType != null && fuelType.isNotEmpty) {
       queryParams['fuel_type'] = fuelType.toLowerCase();
@@ -129,7 +135,13 @@ class CategoryService extends GetxService {
       
       if (transmission != null && transmission.isNotEmpty) {
         final norm = transmission.toLowerCase();
-        queryParams['transmission'] = norm.startsWith('auto') ? 'auto' : 'manual';
+        if (norm.startsWith('auto')) {
+          queryParams['transmission'] = 'auto';
+        } else if (norm == 'manual') {
+          queryParams['transmission'] = 'manual';
+        } else {
+          queryParams['transmission'] = norm;
+        }
       }
       if (fuelType != null && fuelType.isNotEmpty) {
         queryParams['fuel_type'] = fuelType.toLowerCase();

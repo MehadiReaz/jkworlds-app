@@ -4,6 +4,7 @@ import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
+import 'package:jkworlds/app/currency/currency_service.dart';
 
 class ExploreController extends GetxController {
   // ── Search Form States ──────────────────────────────────────────
@@ -78,6 +79,12 @@ class ExploreController extends GetxController {
         applyFilters(isLoadMore: true);
       }
     });
+
+    if (Get.isRegistered<CurrencyService>()) {
+      ever(Get.find<CurrencyService>().selectedCurrency, (_) {
+        applyFilters();
+      });
+    }
 
     applyFilters();
   }

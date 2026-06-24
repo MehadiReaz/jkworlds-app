@@ -10,6 +10,8 @@ import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/network_service.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
+import 'package:jkworlds/app/currency/currency_service.dart';
+
 /// Centralized Dio HTTP client with interceptors and typed exception mapping.
 class ApiProvider {
   late final Dio dio;
@@ -48,6 +50,12 @@ class ApiProvider {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+
+          if (Get.isRegistered<CurrencyService>()) {
+            final currencyCode = Get.find<CurrencyService>().selectedCurrency.value.code;
+            options.headers['Currency'] = currencyCode;
+          }
+
           logger.i('💡 REQUEST: ${options.method} ${options.uri}');
           if (options.data != null) {
             final bodyStr = options.data is FormData

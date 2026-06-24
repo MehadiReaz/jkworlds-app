@@ -584,7 +584,9 @@ class VehicleDetailView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              currencyService.formatPrice(vehicle.pricePerDay),
+                              vehicle.dailyRateFormatted.isNotEmpty
+                                  ? vehicle.dailyRateFormatted
+                                  : currencyService.formatPrice(vehicle.pricePerDay),
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: cs.onSurface,
@@ -974,7 +976,7 @@ class VehicleDetailView extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildBreakdownRow('Rental Rate', '${currencyService.formatPrice(vehicle.pricePerDay)} x $days days', currencyService.formatPrice(ctrl.subtotal), cs),
+                            _buildBreakdownRow('Rental Rate', '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : currencyService.formatPrice(vehicle.pricePerDay)} x $days days', currencyService.formatPrice(ctrl.subtotal), cs),
                             if (ctrl.selectedProtection.value != 'Basic')
                               _buildBreakdownRow(
                                 '${ctrl.selectedProtection.value} Protection',
@@ -1514,7 +1516,9 @@ class VehicleDetailView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        currencyService.formatPrice(vehicle.pricePerDay),
+                        vehicle.dailyRateFormatted.isNotEmpty
+                            ? vehicle.dailyRateFormatted
+                            : currencyService.formatPrice(vehicle.pricePerDay),
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           color: cs.primary,

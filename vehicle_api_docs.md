@@ -15,6 +15,14 @@ All endpoints are prefix-grouped under the API namespace.
 | **GET** | `/api/vehicles/filters` | Dynamic filter options (categories, fuel types, transmissions, sorting, etc.) to populate frontend UI dropdowns. | No |
 | **GET** | `/api/categories/{id_or_slug}/vehicles` | Paginated listing of active vehicles within a specific category. | No |
 
+### Global Header Support: Currency Conversion
+The API supports dynamic currency conversion and localized price formatting across all listing and detail endpoints. Clients can send a custom header to specify the target currency:
+
+*   **Header Name**: `Currency`
+*   **Type**: `string`
+*   **Description**: Optional. The ISO 3-letter currency code (e.g., `AED`, `USD`, `EUR`).
+*   **Behavior**: If the header is provided and matches an active currency in the system, all pricing values (daily, weekly, monthly rates, security deposits, protection plans, add-ons, etc.) are dynamically converted and formatted with the corresponding currency symbol and layout rules. If not provided or invalid, the API falls back to the system's default currency.
+
 ---
 
 ## 2. API Endpoints Reference
@@ -24,18 +32,24 @@ All endpoints are prefix-grouped under the API namespace.
 
 Retrieves a paginated list of active vehicles. Supports a wide array of filters.
 
+#### **Request Headers**
+
+| Header | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `Currency` | `string` | No | Target currency for dynamic price conversion. | `AED` |
+
 #### **Query Parameters**
 
-| Parameter | Type | Default | Description | Example |
+| Parameter / Alias | Type | Default | Description | Example |
 | :--- | :--- | :--- | :--- | :--- |
 | `search` | `string` | *None* | Fuzzy search matches on `title`, `brand`, `model`, `plate_number`, and category `name`/`slug`. | `Toyota` |
-| `category_id` | `int` \| `string` | `all` | Filter by category ID or Category slug/name. | `2` or `suv` |
-| `service_type` | `string` | `all` | `self_drive` (no additional driver needed) or `chauffeur` (additional driver enabled). | `self_drive` |
-| `transmission` | `string` | `all` | Filter by gearbox type: `auto`, `manual`. | `auto` |
-| `fuel_type` | `string` | `all` | Filter by fuel type: `petrol`, `diesel`, `hybrid`, `electric`. | `hybrid` |
+| `category_id` \| `category` | `int` \| `string` | `all` | Filter by Category ID or Category slug/name. Resolves to the correct category ID. | `2` or `suv` |
+| `service_type` | `string` | `all` | Filter by chauffeur requirement: `self_drive` (driver not required) or `chauffeur` (driver required/enabled). | `self_drive` |
+| `transmission` | `string` | `all` | Gearbox type: `auto` (or `automatic`), `manual`, or `all`. | `auto` |
+| `fuel_type` | `string` | `all` | Fuel type: `petrol`, `diesel`, `hybrid`, `electric`, or `all`. | `hybrid` |
 | `featured` | `boolean` | `false` | Set to `true` or `1` to fetch only featured listings. | `1` |
-| `sort` | `string` | `top_rated` | Sorts the result. Options: `top_rated`, `price_low`, `price_high`, `newest`. | `price_low` |
-| `per_page` | `integer` | `12` | Controls size of page pagination block. | `15` |
+| `sort` | `string` | `top_rated` | Sort direction/field. Supports aliases: `price`/`price_low` (Price Low to High), `-price`/`price_high` (Price High to Low), `rating`/`-rating`/`top-rated`/`top_rated` (Top Rated), `newest` (Newest). | `price_low` |
+| `per_page` | `integer` | `12` | Controls page size limit. | `15` |
 | `page` | `integer` | `1` | Page offset number. | `2` |
 
 #### **Example Request**
@@ -43,6 +57,7 @@ Retrieves a paginated list of active vehicles. Supports a wide array of filters.
 GET /api/vehicles?search=SUV&transmission=auto&sort=price_low&per_page=2 HTTP/1.1
 Host: api.jkworlds.com
 Accept: application/json
+Currency: USD
 ```
 
 #### **Example Response**
@@ -50,6 +65,7 @@ Accept: application/json
 {
   "status": true,
   "message": "Vehicles fetched successfully.",
+  "currency": "USD",
   "filters": {
     "search": "SUV",
     "category_id": null,
@@ -155,6 +171,12 @@ Accept: application/json
 
 Retrieves complete details of an active vehicle, including specifications, long-term pricing, rental rules, availability calendars, similar recommendations, and reviews.
 
+#### **Request Headers**
+
+| Header | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `Currency` | `string` | No | Target currency for dynamic price conversion. | `AED` |
+
 #### **URI Parameters**
 
 | Parameter | Type | Required | Description | Example |
@@ -166,6 +188,7 @@ Retrieves complete details of an active vehicle, including specifications, long-
 GET /api/vehicles/toyota-rav4-2024 HTTP/1.1
 Host: api.jkworlds.com
 Accept: application/json
+Currency: USD
 ```
 
 #### **Example Response**
@@ -237,8 +260,6 @@ Accept: application/json
       "https://api.jkworlds.com/storage/uploads/cars/rav4-back.jpg"
     ],
     "pricing_details": {
-      "daily_rate": 150.00,
-      "daily_rate_formatted": "$150.00",
       "weekly_rate": 950.00,
       "weekly_rate_formatted": "$950.00",
       "monthly_rate": 3500.00,
@@ -250,8 +271,7 @@ Accept: application/json
       "extra_km_charge": 0.50,
       "extra_km_charge_formatted": "$0.50",
       "overtime_charge_per_hour": 20.00,
-      "overtime_charge_per_hour_formatted": "$20.00",
-      "currency": "USD"
+      "overtime_charge_per_hour_formatted": "$20.00"
     },
     "security_deposit": {
       "amount": 500.00,
@@ -439,10 +459,10 @@ Accept: application/json
       { "value": "chauffeur", "label": "Chauffeur" }
     ],
     "category_id": [
-      { "value": null, "label": "All" },
-      { "value": 1, "label": "Luxury Sedan" },
-      { "value": 2, "label": "Economy hatchback" },
-      { "value": 3, "label": "SUV" }
+      { "value": null, "label": "All", "image": null },
+      { "value": 1, "label": "Luxury Sedan", "image": "https://api.jkworlds.com/storage/uploads/categories/sedan.jpg" },
+      { "value": 2, "label": "Economy hatchback", "image": "https://api.jkworlds.com/storage/uploads/categories/hatchback.jpg" },
+      { "value": 3, "label": "SUV", "image": "https://api.jkworlds.com/storage/uploads/categories/suv.jpg" }
     ],
     "transmission": [
       { "value": "all", "label": "All" },
@@ -473,6 +493,12 @@ Accept: application/json
 
 A convenient helper endpoint that automatically maps queries to a specific active category, returning a paginated vehicle resource collection.
 
+#### **Request Headers**
+
+| Header | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `Currency` | `string` | No | Target currency for dynamic price conversion. | `AED` |
+
 #### **URI Parameters**
 
 | Parameter | Type | Required | Description | Example |
@@ -480,13 +506,13 @@ A convenient helper endpoint that automatically maps queries to a specific activ
 | `id_or_slug` | `string` \| `integer` | Yes | The ID of the category or its slug identifier. | `suv` or `3` |
 
 #### **Query Parameters**
-Accepts the same search, sorting, filtering, and page parameters as `GET /api/vehicles`.
+Accepts the same search, sorting, filtering, and page parameters as `GET /api/vehicles`. The response structure, including pagination format and the root-level `currency` field, matches the `GET /api/vehicles` endpoint.
 
 ---
 
 ## 3. Core Database Models & Schema Relationships
 
-The database implementation utilizes Eloquent relationships to dynamic construct the listing models:
+The database implementation utilizes Eloquent relationships to dynamically construct the listing models:
 
 ```mermaid
 classDiagram
