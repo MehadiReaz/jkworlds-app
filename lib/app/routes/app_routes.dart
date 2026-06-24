@@ -20,4 +20,8 @@ abstract class AppRoutes {
   static const editProfile     = '/edit-profile';
   static const vehicleDetail   = '/vehicle-detail';
   static const checkout        = '/checkout';
+  static const about           = '/about';
+  static const terms           = '/terms';
+  static const privacy         = '/privacy';
+  static const helpSupport     = '/help-support';
 }

@@ -6,7 +6,6 @@ import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/review_model.dart';
 import 'package:jkworlds/data/services/category_service.dart';
-import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 
 class VehicleDetailController extends GetxController {
@@ -20,6 +19,7 @@ class VehicleDetailController extends GetxController {
   final isSelfDrive = true.obs;
   final isWishlisted = false.obs;
   final currentGalleryIndex = 0.obs; // Track gallery page index
+  final scrollController = ScrollController();
 
   // ── Loading / Error States ──────────────────────────────────────
   final isLoadingDetail = true.obs;
@@ -522,8 +522,36 @@ class VehicleDetailController extends GetxController {
     Get.toNamed('/checkout', arguments: arguments);
   }
 
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
+  }
+
   /// Navigate to a similar vehicle's detail page
   void navigateToSimilarVehicle(VehicleModel similarVehicle) {
-    Get.offNamed(AppRoutes.vehicleDetail, arguments: similarVehicle);
+    vehicle = similarVehicle;
+    vehicleRx.value = similarVehicle;
+    reviews.clear();
+    similarVehicles.clear();
+    currentGalleryIndex.value = 0;
+
+    // Reset configurator states
+    pickupDate.value = null;
+    returnDate.value = null;
+    selectedProtection.value = 'Basic';
+    gpsAddon.value = false;
+    additionalDriverAddon.value = false;
+    childSeatAddon.value = false;
+
+    _fetchVehicleDetail();
+
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 }

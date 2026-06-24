@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'profile_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
-import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/core/utils/dialog_helper.dart';
 
@@ -86,9 +85,7 @@ class ProfileView extends StatelessWidget {
               iconBg: cs.secondaryContainer,
               iconColor: cs.onSecondaryContainer,
               title: 'help_support'.tr,
-              onTap: () {
-                SnackbarHelper.showInfo('coming_soon'.tr);
-              },
+              onTap: () => Get.toNamed(AppRoutes.helpSupport),
             ),
             _MenuItem(
               icon: Icons.mail_outline_rounded,
@@ -106,22 +103,25 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 8),
           _buildMenuCard(context, [
             _MenuItem(
+              icon: Icons.info_outline_rounded,
+              iconBg: cs.surfaceContainerHighest,
+              iconColor: cs.onSurfaceVariant,
+              title: 'about'.tr,
+              onTap: () => Get.toNamed(AppRoutes.about),
+            ),
+            _MenuItem(
               icon: Icons.description_outlined,
               iconBg: cs.surfaceContainerHighest,
               iconColor: cs.onSurfaceVariant,
               title: 'terms_of_service'.tr,
-              onTap: () {
-                SnackbarHelper.showInfo('coming_soon'.tr);
-              },
+              onTap: () => Get.toNamed(AppRoutes.terms),
             ),
             _MenuItem(
               icon: Icons.privacy_tip_outlined,
               iconBg: cs.surfaceContainerHighest,
               iconColor: cs.onSurfaceVariant,
               title: 'privacy_policy'.tr,
-              onTap: () {
-                SnackbarHelper.showInfo('coming_soon'.tr);
-              },
+              onTap: () => Get.toNamed(AppRoutes.privacy),
             ),
           ]),
 

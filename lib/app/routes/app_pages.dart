@@ -22,6 +22,10 @@ import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_binding.dart';
 import 'package:jkworlds/modules/booking/checkout_view.dart';
 import 'package:jkworlds/modules/booking/checkout_binding.dart';
+import 'package:jkworlds/modules/static_pages/about_us_view.dart';
+import 'package:jkworlds/modules/static_pages/terms_conditions_view.dart';
+import 'package:jkworlds/modules/static_pages/privacy_policy_view.dart';
+import 'package:jkworlds/modules/static_pages/help_support_view.dart';
 
 import 'app_routes.dart';
 
@@ -95,6 +99,22 @@ class AppPages {
       name: AppRoutes.checkout,
       page: () => const CheckoutView(),
       binding: CheckoutBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.about,
+      page: () => const AboutUsView(),
+    ),
+    GetPage(
+      name: AppRoutes.terms,
+      page: () => const TermsConditionsView(),
+    ),
+    GetPage(
+      name: AppRoutes.privacy,
+      page: () => const PrivacyPolicyView(),
+    ),
+    GetPage(
+      name: AppRoutes.helpSupport,
+      page: () => const HelpSupportView(),
     ),
   ];
 }

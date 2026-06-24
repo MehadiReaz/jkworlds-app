@@ -40,6 +40,7 @@ class VehicleDetailView extends StatelessWidget {
           final VehicleModel vehicle = ctrl.vehicleRx.value ?? ctrl.vehicle;
           final cleanCarName = '${vehicle.brand} ${vehicle.name}'.replaceAll(RegExp(r'\s*\(.*\)'), '');
           return SingleChildScrollView(
+            controller: ctrl.scrollController,
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1455,96 +1456,102 @@ class VehicleDetailView extends StatelessWidget {
     required ThemeData theme,
   }) {
     final isLight = theme.brightness == Brightness.light;
-    return GestureDetector(
-      onTap: () => ctrl.navigateToSimilarVehicle(vehicle),
-      child: Container(
-        width: 240,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isLight ? 0.03 : 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: SizedBox(
-                height: 110,
-                width: double.infinity,
-                child: vehicle.images.isNotEmpty
-                    ? Image.network(
-                        vehicle.images[0],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(Icons.directions_car_rounded, size: 40, color: cs.primary),
-                        ),
-                      )
-                    : Container(
-                        color: cs.surfaceContainerHighest,
-                        child: Icon(Icons.directions_car_rounded, size: 40, color: cs.primary),
-                      ),
-              ),
-            ),
-            // Info
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${vehicle.brand} ${vehicle.name}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                    ),
+    return Container(
+      width: 240,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isLight ? 0.03 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => ctrl.navigateToSimilarVehicle(vehicle),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: SizedBox(
+                    height: 110,
+                    width: double.infinity,
+                    child: vehicle.images.isNotEmpty
+                        ? Image.network(
+                            vehicle.images[0],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: cs.surfaceContainerHighest,
+                              child: Icon(Icons.directions_car_rounded, size: 40, color: cs.primary),
+                            ),
+                          )
+                        : Container(
+                            color: cs.surfaceContainerHighest,
+                            child: Icon(Icons.directions_car_rounded, size: 40, color: cs.primary),
+                          ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                // Info
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        vehicle.dailyRateFormatted.isNotEmpty
-                            ? vehicle.dailyRateFormatted
-                            : currencyService.formatPrice(vehicle.pricePerDay),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          color: cs.primary,
-                          fontSize: 14,
+                        '${vehicle.brand} ${vehicle.name}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                          const SizedBox(width: 2),
                           Text(
-                            vehicle.rating.toStringAsFixed(1),
+                            vehicle.dailyRateFormatted.isNotEmpty
+                                ? vehicle.dailyRateFormatted
+                                : currencyService.formatPrice(vehicle.pricePerDay),
                             style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w900,
+                              color: cs.primary,
+                              fontSize: 14,
                             ),
+                          ),
+                          Row(
+                            children: [
+                              const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                              const SizedBox(width: 2),
+                              Text(
+                                vehicle.rating.toStringAsFixed(1),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
