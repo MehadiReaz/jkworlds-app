@@ -15,6 +15,9 @@ class ExploreController extends GetxController {
   final pickupDateTime = Rxn<DateTime>();
   final dropoffDateTime = Rxn<DateTime>();
   final isChauffeurRequired = false.obs;
+  
+  final selectedPickupPrediction = Rxn<LocationPrediction>();
+  final selectedDropoffPrediction = Rxn<LocationPrediction>();
 
   // Controllers for text inputs
   final pickupLocationCtrl = TextEditingController();
@@ -112,6 +115,8 @@ class ExploreController extends GetxController {
     pickupDateTime.value = null;
     dropoffDateTime.value = null;
     isChauffeurRequired.value = false;
+    selectedPickupPrediction.value = null;
+    selectedDropoffPrediction.value = null;
 
     selectedServiceType.value = 'All';
     selectedCategory.value = 'All';
@@ -351,6 +356,7 @@ class ExploreController extends GetxController {
   void selectPickupSuggestion(LocationPrediction suggestion) {
     pickupLocationCtrl.text = suggestion.description;
     pickupLocation.value = suggestion.description;
+    selectedPickupPrediction.value = suggestion;
     pickupSuggestions.clear();
     applyFilters();
   }
@@ -358,6 +364,7 @@ class ExploreController extends GetxController {
   void selectDropoffSuggestion(LocationPrediction suggestion) {
     dropoffLocationCtrl.text = suggestion.description;
     dropoffLocation.value = suggestion.description;
+    selectedDropoffPrediction.value = suggestion;
     dropoffSuggestions.clear();
     applyFilters();
   }

@@ -354,12 +354,14 @@ class SupportTicketChatView extends StatelessWidget {
                               tag: msg.file!,
                               child: Image.network(
                                 msg.file!,
+                                width: 240,
+                                height: 160,
                                 fit: BoxFit.cover,
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
                                   return Container(
-                                    width: 150,
-                                    height: 150,
+                                    width: 240,
+                                    height: 160,
                                     color: Colors.black.withValues(alpha: 0.05),
                                     child: const Center(
                                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -367,8 +369,8 @@ class SupportTicketChatView extends StatelessWidget {
                                   );
                                 },
                                 errorBuilder: (_, __, ___) => Container(
-                                  width: 150,
-                                  height: 100,
+                                  width: 240,
+                                  height: 160,
                                   color: cs.errorContainer,
                                   child: Center(
                                     child: Icon(Icons.broken_image_rounded, color: cs.onErrorContainer),

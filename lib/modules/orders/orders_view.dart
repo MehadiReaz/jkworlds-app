@@ -215,11 +215,16 @@ class OrdersView extends StatelessWidget {
                             ),
                             itemBuilder: (context, index) {
                               final booking = bookings[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
+                              return InkWell(
+                                onTap: () => Get.toNamed(
+                                  AppRoutes.bookingDetail,
+                                  arguments: int.tryParse(booking.id) ?? 0,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
                                     // Car Column (Photo + Name)
                                     Expanded(
                                       flex: 4,
@@ -264,7 +269,7 @@ class OrdersView extends StatelessWidget {
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              '${booking.vehicle?.brand ?? ''} ${booking.vehicle?.name ?? 'Booking #${booking.id}'}'.trim().replaceAll(RegExp(r'\s*\(.*\)'), ''),
+                                              (booking.vehicle?.name ?? 'Booking #${booking.id}').trim().replaceAll(RegExp(r'\s*\(.*\)'), ''),
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
@@ -294,14 +299,14 @@ class OrdersView extends StatelessWidget {
                                     Expanded(
                                       flex: 2,
                                       child: Center(
-                                        child: _buildStatusWidget(booking.status, cs),
+                                        child: _buildStatusWidget(booking, cs),
                                       ),
                                     ),
 
                                     Expanded(
                                       flex: 2,
                                       child: Text(
-                                        currencyService.formatPrice(booking.totalPrice),
+                                        booking.totalAmountFormatted ?? currencyService.formatPrice(booking.totalPrice),
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w900,
@@ -312,8 +317,9 @@ class OrdersView extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                              );
-                            },
+                              ),
+                            );
+                          },
                           );
                         }),
                       ],
@@ -349,11 +355,43 @@ class OrdersView extends StatelessWidget {
   }
 
   // ── Colored Status Label Helper ─────────────────────────────────
-  Widget _buildStatusWidget(BookingStatus status, ColorScheme cs) {
+  Widget _buildStatusWidget(BookingModel booking, ColorScheme cs) {
+    if (booking.statusLabel.isNotEmpty) {
+      final label = booking.statusLabel.toUpperCase();
+      Color color;
+      switch (booking.statusBadgeClass.toLowerCase()) {
+        case 'success':
+          color = const Color(0xFF2E7D32); // Green
+          break;
+        case 'info':
+          color = const Color(0xFF1565C0); // Blue
+          break;
+        case 'warning':
+          color = const Color(0xFFE65100); // Dark Orange / Amber
+          break;
+        case 'danger':
+        case 'error':
+          color = const Color(0xFFC62828); // Red
+          break;
+        default:
+          color = const Color(0xFF757575); // Grey
+      }
+      return Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          color: color,
+          letterSpacing: 0.5,
+        ),
+        textAlign: TextAlign.center,
+      );
+    }
+
     String text;
     Color color;
 
-    switch (status) {
+    switch (booking.status) {
       case BookingStatus.active:
         text = 'ACTIVE';
         color = const Color(0xFF2E7D32); // Green

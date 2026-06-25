@@ -17,16 +17,14 @@ All endpoints under the `/api/support-tickets` group require Sanctum token authe
 
 ## 2. Endpoints Overview
 
+The Support Tickets API is designed using 4 core endpoints. Ticket updates, cursoring, scrolling, and status transitions are driven by request parameters on the ticket resource detail endpoint.
+
 | Method | Endpoint | Description | Auth Required |
 |:---|:---|:---|:---|
-| **GET** | `/api/support-tickets` | Retrieves all tickets belonging to the authenticated user along with polling hints and unread count totals. | Yes |
+| **GET** | `/api/support-tickets` | Retrieves all tickets belonging to the authenticated user along with total unread counts and polling frequency recommendations. | Yes |
 | **POST** | `/api/support-tickets` | Creates a new support ticket with an initial message. | Yes |
-| **GET** | `/api/support-tickets/unread-summary` | Retrieves a summary mapping of unread message counts for all active tickets. | Yes |
-| **POST** | `/api/support-tickets/sync` | Batch checks multiple tickets to see if new messages have arrived since a given message ID threshold. | Yes |
-| **GET** | `/api/support-tickets/{ticket}` | Fetches details for a single specific support ticket. | Yes |
-| **GET** | `/api/support-tickets/{ticket}/messages` | Retrieves messages for a ticket (supports light checking, older/newer cursors, and limits). | Yes |
+| **GET** | `/api/support-tickets/{ticket}` | Fetches ticket details, messages list, cursor navigation (older/newer), light-weight polling checks, and read marking. | Yes |
 | **POST** | `/api/support-tickets/{ticket}/messages` | Appends a new user message to the ticket, optionally uploading a file attachment. | Yes |
-| **POST** | `/api/support-tickets/{ticket}/read` | Marks a ticket as read for the user up to a specified message ID. | Yes |
 
 ---
 
@@ -67,12 +65,7 @@ Accept: application/json
       }
     ],
     "total_unread": 2,
-    "polling": {
-      "inbox_interval_seconds": 12,
-      "chat_light_interval_seconds": 3,
-      "chat_idle_interval_seconds": 20,
-      "messages_page_size": 20
-    }
+    "poll_seconds": 12
   }
 }
 ```
@@ -90,7 +83,7 @@ Registers a new support ticket under the user's account and logs their initial q
 | :--- | :--- | :--- | :--- | :--- |
 | `subject` | `string` | Yes | Subject of the support request. | Max 255 chars. |
 | `message` | `string` | Yes | Initial message detail describing the issue. | Max 5000 chars. |
-| `priority` | `string` | Yes | Case-insensitive ticket priority level. | Must be: `Low`, `Medium`, `High`. |
+| `priority` | `string` | Yes | Case-insensitive ticket priority level. | Must be: `High`, `Medium`, `Low`, `high`, `medium`, `low`. |
 
 #### **Example Request**
 ```http
@@ -107,7 +100,7 @@ Accept: application/json
 }
 ```
 
-#### **Example Response**
+#### **Example Response (201 Created)**
 ```json
 {
   "status": true,
@@ -130,111 +123,10 @@ Accept: application/json
 
 ---
 
-### C. Get Unread Summary
-`GET /api/support-tickets/unread-summary`
-
-Returns a quick summary mapping containing the sum total of unread support messages and specific per-ticket counts.
-
-#### **Example Request**
-```http
-GET /api/support-tickets/unread-summary HTTP/1.1
-Host: api.jkworlds.com
-Authorization: Bearer 3|abc123xyz...
-Accept: application/json
-```
-
-#### **Example Response**
-```json
-{
-  "status": true,
-  "message": "Unread summary fetched successfully.",
-  "data": {
-    "total_unread": 3,
-    "tickets": {
-      "12": {
-        "unread": 2,
-        "subject": "Unable to verify driving license",
-        "last_message_id": 145
-      },
-      "15": {
-        "unread": 1,
-        "subject": "GPS Addon query",
-        "last_message_id": 150
-      }
-    },
-    "polling": {
-      "inbox_interval_seconds": 12,
-      "chat_light_interval_seconds": 3,
-      "chat_idle_interval_seconds": 20,
-      "messages_page_size": 20
-    }
-  }
-}
-```
-
----
-
-### D. Sync Tickets Cursor
-`POST /api/support-tickets/sync`
-
-Allows a batch client poll to verify if new incoming messages exist for specific tickets beyond their last-cached message IDs.
-
-#### **Request Body Parameters**
-
-| Parameter | Type | Required | Description | Format |
-| :--- | :--- | :--- | :--- | :--- |
-| `tickets` | `array` | Yes | Map of ticket IDs to their last read message ID. | `{"<ticket_id>": <last_message_id>}` |
-
-#### **Example Request**
-```http
-POST /api/support-tickets/sync HTTP/1.1
-Host: api.jkworlds.com
-Authorization: Bearer 3|abc123xyz...
-Content-Type: application/json
-Accept: application/json
-
-{
-  "tickets": {
-    "12": 143,
-    "15": 150
-  }
-}
-```
-
-#### **Example Response**
-```json
-{
-  "status": true,
-  "message": "Support ticket sync fetched successfully.",
-  "data": {
-    "has_new": {
-      "12": true,
-      "15": false
-    },
-    "total_unread": 2,
-    "tickets": {
-      "12": {
-        "unread": 2,
-        "subject": "Unable to verify driving license",
-        "last_message_id": 145
-      }
-    },
-    "polling": {
-      "inbox_interval_seconds": 12,
-      "chat_light_interval_seconds": 3,
-      "chat_idle_interval_seconds": 20,
-      "messages_page_size": 20
-    }
-  }
-}
-```
-
----
-
-### E. Get Ticket Details
+### C. Get Ticket Details / Messages / Poll / Mark Read
 `GET /api/support-tickets/{ticket}`
 
-Fetches single resource metadata for a specific ticket.
+Fetches single resource metadata for a specific ticket. This endpoint serves multiple query modes: standard message fetching, scrolling/pagination, light-weight polling for new content, and marking messages as read.
 
 #### **URI Parameters**
 
@@ -242,46 +134,20 @@ Fetches single resource metadata for a specific ticket.
 | :--- | :--- | :--- | :--- | :--- |
 | `ticket` | `integer` | Yes | The ID of the support ticket (must be numeric). | `12` |
 
-#### **Example Response**
-```json
-{
-  "status": true,
-  "message": "Support ticket fetched successfully.",
-  "data": {
-    "id": 12,
-    "subject": "Unable to verify driving license",
-    "priority": "High",
-    "status": 1,
-    "status_label": "open",
-    "can_send_message": true,
-    "unread_count": 2,
-    "last_message_id": 145,
-    "date": "2026-06-24",
-    "created_at": "2026-06-24T05:30:17.000000Z",
-    "updated_at": "2026-06-24T06:12:45.000000Z"
-  }
-}
-```
-
----
-
-### F. Get Ticket Messages
-`GET /api/support-tickets/{ticket}/messages`
-
-Fetches chronological messages inside the ticket. Supports pagination/cursors and light polling queries.
-
 #### **Query Parameters**
 
 | Parameter | Type | Default | Description | Example |
 | :--- | :--- | :--- | :--- | :--- |
-| `light` | `boolean` | `false` | If set to `true`, returns a quick check of whether new messages exist without downloading the message list. | `true` |
-| `after_id` | `integer` | `0` | Returns only messages with an ID greater than this value (newer messages cursor). | `140` |
-| `before_id` | `integer` | `0` | Returns only messages with an ID smaller than this value (older messages cursor). | `135` |
-| `limit` | `integer` | `20` | Maximum messages to return. Max cap is `50`. | `30` |
+| `light` | `boolean` | `false` | If set to `true` (or `1`), performs a quick check returning only whether new messages exist since `after_id` without returning the message payload. | `1` |
+| `after_id` | `integer` | `0` | Returns only messages with an ID greater than this value (newer messages cursor / polling threshold). | `145` |
+| `before_id` | `integer` | `0` | Returns only messages with an ID smaller than this value (older messages cursor for scroll-up pagination). | `135` |
+| `limit` | `integer` | `20` | Maximum messages to return. Minimum is `1`, max cap is `50`. | `30` |
+| `mark_read` | `boolean` | `false` | If set to `true` (or `1`), marks all messages as read for the user up to `last_id`. | `1` |
+| `last_id` | `integer` | `0` | Specified message ID threshold when marking read. If omitted or `0` while `mark_read` is enabled, marks all messages as read up to the latest fetched message's ID. | `145` |
 
-#### **Example Request (Standard Fetch)**
+#### **Example Request (Standard Fetch - Info & Latest Messages)**
 ```http
-GET /api/support-tickets/12/messages?limit=2 HTTP/1.1
+GET /api/support-tickets/12 HTTP/1.1
 Host: api.jkworlds.com
 Authorization: Bearer 3|abc123xyz...
 Accept: application/json
@@ -291,8 +157,21 @@ Accept: application/json
 ```json
 {
   "status": true,
-  "message": "Messages fetched successfully.",
+  "message": "Ticket conversation fetched successfully.",
   "data": {
+    "ticket": {
+      "id": 12,
+      "subject": "Unable to verify driving license",
+      "priority": "High",
+      "status": 1,
+      "status_label": "open",
+      "can_send_message": true,
+      "unread_count": 0,
+      "last_message_id": 145,
+      "date": "2026-06-24",
+      "created_at": "2026-06-24T05:30:17.000000Z",
+      "updated_at": "2026-06-24T06:12:45.000000Z"
+    },
     "messages": [
       {
         "id": 144,
@@ -300,7 +179,7 @@ Accept: application/json
         "file": null,
         "from_admin": true,
         "sender_name": "Support Team",
-        "sender_avatar": "https://api.jkworlds.com/storage/profiles/admin-1.jpg",
+        "sender_avatar": "http://localhost:8000/assets/profiles/admin-1.jpg",
         "created_at": "24 Jun, 2026 06:10 AM",
         "created_at_iso": "2026-06-24T06:10:00.000000Z",
         "is_mine": false
@@ -308,10 +187,10 @@ Accept: application/json
       {
         "id": 145,
         "message": "Here is the photo.",
-        "file": "https://api.jkworlds.com/uploads/60a2b3c4d5e6.png",
+        "file": "http://localhost:8000/uploads/60a2b3c4d5e6.png",
         "from_admin": false,
         "sender_name": "Jane Smith",
-        "sender_avatar": "https://api.jkworlds.com/storage/profiles/user-4.jpg",
+        "sender_avatar": "http://localhost:8000/assets/profiles/user-4.jpg",
         "created_at": "24 Jun, 2026 06:12 AM",
         "created_at_iso": "2026-06-24T06:12:45.000000Z",
         "is_mine": true
@@ -320,16 +199,15 @@ Accept: application/json
     "first_id": 144,
     "last_id": 145,
     "has_more_older": true,
-    "ticket_status": 1,
-    "status_label": "open",
-    "can_send_message": true
+    "poll_seconds": 3
   }
 }
 ```
 
 #### **Example Request (Light Polling Check)**
+Checking for new messages since ID 145 without loading full payloads.
 ```http
-GET /api/support-tickets/12/messages?light=1&after_id=145 HTTP/1.1
+GET /api/support-tickets/12?light=1&after_id=145 HTTP/1.1
 Host: api.jkworlds.com
 Authorization: Bearer 3|abc123xyz...
 Accept: application/json
@@ -339,28 +217,59 @@ Accept: application/json
 ```json
 {
   "status": true,
-  "message": "Message check fetched successfully.",
+  "message": "Ticket check fetched successfully.",
   "data": {
-    "has_new": false,
-    "ticket_status": 1,
-    "can_send_message": true
+    "ticket": {
+      "id": 12,
+      "subject": "Unable to verify driving license",
+      "priority": "High",
+      "status": 1,
+      "status_label": "open",
+      "can_send_message": true,
+      "unread_count": 2,
+      "last_message_id": 147,
+      "date": "2026-06-24",
+      "created_at": "2026-06-24T05:30:17.000000Z",
+      "updated_at": "2026-06-24T06:12:45.000000Z"
+    },
+    "has_new": true,
+    "poll_seconds": 3
   }
+}
+```
+
+#### **Example Request (Fetch & Mark Read)**
+Fetches messages while simultaneously marking the ticket as read up to the latest message ID.
+```http
+GET /api/support-tickets/12?mark_read=1 HTTP/1.1
+Host: api.jkworlds.com
+Authorization: Bearer 3|abc123xyz...
+Accept: application/json
+```
+
+#### **Error Response Format (404 Not Found)**
+Returned if the ticket does not exist or belongs to another user.
+```json
+{
+  "status": false,
+  "message": "Support ticket not found.",
+  "data": null
 }
 ```
 
 ---
 
-### G. Send Ticket Message
+### D. Send Ticket Message
 `POST /api/support-tickets/{ticket}/messages`
 
-Appends a message to the ticket timeline. Supports multipart file uploads.
+Appends a message to the ticket timeline. Supports optional multipart file uploads (e.g. photos/screenshots).
 
 #### **Request Body Parameters (Multipart Form-Data)**
 
 | Parameter | Type | Required | Description | Constraints |
 | :--- | :--- | :--- | :--- | :--- |
 | `message` | `string` | Yes | The textual content of the message. | Max 5000 chars. |
-| `file` | `file` | No | Optional attached image. | Allowed: `jpeg`, `png`, `jpg`, `gif`, `webp`. Max `2MB`. |
+| `file` | `file` | No | Optional attached image. | Allowed formats: `jpeg`, `png`, `jpg`, `gif`, `webp`. Max size: `2MB` (`2048 KB`). |
 
 #### **Example Request**
 ```http
@@ -382,7 +291,7 @@ Content-Type: image/png
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 ```
 
-#### **Example Response**
+#### **Example Response (201 Created)**
 ```json
 {
   "status": true,
@@ -390,62 +299,13 @@ Content-Type: image/png
   "data": {
     "id": 145,
     "message": "Here is the photo.",
-    "file": "https://api.jkworlds.com/uploads/60a2b3c4d5e6.png",
+    "file": "http://localhost:8000/uploads/60a2b3c4d5e6.png",
     "from_admin": false,
     "sender_name": "Jane Smith",
-    "sender_avatar": "https://api.jkworlds.com/storage/profiles/user-4.jpg",
+    "sender_avatar": "http://localhost:8000/assets/profiles/user-4.jpg",
     "created_at": "24 Jun, 2026 06:12 AM",
     "created_at_iso": "2026-06-24T06:12:45.000000Z",
     "is_mine": true
-  }
-}
-```
-
----
-
-### H. Mark Ticket As Read
-`POST /api/support-tickets/{ticket}/read`
-
-Updates the user's read cursor/index status for a given ticket.
-
-#### **Request Body Parameters**
-
-| Parameter | Type | Required | Description | Default |
-| :--- | :--- | :--- | :--- | :--- |
-| `last_id` | `integer` | No | Target message ID to mark up to. | Optional; if not provided or 0, marks all messages as read up to the current maximum message ID. |
-
-#### **Example Request**
-```http
-POST /api/support-tickets/12/read HTTP/1.1
-Host: api.jkworlds.com
-Authorization: Bearer 3|abc123xyz...
-Content-Type: application/json
-Accept: application/json
-
-{
-  "last_id": 145
-}
-```
-
-#### **Example Response**
-```json
-{
-  "status": true,
-  "message": "Ticket marked as read.",
-  "data": {
-    "ticket": {
-      "id": 12,
-      "subject": "Unable to verify driving license",
-      "priority": "High",
-      "status": 1,
-      "status_label": "open",
-      "can_send_message": true,
-      "unread_count": 0,
-      "last_message_id": 145,
-      "date": "2026-06-24",
-      "created_at": "2026-06-24T05:30:17.000000Z",
-      "updated_at": "2026-06-24T06:12:45.000000Z"
-    }
   }
 }
 ```

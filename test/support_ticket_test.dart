@@ -27,10 +27,38 @@ class MockApiProvider extends ApiProvider {
         statusCode: 200,
       );
     }
-    // If path is parameterized like /api/support-tickets/12/messages
-    final regExp = RegExp(r'/api/support-tickets/\d+/messages');
+    // If path is parameterized like /api/support-tickets/12
+    final regExp = RegExp(r'/api/support-tickets/\d+$');
     if (regExp.hasMatch(path)) {
-      final isLight = queryParameters?['light'] == 1;
+      final isLight = queryParameters?['light'] == 1 || queryParameters?['light'] == true;
+      final isMarkRead = queryParameters?['mark_read'] == 1 || queryParameters?['mark_read'] == true;
+
+      if (isMarkRead) {
+        return Response(
+          requestOptions: RequestOptions(path: path),
+          data: {
+            'success': true,
+            'message': 'Ticket marked as read.',
+            'data': {
+              'ticket': {
+                'id': 12,
+                'subject': 'Unable to verify driving license',
+                'priority': 'High',
+                'status': 1,
+                'status_label': 'open',
+                'can_send_message': true,
+                'unread_count': 0,
+                'last_message_id': 145,
+                'date': '2026-06-24',
+                'created_at': '2026-06-24T05:30:17.000000Z',
+                'updated_at': '2026-06-24T06:12:45.000000Z',
+              }
+            }
+          },
+          statusCode: 200,
+        );
+      }
+
       if (isLight) {
         return Response(
           requestOptions: RequestOptions(path: path),
@@ -38,20 +66,46 @@ class MockApiProvider extends ApiProvider {
             'success': true,
             'message': 'Check success',
             'data': {
+              'ticket': {
+                'id': 12,
+                'subject': 'Unable to verify driving license',
+                'priority': 'High',
+                'status': 1,
+                'status_label': 'open',
+                'can_send_message': true,
+                'unread_count': 2,
+                'last_message_id': 147,
+                'date': '2026-06-24',
+                'created_at': '2026-06-24T05:30:17.000000Z',
+                'updated_at': '2026-06-24T06:12:45.000000Z',
+              },
               'has_new': true,
-              'ticket_status': 1,
-              'can_send_message': true,
+              'poll_seconds': 3,
             }
           },
           statusCode: 200,
         );
       }
+
       return Response(
         requestOptions: RequestOptions(path: path),
         data: {
           'success': true,
           'message': 'Success',
           'data': {
+            'ticket': {
+              'id': 12,
+              'subject': 'Unable to verify driving license',
+              'priority': 'High',
+              'status': 1,
+              'status_label': 'open',
+              'can_send_message': true,
+              'unread_count': 2,
+              'last_message_id': 145,
+              'date': '2026-06-24',
+              'created_at': '2026-06-24T05:30:17.000000Z',
+              'updated_at': '2026-06-24T06:12:45.000000Z',
+            },
             'messages': [
               {
                 'id': 145,
@@ -68,9 +122,6 @@ class MockApiProvider extends ApiProvider {
             'first_id': 145,
             'last_id': 145,
             'has_more_older': false,
-            'ticket_status': 1,
-            'status_label': 'open',
-            'can_send_message': true,
           }
         },
         statusCode: 200,

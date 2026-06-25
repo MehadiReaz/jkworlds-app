@@ -183,9 +183,27 @@ class CategoryService extends GetxService {
   /// Fetch a single vehicle's full details from GET /api/vehicles/{id}.
   /// Returns a [VehicleDetailResult] containing the vehicle, similar vehicles,
   /// and reviews as provided by the VehicleDetailResource on the backend.
-  Future<VehicleDetailResult> fetchVehicleDetail(dynamic vehicleId) async {
+  Future<VehicleDetailResult> fetchVehicleDetail(
+    dynamic vehicleId, {
+    String? serviceType,
+    double? pickupLatitude,
+    double? pickupLongitude,
+    double? dropoffLatitude,
+    double? dropoffLongitude,
+  }) async {
     try {
-      final response = await _api.get(ApiConstants.vehicleDetail(vehicleId));
+      final queryParams = {
+        if (serviceType != null) 'service_type': serviceType,
+        if (pickupLatitude != null) 'pickup_latitude': pickupLatitude,
+        if (pickupLongitude != null) 'pickup_longitude': pickupLongitude,
+        if (dropoffLatitude != null) 'dropoff_latitude': dropoffLatitude,
+        if (dropoffLongitude != null) 'dropoff_longitude': dropoffLongitude,
+      };
+
+      final response = await _api.get(
+        ApiConstants.vehicleDetail(vehicleId),
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
       final body = response.data;
       if (body == null) {
         throw const ServerException('Empty response from server');

@@ -29,4 +29,6 @@ abstract class AppRoutes {
   static const supportTickets       = '/support-tickets';
   static const createSupportTicket = '/support-tickets/create';
   static const supportTicketChat   = '/support-tickets/chat';
+  static const paymentWebView      = '/payment-webview';
+  static const bookingDetail       = '/booking-detail';
 }

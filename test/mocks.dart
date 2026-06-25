@@ -148,7 +148,14 @@ class MockCategoryService extends CategoryService {
   }
 
   @override
-  Future<VehicleDetailResult> fetchVehicleDetail(dynamic vehicleId) async {
+  Future<VehicleDetailResult> fetchVehicleDetail(
+    dynamic vehicleId, {
+    String? serviceType,
+    double? pickupLatitude,
+    double? pickupLongitude,
+    double? dropoffLatitude,
+    double? dropoffLongitude,
+  }) async {
     final vehicle = mockVehicles.firstWhere(
       (v) => v.id.toString() == vehicleId.toString(),
       orElse: () => mockVehicles.first,
@@ -213,6 +220,14 @@ class MockBookingService extends BookingService {
   @override
   Future<List<BookingModel>> fetchBookings() async {
     return mockBookings;
+  }
+
+  @override
+  Future<BookingModel> fetchBookingDetail(int id) async {
+    return mockBookings.firstWhere(
+      (b) => b.id.contains(id.toString()) || int.tryParse(b.id) == id,
+      orElse: () => mockBookings.first,
+    );
   }
 }
 

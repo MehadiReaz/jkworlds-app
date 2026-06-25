@@ -1,6 +1,8 @@
 // lib/data/services/booking_service.dart
 
-import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get/get.dart' hide Response, FormData, MultipartFile;
+import 'package:dio/dio.dart' show FormData, MultipartFile;
 import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
@@ -72,6 +74,217 @@ class BookingService extends GetxService {
       rethrow;
     } catch (e, st) {
       logger.e('[BookingService] fetchBookingDetail error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  // ── v2 Booking & Checkout Endpoints ──────────────────────────────
+
+  /// Calculate checkout pricing details.
+  /// POST /api/v2/checkout
+  Future<Map<String, dynamic>> calculateCheckoutPricing(Map<String, dynamic> data) async {
+    try {
+      final response = await _api.post(
+        ApiConstants.checkout,
+        data: data,
+      );
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid checkout response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to calculate checkout pricing';
+        throw ServerException(msg);
+      }
+
+      final resData = body['data'];
+      if (resData == null || resData is! Map<String, dynamic>) {
+        throw const ServerException('Checkout response missing "data" node');
+      }
+
+      return resData;
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[BookingService] calculateCheckoutPricing error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Initiate a new booking.
+  /// POST /api/v2/bookings
+  Future<Map<String, dynamic>> initiateBooking(
+    Map<String, dynamic> data, {
+    String? driverLicensePath,
+  }) async {
+    try {
+      final map = Map<String, dynamic>.from(data);
+      if (driverLicensePath != null && driverLicensePath.isNotEmpty) {
+        debugPrint('[BookingService] calling MultipartFile.fromFile with path: $driverLicensePath');
+        final file = await MultipartFile.fromFile(
+          driverLicensePath,
+          filename: driverLicensePath.split('/').last,
+        );
+        debugPrint('[BookingService] MultipartFile.fromFile succeeded');
+        map['driver_license'] = file;
+      }
+
+      final formData = FormData.fromMap(map);
+
+      debugPrint('[BookingService] calling postFormData...');
+      final response = await _api.postFormData(
+        ApiConstants.bookingsV2,
+        formData,
+      );
+      debugPrint('[BookingService] postFormData response status: ${response.statusCode}');
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid bookings response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to initiate booking';
+        throw ServerException(msg);
+      }
+
+      final resData = body['data'];
+      if (resData == null || resData is! Map<String, dynamic>) {
+        throw const ServerException('Bookings response missing "data" node');
+      }
+
+      return resData;
+    } on AppException {
+      debugPrint('[BookingService] initiateBooking caught AppException');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[BookingService] initiateBooking caught other exception: $e\n$st');
+      logger.e('[BookingService] initiateBooking error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Confirm/Verify booking payment success.
+  /// POST /api/v2/payments/{gateway}/success
+  Future<BookingModel> confirmPayment(
+    String gateway, {
+    required String reference,
+    String? transactionId,
+  }) async {
+    try {
+      final response = await _api.post(
+        ApiConstants.paymentSuccess(gateway),
+        data: {
+          'reference': reference,
+          if (transactionId != null) 'transaction_id': transactionId,
+        },
+      );
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid payment success response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to confirm payment';
+        throw ServerException(msg);
+      }
+
+      final resData = body['data'];
+      if (resData == null || resData is! Map<String, dynamic>) {
+        throw const ServerException('Payment success response missing "data" node');
+      }
+
+      return BookingModel.fromJson(resData);
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[BookingService] confirmPayment error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Cancel booking payment.
+  /// POST /api/v2/payments/{gateway}/cancel
+  Future<Map<String, dynamic>> cancelPayment(
+    String gateway, {
+    required String reference,
+  }) async {
+    try {
+      final response = await _api.post(
+        ApiConstants.paymentCancel(gateway),
+        data: {
+          'reference': reference,
+        },
+      );
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid payment cancel response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to cancel payment';
+        throw ServerException(msg);
+      }
+
+      final resData = body['data'];
+      if (resData == null || resData is! Map<String, dynamic>) {
+        throw const ServerException('Payment cancel response missing "data" node');
+      }
+
+      return resData;
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[BookingService] cancelPayment error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Preview airport transfer distance and fare.
+  /// POST /api/airport-transfer/distance
+  Future<Map<String, dynamic>> fetchAirportTransferDistance({
+    required double pickupLatitude,
+    required double pickupLongitude,
+    required double dropoffLatitude,
+    required double dropoffLongitude,
+    int? vehicleId,
+  }) async {
+    try {
+      final response = await _api.post(
+        ApiConstants.airportTransferDistance,
+        data: {
+          'pickup_latitude': pickupLatitude,
+          'pickup_longitude': pickupLongitude,
+          'dropoff_latitude': dropoffLatitude,
+          'dropoff_longitude': dropoffLongitude,
+          if (vehicleId != null) 'vehicle_id': vehicleId,
+        },
+      );
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid airport transfer distance response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to calculate airport transfer distance';
+        throw ServerException(msg);
+      }
+
+      final resData = body['data'];
+      if (resData == null || resData is! Map<String, dynamic>) {
+        throw const ServerException('Airport transfer distance response missing "data" node');
+      }
+
+      return resData;
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[BookingService] fetchAirportTransferDistance error', error: e, stackTrace: st);
       throw UnknownException(e.toString());
     }
   }

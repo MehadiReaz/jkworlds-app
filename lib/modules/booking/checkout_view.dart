@@ -26,7 +26,6 @@ class CheckoutView extends StatelessWidget {
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 850;
 
-            // Define the details card content so we can place it either inside sidebar or top/bottom
             Widget buildBookingSummaryCard() {
               return Card(
                 elevation: 0,
@@ -96,36 +95,52 @@ class CheckoutView extends StatelessWidget {
                       const SizedBox(height: 20),
 
                       // Breakdown rows
-                      _buildSummaryRow(
-                        'Base (${ctrl.totalDays}d x ${ctrl.vehicle.dailyRateFormatted.isNotEmpty ? ctrl.vehicle.dailyRateFormatted : currencyService.formatPrice(ctrl.vehicle.pricePerDay)})',
-                        currencyService.formatPrice(ctrl.initialSubtotal),
-                        cs,
-                      ),
-                      _buildSummaryRow('Insurance', ctrl.selectedProtection, cs),
+                      Obx(() => _buildSummaryRow(
+                            'Base (${ctrl.totalDays}d)',
+                            ctrl.calculatedSubtotalFormatted.value.isNotEmpty
+                                ? ctrl.calculatedSubtotalFormatted.value
+                                : currencyService.formatPrice(ctrl.calculatedSubtotal.value),
+                            cs,
+                          )),
+                      Obx(() => _buildSummaryRow(
+                            '${ctrl.calculatedProtectionTitle.value} Protection',
+                            ctrl.calculatedProtectionFormatted.value.isNotEmpty
+                                ? ctrl.calculatedProtectionFormatted.value
+                                : currencyService.formatPrice(ctrl.calculatedProtectionCost.value),
+                            cs,
+                          )),
                       _buildSummaryRow('Rental Type', ctrl.isSelfDrive ? 'Self Drive' : 'Chauffeur', cs),
                       _buildSummaryRow('Pickup Date', DateFormat('MMM d, yyyy').format(ctrl.pickupDate), cs),
                       _buildSummaryRow('Return Date', DateFormat('MMM d, yyyy').format(ctrl.returnDate), cs),
 
                       // Selected Add-ons
-                      if (ctrl.gpsAddon || ctrl.additionalDriverAddon || ctrl.childSeatAddon) ...[
-                        const Divider(height: 24),
-                        Text(
-                          'SELECTED ADD-ONS',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        if (ctrl.gpsAddon)
-                          _buildSummaryRow('GPS Navigation', '+${currencyService.formatPrice(5000.0 * ctrl.totalDays)}', cs, isAddon: true),
-                        if (ctrl.additionalDriverAddon)
-                          _buildSummaryRow('Additional Driver', '+${currencyService.formatPrice(8000.0 * ctrl.totalDays)}', cs, isAddon: true),
-                        if (ctrl.childSeatAddon)
-                          _buildSummaryRow('Child Seat', '+${currencyService.formatPrice(4000.0 * ctrl.totalDays)}', cs, isAddon: true),
-                      ],
+                      if (ctrl.gpsAddon || ctrl.additionalDriverAddon || ctrl.childSeatAddon)
+                        Obx(() => Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Divider(height: 24),
+                                Text(
+                                  'SELECTED ADD-ONS',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                if (ctrl.calculatedAddonsFormatted.value.isNotEmpty)
+                                  _buildSummaryRow('Add-ons Total', ctrl.calculatedAddonsFormatted.value, cs, isAddon: true)
+                                else ...[
+                                  if (ctrl.gpsAddon)
+                                    _buildSummaryRow('GPS Navigation', '+${currencyService.formatPrice(ctrl.calculatedAddonsCost.value)}', cs, isAddon: true),
+                                  if (ctrl.additionalDriverAddon)
+                                    _buildSummaryRow('Additional Driver', '+${currencyService.formatPrice(ctrl.calculatedAddonsCost.value)}', cs, isAddon: true),
+                                  if (ctrl.childSeatAddon)
+                                    _buildSummaryRow('Child Seat', '+${currencyService.formatPrice(ctrl.calculatedAddonsCost.value)}', cs, isAddon: true),
+                                ],
+                              ],
+                            )),
 
                       // Promo Code Card
                       const Divider(height: 24),
@@ -173,9 +188,23 @@ class CheckoutView extends StatelessWidget {
                           ? Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
-                                'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${currencyService.formatPrice(ctrl.discountAmount.value)}',
+                                'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : currencyService.formatPrice(ctrl.calculatedDiscount.value)}',
                                 style: TextStyle(color: Colors.green.shade600, fontSize: 12, fontWeight: FontWeight.bold),
                               ),
+                            )
+                          : const SizedBox.shrink()),
+
+                      // Dynamic Service Fee / Taxes & Security Deposit
+                      Obx(() => ctrl.calculatedServiceFee.value > 0
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: _buildSummaryRow('Taxes & Fees', ctrl.calculatedServiceFeeFormatted.value, cs),
+                            )
+                          : const SizedBox.shrink()),
+                      Obx(() => ctrl.calculatedSecurityDeposit.value > 0
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: _buildSummaryRow('Security Deposit', ctrl.calculatedSecurityDepositFormatted.value, cs),
                             )
                           : const SizedBox.shrink()),
 
@@ -202,8 +231,9 @@ class CheckoutView extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Obx(() => Text(
-
-                                      currencyService.formatPrice(ctrl.totalAmount),
+                                      ctrl.calculatedPayableTotalFormatted.value.isNotEmpty
+                                          ? ctrl.calculatedPayableTotalFormatted.value
+                                          : currencyService.formatPrice(ctrl.calculatedPayableTotal.value),
                                       style: theme.textTheme.titleLarge?.copyWith(
                                         fontWeight: FontWeight.w900,
                                         color: cs.primary,
@@ -259,39 +289,133 @@ class CheckoutView extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   // Inputs Layout
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: isWide ? 2 : 1,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: isWide ? 2.5 : 4.5,
-                    children: [
-                      // Full name input
-                      _buildFormInput(
-                        label: 'FULL NAME *',
-                        controller: ctrl.fullNameController,
-                        hint: 'Your full name',
-                        cs: cs,
-                        theme: theme,
-                      ),
-                      // Email input
-                      _buildFormInput(
-                        label: 'EMAIL *',
-                        controller: ctrl.emailController,
-                        hint: 'Your email address',
-                        cs: cs,
-                        theme: theme,
-                      ),
-                      // Phone input
-                      _buildFormInput(
-                        label: 'PHONE NUMBER *',
-                        controller: ctrl.phoneController,
-                        hint: 'Enter your phone number',
-                        cs: cs,
-                        theme: theme,
-                      ),
-                      // Driver's License file selection
+                  if (isWide) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _buildFormInput(
+                            label: 'FULL NAME *',
+                            controller: ctrl.fullNameController,
+                            hint: 'Your full name',
+                            cs: cs,
+                            theme: theme,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildFormInput(
+                            label: 'EMAIL *',
+                            controller: ctrl.emailController,
+                            hint: 'Your email address',
+                            cs: cs,
+                            theme: theme,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _buildFormInput(
+                            label: 'PHONE NUMBER *',
+                            controller: ctrl.phoneController,
+                            hint: 'Enter your phone number',
+                            cs: cs,
+                            theme: theme,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ctrl.isSelfDrive
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'DRIVER LICENSE *',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                          letterSpacing: 0.5),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          ElevatedButton(
+                                            onPressed: ctrl.chooseLicenseFile,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: cs.primary,
+                                              foregroundColor: cs.onPrimary,
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              elevation: 0,
+                                            ),
+                                            child: const Text('Choose file', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Obx(() {
+                                              final path = ctrl.selectedLicensePath.value;
+                                              final displayPath = path.isEmpty
+                                                  ? 'No file chosen'
+                                                  : path.split('/').last.split('\\').last;
+                                              return Text(
+                                                displayPath,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: path.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                                  color: path.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    _buildFormInput(
+                      label: 'FULL NAME *',
+                      controller: ctrl.fullNameController,
+                      hint: 'Your full name',
+                      cs: cs,
+                      theme: theme,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormInput(
+                      label: 'EMAIL *',
+                      controller: ctrl.emailController,
+                      hint: 'Your email address',
+                      cs: cs,
+                      theme: theme,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormInput(
+                      label: 'PHONE NUMBER *',
+                      controller: ctrl.phoneController,
+                      hint: 'Enter your phone number',
+                      cs: cs,
+                      theme: theme,
+                    ),
+                    if (ctrl.isSelfDrive) ...[
+                      const SizedBox(height: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -299,11 +423,10 @@ class CheckoutView extends StatelessWidget {
                           Text(
                             'DRIVER LICENSE *',
                             style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                              letterSpacing: 0.5,
-                            ),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                letterSpacing: 0.5),
                           ),
                           const SizedBox(height: 6),
                           Container(
@@ -350,7 +473,7 @@ class CheckoutView extends StatelessWidget {
                         ],
                       ),
                     ],
-                  ),
+                  ],
                   const SizedBox(height: 16),
 
                   // Flight number
@@ -395,43 +518,52 @@ class CheckoutView extends StatelessWidget {
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: isWide ? 3 : 1,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: isWide ? 1.6 : 3.2,
-                    children: [
-                      _buildPaymentRadio(
-                        value: 'Stripe',
-                        title: 'Stripe',
-                        subtitle: 'Credit / Debit Card',
-                        logoWidget: _buildStripeLogo(),
-                        ctrl: ctrl,
-                        theme: theme,
-                        cs: cs,
-                      ),
-                      _buildPaymentRadio(
-                        value: 'PayPal',
-                        title: 'PayPal',
-                        subtitle: 'PayPal account',
-                        logoWidget: _buildPayPalLogo(),
-                        ctrl: ctrl,
-                        theme: theme,
-                        cs: cs,
-                      ),
-                      _buildPaymentRadio(
-                        value: 'Flutterwave',
-                        title: 'Flutterwave',
-                        subtitle: 'Card, bank, or USSD',
-                        logoWidget: _buildFlutterwaveLogo(),
-                        ctrl: ctrl,
-                        theme: theme,
-                        cs: cs,
-                      ),
-                    ],
-                  ),
+                  
+                  // Dynamic Payment Gateways from API
+                  Obx(() => ctrl.paymentMethods.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.0),
+                          child: Center(
+                            child: Text(
+                              'No payment methods available for the selected currency.',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        )
+                      : GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: isWide ? 3 : 1,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: isWide ? 1.6 : 3.2,
+                          ),
+                          itemCount: ctrl.paymentMethods.length,
+                          itemBuilder: (context, index) {
+                            final method = ctrl.paymentMethods[index];
+                            final key = method['key']?.toString() ?? 'stripe';
+                            final label = method['label']?.toString() ?? 'Stripe';
+                            final subtitle = method['subtitle']?.toString() ?? '';
+                            final enabled = method['enabled'] as bool? ?? true;
+
+                            return IgnorePointer(
+                              ignoring: !enabled,
+                              child: Opacity(
+                                opacity: enabled ? 1.0 : 0.5,
+                                child: _buildPaymentRadio(
+                                  value: key,
+                                  title: label,
+                                  subtitle: subtitle,
+                                  logoWidget: _buildGatewayLogo(key),
+                                  ctrl: ctrl,
+                                  theme: theme,
+                                  cs: cs,
+                                ),
+                              ),
+                            );
+                          },
+                        )),
                   const SizedBox(height: 32),
 
                   // Confirm & Pay button
@@ -501,7 +633,6 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
-  // ── Helper to build summary row ────────────────────────────────
   Widget _buildSummaryRow(String title, String value, ColorScheme cs, {bool isAddon = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -530,7 +661,6 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
-  // ── Helper to build form inputs ────────────────────────────────
   Widget _buildFormInput({
     required String label,
     required TextEditingController controller,
@@ -570,7 +700,6 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
-  // ── Payment Card Radio widget ──────────────────────────────────
   Widget _buildPaymentRadio({
     required String value,
     required String title,
@@ -581,7 +710,7 @@ class CheckoutView extends StatelessWidget {
     required ColorScheme cs,
   }) {
     return Obx(() {
-      final isSelected = ctrl.selectedPaymentMethod.value == value;
+      final isSelected = ctrl.selectedPaymentMethod.value.toLowerCase() == value.toLowerCase();
       return InkWell(
         onTap: () => ctrl.selectedPaymentMethod.value = value,
         borderRadius: BorderRadius.circular(12),
@@ -597,7 +726,6 @@ class CheckoutView extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // radio checkmark
               Container(
                 width: 18,
                 height: 18,
@@ -647,7 +775,18 @@ class CheckoutView extends StatelessWidget {
     });
   }
 
-  // ── Representational Logos ─────────────────────────────────────
+  Widget _buildGatewayLogo(String key) {
+    switch (key.toLowerCase()) {
+      case 'stripe':
+        return _buildStripeLogo();
+      case 'paypal':
+        return _buildPayPalLogo();
+      case 'flutterwave':
+      default:
+        return _buildFlutterwaveLogo();
+    }
+  }
+
   Widget _buildStripeLogo() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -699,7 +838,7 @@ class CheckoutView extends StatelessWidget {
             child: Text(
               'P',
               style: TextStyle(
-                color: Color(0xFF003087),
+                color: const Color(0xFF003087),
                 fontWeight: FontWeight.w900,
                 fontSize: 22,
                 fontStyle: FontStyle.italic,

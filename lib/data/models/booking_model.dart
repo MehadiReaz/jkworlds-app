@@ -23,6 +23,32 @@ class BookingModel {
   final double totalPrice;
   final DateTime createdAt;
   final String? paymentStatus;
+  final String statusLabel;
+  final String statusValue;
+  final String statusBadgeClass;
+
+  // New fields for formatting and pricing detail from real API
+  final String? baseAmountFormatted;
+  final String? addonsTotalFormatted;
+  final String? protectionPlanAmountFormatted;
+  final String? discountAmountFormatted;
+  final String? depositAmountFormatted;
+  final String? totalAmountFormatted;
+  final String? payableAmountFormatted;
+  final String? currency;
+
+  // New fields for customer and driver info
+  final String? customerName;
+  final String? customerEmail;
+  final String? customerPhone;
+
+  final String? driverName;
+  final String? driverEmail;
+  final String? driverPhone;
+  final String? driverImage;
+
+  // New field for payment details
+  final String? paymentMethod;
 
   const BookingModel({
     required this.id,
@@ -40,6 +66,25 @@ class BookingModel {
     required this.totalPrice,
     required this.createdAt,
     this.paymentStatus,
+    this.statusLabel = '',
+    this.statusValue = '',
+    this.statusBadgeClass = '',
+    this.baseAmountFormatted,
+    this.addonsTotalFormatted,
+    this.protectionPlanAmountFormatted,
+    this.discountAmountFormatted,
+    this.depositAmountFormatted,
+    this.totalAmountFormatted,
+    this.payableAmountFormatted,
+    this.currency,
+    this.customerName,
+    this.customerEmail,
+    this.customerPhone,
+    this.driverName,
+    this.driverEmail,
+    this.driverPhone,
+    this.driverImage,
+    this.paymentMethod,
   });
 
   int get totalDays => returnDate.difference(pickupDate).inDays;
@@ -90,8 +135,33 @@ class BookingModel {
     final dropoffMap = json['dropoff'] is Map<String, dynamic> ? json['dropoff'] as Map<String, dynamic> : null;
     final pricingMap = json['pricing'] is Map<String, dynamic> ? json['pricing'] as Map<String, dynamic> : null;
     final paymentMap = json['payment'] is Map<String, dynamic> ? json['payment'] as Map<String, dynamic> : null;
+    final customerMap = json['customer'] is Map<String, dynamic> ? json['customer'] as Map<String, dynamic> : null;
+    final driverMap = json['driver'] is Map<String, dynamic> ? json['driver'] as Map<String, dynamic> : null;
 
     final subtotal = _parseDouble(pricingMap?['base_amount'] ?? json['subtotal'] ?? json['sub_total']);
+
+    final statusMap = json['status'] is Map<String, dynamic> ? json['status'] as Map<String, dynamic> : null;
+    final statusLabel = statusMap?['label']?.toString() ?? json['status_label']?.toString() ?? '';
+    final statusValue = statusMap?['value']?.toString() ?? json['status_value']?.toString() ?? '';
+    final statusBadgeClass = statusMap?['badge_class']?.toString() ?? json['status_badge_class']?.toString() ?? '';
+
+    final customerName = customerMap?['name']?.toString() ?? json['customer_name']?.toString();
+    final customerEmail = customerMap?['email']?.toString() ?? json['customer_email']?.toString();
+    final customerPhone = customerMap?['phone']?.toString() ?? json['customer_phone']?.toString();
+
+    final driverName = driverMap?['name']?.toString() ?? json['driver_name']?.toString();
+    final driverEmail = driverMap?['email']?.toString() ?? json['driver_email']?.toString();
+    final driverPhone = driverMap?['phone']?.toString() ?? json['driver_phone']?.toString();
+    final driverImage = driverMap?['image']?.toString() ?? json['driver_image']?.toString();
+
+    final baseAmountFormatted = pricingMap?['base_amount_formatted']?.toString();
+    final addonsTotalFormatted = pricingMap?['addons_total_formatted']?.toString();
+    final protectionPlanAmountFormatted = pricingMap?['protection_plan_amount_formatted']?.toString();
+    final discountAmountFormatted = pricingMap?['discount_amount_formatted']?.toString();
+    final depositAmountFormatted = pricingMap?['deposit_amount_formatted']?.toString();
+    final totalAmountFormatted = pricingMap?['total_amount_formatted']?.toString();
+    final payableAmountFormatted = pricingMap?['payable_amount_formatted']?.toString();
+    final currency = pricingMap?['currency']?.toString() ?? json['currency']?.toString();
 
     return BookingModel(
       id: (json['id'] ?? '').toString(),
@@ -111,6 +181,25 @@ class BookingModel {
       totalPrice: _parseDouble(pricingMap?['total_amount'] ?? pricingMap?['payable_amount'] ?? json['total'] ?? json['total_price'] ?? json['amount']),
       createdAt: _parseDate(json['created_at']),
       paymentStatus: (paymentMap?['status'] ?? json['payment_status'])?.toString(),
+      statusLabel: statusLabel,
+      statusValue: statusValue,
+      statusBadgeClass: statusBadgeClass,
+      baseAmountFormatted: baseAmountFormatted,
+      addonsTotalFormatted: addonsTotalFormatted,
+      protectionPlanAmountFormatted: protectionPlanAmountFormatted,
+      discountAmountFormatted: discountAmountFormatted,
+      depositAmountFormatted: depositAmountFormatted,
+      totalAmountFormatted: totalAmountFormatted,
+      payableAmountFormatted: payableAmountFormatted,
+      currency: currency,
+      customerName: customerName,
+      customerEmail: customerEmail,
+      customerPhone: customerPhone,
+      driverName: driverName,
+      driverEmail: driverEmail,
+      driverPhone: driverPhone,
+      driverImage: driverImage,
+      paymentMethod: (paymentMap?['method'] ?? json['payment_method'])?.toString(),
     );
   }
 
@@ -129,5 +218,13 @@ class BookingModel {
         'total': totalPrice,
         'created_at': createdAt.toIso8601String(),
         'payment_status': paymentStatus,
+        'customer_name': customerName,
+        'customer_email': customerEmail,
+        'customer_phone': customerPhone,
+        'driver_name': driverName,
+        'driver_email': driverEmail,
+        'driver_phone': driverPhone,
+        'driver_image': driverImage,
+        'payment_method': paymentMethod,
       };
 }

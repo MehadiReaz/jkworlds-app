@@ -43,3 +43,5 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+JKWorlds_Mobile_API_App_Developer_Guide.pdf
+pubspec.lock

@@ -46,9 +46,9 @@ void main() {
     expect(find.text('Amount'), findsOneWidget);
 
     // Verify bookings list elements are rendered
-    expect(find.text('Toyota Land Cruiser V8'), findsOneWidget);
-    expect(find.text('Mercedes-Benz E-Class'), findsOneWidget);
-    expect(find.text('BMW 5 Series'), findsOneWidget);
+    expect(find.text('Land Cruiser V8'), findsOneWidget);
+    expect(find.text('E-Class'), findsOneWidget);
+    expect(find.text('5 Series'), findsOneWidget);
 
     // Verify status states
     expect(find.text('ACTIVE'), findsOneWidget);
@@ -60,9 +60,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Now only Confirmed booking should be visible
-    expect(find.text('Mercedes-Benz E-Class'), findsOneWidget);
-    expect(find.text('Toyota Land Cruiser V8'), findsNothing);
-    expect(find.text('BMW 5 Series'), findsNothing);
+    expect(find.text('E-Class'), findsOneWidget);
+    expect(find.text('Land Cruiser V8'), findsNothing);
+    expect(find.text('5 Series'), findsNothing);
 
     // Clean up
     Get.reset();

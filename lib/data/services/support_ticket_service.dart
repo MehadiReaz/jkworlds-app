@@ -89,7 +89,7 @@ class SupportTicketService extends GetxService {
   }
 
   /// Retrieves messages for a ticket (supports light checking, cursors, and limits).
-  /// GET /api/support-tickets/{ticket}/messages
+  /// GET /api/support-tickets/{ticket}
   Future<Map<String, dynamic>> fetchMessages(
     int ticketId, {
     bool light = false,
@@ -106,7 +106,7 @@ class SupportTicketService extends GetxService {
       };
 
       final response = await _api.get(
-        ApiConstants.supportTicketMessages(ticketId),
+        ApiConstants.supportTicketDetails(ticketId),
         queryParameters: queryParams,
       );
 
@@ -123,11 +123,17 @@ class SupportTicketService extends GetxService {
 
       final data = body['data'] as Map<String, dynamic>? ?? {};
 
+      // Parse ticket status/sending details from data['ticket'] if nested, else fallback to root data keys
+      final ticketMap = data['ticket'] as Map<String, dynamic>?;
+      final ticketStatus = ticketMap?['status'] as int? ?? data['ticket_status'] as int? ?? 1;
+      final statusLabel = ticketMap?['status_label'] as String? ?? data['status_label'] as String? ?? 'open';
+      final canSendMessage = ticketMap?['can_send_message'] as bool? ?? data['can_send_message'] as bool? ?? true;
+
       if (light) {
         return {
           'has_new': data['has_new'] as bool? ?? false,
-          'ticket_status': data['ticket_status'] as int? ?? 1,
-          'can_send_message': data['can_send_message'] as bool? ?? true,
+          'ticket_status': ticketStatus,
+          'can_send_message': canSendMessage,
         };
       }
 
@@ -142,9 +148,9 @@ class SupportTicketService extends GetxService {
         'first_id': data['first_id'] as int? ?? 0,
         'last_id': data['last_id'] as int? ?? 0,
         'has_more_older': data['has_more_older'] as bool? ?? false,
-        'ticket_status': data['ticket_status'] as int? ?? 1,
-        'status_label': data['status_label'] as String? ?? 'open',
-        'can_send_message': data['can_send_message'] as bool? ?? true,
+        'ticket_status': ticketStatus,
+        'status_label': statusLabel,
+        'can_send_message': canSendMessage,
       };
     } on AppException {
       rethrow;
@@ -202,12 +208,13 @@ class SupportTicketService extends GetxService {
   }
 
   /// Marks a ticket as read for the user up to a specified message ID.
-  /// POST /api/support-tickets/{ticket}/read
+  /// GET /api/support-tickets/{ticket} with mark_read=1
   Future<SupportTicketModel> markAsRead(int ticketId, {int? lastId}) async {
     try {
-      final response = await _api.post(
-        ApiConstants.supportTicketMarkAsRead(ticketId),
-        data: {
+      final response = await _api.get(
+        ApiConstants.supportTicketDetails(ticketId),
+        queryParameters: {
+          'mark_read': 1,
           if (lastId != null && lastId > 0) 'last_id': lastId,
         },
       );

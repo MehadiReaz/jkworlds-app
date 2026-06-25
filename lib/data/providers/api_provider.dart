@@ -1,5 +1,6 @@
 // lib/data/providers/api_provider.dart
 
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response, FormData;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,26 +58,63 @@ class ApiProvider {
           }
 
           logger.i('💡 REQUEST: ${options.method} ${options.uri}');
+          if (options.queryParameters.isNotEmpty) {
+            logger.i('🔍 QUERY PARAMETERS: ${options.queryParameters}');
+          }
           if (options.data != null) {
-            final bodyStr = options.data is FormData
-                ? '[FormData fields: ${(options.data as FormData).fields.map((e) => '${e.key}=${e.value}').join(', ')}]'
-                : options.data.toString();
-            logger.i('📤 REQUEST BODY: ${bodyStr.length > 2000 ? '${bodyStr.substring(0, 2000)}…' : bodyStr}');
+            String bodyStr;
+            if (options.data is FormData) {
+              bodyStr = '[FormData fields: ${(options.data as FormData).fields.map((e) => '${e.key}=${e.value}').join(', ')}]';
+            } else {
+              try {
+                if (options.data is Map || options.data is List) {
+                  const encoder = JsonEncoder.withIndent('  ');
+                  bodyStr = encoder.convert(options.data);
+                } else {
+                  bodyStr = options.data.toString();
+                }
+              } catch (_) {
+                bodyStr = options.data.toString();
+              }
+            }
+            logger.i('📤 REQUEST BODY:\n$bodyStr');
           }
           handler.next(options);
         },
 
         onResponse: (response, handler) {
           logger.i('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
-          final resStr = response.data?.toString() ?? '';
-          logger.i('📥 RESPONSE BODY: ${resStr.length > 2000 ? '${resStr.substring(0, 2000)}…' : resStr}');
+          String prettyJsonStr;
+          try {
+            if (response.data is Map || response.data is List) {
+              const encoder = JsonEncoder.withIndent('  ');
+              prettyJsonStr = encoder.convert(response.data);
+            } else {
+              prettyJsonStr = response.data?.toString() ?? '';
+            }
+          } catch (_) {
+            prettyJsonStr = response.data?.toString() ?? '';
+          }
+          logger.i('📥 RESPONSE BODY:\n$prettyJsonStr');
           handler.next(response);
         },
 
         onError: (error, handler) async {
           logger.e('⛔ ERROR: ${error.response?.statusCode} ${error.requestOptions.uri}');
           if (error.response?.data != null) {
-            logger.e('⛔ ERROR BODY: ${error.response?.data}');
+            String prettyErrorStr;
+            try {
+              final errData = error.response?.data;
+              if (errData is Map || errData is List) {
+                const encoder = JsonEncoder.withIndent('  ');
+                prettyErrorStr = encoder.convert(errData);
+              } else {
+                prettyErrorStr = errData.toString();
+              }
+            } catch (_) {
+              prettyErrorStr = error.response?.data.toString() ?? '';
+            }
+            logger.e('⛔ ERROR BODY:\n$prettyErrorStr');
           }
 
           if (error.response?.statusCode == 401) {

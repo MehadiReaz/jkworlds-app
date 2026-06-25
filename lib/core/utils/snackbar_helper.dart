@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -38,7 +39,7 @@ class SnackbarHelper {
     required Color color,
     required IconData icon,
   }) {
-    if (Get.key.currentState == null) {
+    if (Get.key.currentState == null || Platform.environment.containsKey('FLUTTER_TEST')) {
       debugPrint('[SnackbarHelper] $title: $message');
       return;
     }
