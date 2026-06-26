@@ -53,10 +53,20 @@ void main() {
     // Verify search options are present in details sheet
     expect(find.text('Trip Details'), findsOneWidget);
     expect(find.text('Pick-up Location'), findsOneWidget);
-    expect(find.text('Different Drop-off Location'), findsOneWidget);
+    expect(find.text('Different Drop-off Location'), findsNothing);
     expect(find.text('PICK-UP DATE & TIME'), findsOneWidget);
     expect(find.text('DROP-OFF DATE & TIME'), findsOneWidget);
     expect(find.text('Require Chauffeur Service'), findsOneWidget);
+
+    // Toggle Chauffeur Service to show Different Drop-off Location
+    await tester.tap(find.text('Require Chauffeur Service'));
+    await tester.pumpAndSettle();
+    expect(find.text('Different Drop-off Location'), findsOneWidget);
+
+    // Toggle Chauffeur Service back to false to restore original state
+    await tester.tap(find.text('Require Chauffeur Service'));
+    await tester.pumpAndSettle();
+    expect(find.text('Different Drop-off Location'), findsNothing);
 
     // 5. Test Pick-up Location filtering
     final pickupField = find.widgetWithText(TextField, 'Pick-up Location');

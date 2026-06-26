@@ -324,7 +324,7 @@ class VehicleModel {
     if (json['protection_plans'] is List) {
       for (final item in json['protection_plans'] as List) {
         if (item is Map<String, dynamic>) {
-          protectionPlans.add(ProtectionPlanModel.fromJson(item));
+          protectionPlans.add(ProtectionPlanModel.fromJson(item, scale: scale));
         }
       }
     }
@@ -334,7 +334,7 @@ class VehicleModel {
     if (json['rental_addons'] is List) {
       for (final item in json['rental_addons'] as List) {
         if (item is Map<String, dynamic>) {
-          rentalAddons.add(RentalAddonModel.fromJson(item));
+          rentalAddons.add(RentalAddonModel.fromJson(item, scale: scale));
         }
       }
     }

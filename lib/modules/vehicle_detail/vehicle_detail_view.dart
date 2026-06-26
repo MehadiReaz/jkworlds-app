@@ -678,6 +678,240 @@ class VehicleDetailView extends StatelessWidget {
                       ),
                     ],
 
+                    // Pickup Location Selector (if direct selection / featured vehicles flow)
+                    if (ctrl.isFromFeatured) ...[
+                      Text(
+                        'PICKUP LOCATION',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: ctrl.pickupLocationCtrl,
+                        onChanged: (val) {
+                          ctrl.updatePickupLocation(val);
+                        },
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
+                          labelText: 'Pick-up Location',
+                          hintText: 'Enter city or neighborhood',
+                          filled: true,
+                          fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                          ),
+                          suffixIcon: Obx(() => ctrl.isLoadingPickup.value
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12.0),
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                )
+                              : const SizedBox.shrink()),
+                        ),
+                      ),
+                      Obx(() {
+                        if (ctrl.pickupSuggestions.isEmpty) return const SizedBox.shrink();
+                        return Container(
+                          margin: const EdgeInsets.only(top: 4, bottom: 8),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: ctrl.pickupSuggestions.length,
+                            itemBuilder: (context, index) {
+                              final suggestion = ctrl.pickupSuggestions[index];
+                              return ListTile(
+                                leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      suggestion.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (suggestion.typeLabel.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        suggestion.typeLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: cs.secondary,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                    if (suggestion.address.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        suggestion.address,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                dense: true,
+                                onTap: () => ctrl.selectPickupSuggestion(suggestion),
+                              );
+                            },
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Different drop-off toggle and input (if Additional Driver is checked)
+                    Obx(() {
+                      if (!ctrl.additionalDriverAddon.value) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SwitchListTile.adaptive(
+                            value: ctrl.isDifferentDropoff.value,
+                            onChanged: (val) {
+                              ctrl.isDifferentDropoff.value = val;
+                              if (!val) {
+                                ctrl.dropoffLocation.value = '';
+                                ctrl.dropoffLocationCtrl.clear();
+                                ctrl.selectedDropoffPrediction.value = null;
+                              }
+                            },
+                            title: const Text(
+                              'Different Drop-off Location?',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                            activeColor: cs.primary,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          const SizedBox(height: 8),
+                          if (ctrl.isDifferentDropoff.value) ...[
+                            Text(
+                              'DROPOFF LOCATION',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: ctrl.dropoffLocationCtrl,
+                              onChanged: (val) {
+                                ctrl.updateDropoffLocation(val);
+                              },
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(Icons.location_off_rounded, color: cs.primary),
+                                labelText: 'Drop-off Location',
+                                hintText: 'Enter drop-off city',
+                                filled: true,
+                                fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                ),
+                                suffixIcon: Obx(() => ctrl.isLoadingDropoff.value
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(12.0),
+                                        child: SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink()),
+                              ),
+                            ),
+                            Obx(() {
+                              if (ctrl.dropoffSuggestions.isEmpty) return const SizedBox.shrink();
+                              return Container(
+                                margin: const EdgeInsets.only(top: 4, bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: theme.cardColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                ),
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: ctrl.dropoffSuggestions.length,
+                                  itemBuilder: (context, index) {
+                                    final suggestion = ctrl.dropoffSuggestions[index];
+                                    return ListTile(
+                                      leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
+                                      title: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            suggestion.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.bodyMedium?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          if (suggestion.typeLabel.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              suggestion.typeLabel,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: cs.secondary,
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                          if (suggestion.address.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              suggestion.address,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      dense: true,
+                                      onTap: () => ctrl.selectDropoffSuggestion(suggestion),
+                                    );
+                                  },
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      );
+                    }),
+
                     // Pickup & Return inputs side-by-side
                     Row(
                       children: [
@@ -898,14 +1132,15 @@ class VehicleDetailView extends StatelessWidget {
                               final addon = entry.value;
                               final isLast = entry.key == vehicle.rentalAddons.length - 1;
                               
-                              // Determine which controller to bind based on addon title keywords
                               final labelRx = addon.title.toLowerCase().contains('gps')
                                   ? ctrl.gpsAddon
                                   : addon.title.toLowerCase().contains('driver')
                                       ? ctrl.additionalDriverAddon
                                       : addon.title.toLowerCase().contains('seat') || addon.title.toLowerCase().contains('child')
                                           ? ctrl.childSeatAddon
-                                          : ctrl.gpsAddon; // Default fallback
+                                          : addon.title.toLowerCase().contains('fuel') || addon.title.toLowerCase().contains('prepaid')
+                                              ? ctrl.prepaidFuelAddon
+                                              : ctrl.gpsAddon; // Default fallback
 
                               return Padding(
                                 padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
@@ -916,6 +1151,7 @@ class VehicleDetailView extends StatelessWidget {
                                   price: addon.priceLabel,
                                   theme: theme,
                                   cs: cs,
+                                  enabled: !addon.title.toLowerCase().contains('driver') || !ctrl.isAirportTransfer,
                                 ),
                               );
                             }).toList()
@@ -936,6 +1172,7 @@ class VehicleDetailView extends StatelessWidget {
                                 price: '${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)} /day',
                                 theme: theme,
                                 cs: cs,
+                                enabled: !ctrl.isAirportTransfer,
                               ),
                               const SizedBox(height: 8),
                               _buildAddonCheckbox(
@@ -1347,7 +1584,6 @@ class VehicleDetailView extends StatelessWidget {
       );
     });
   }
-
   // ── Addon Checkbox Generator ────────────────────────────────────
   Widget _buildAddonCheckbox({
     required RxBool labelRx,
@@ -1356,18 +1592,21 @@ class VehicleDetailView extends StatelessWidget {
     required String price,
     required ThemeData theme,
     required ColorScheme cs,
+    bool enabled = true,
   }) {
     return Obx(() {
       final isChecked = labelRx.value;
       return InkWell(
-        onTap: () => labelRx.toggle(),
+        onTap: enabled ? () => labelRx.toggle() : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isChecked ? cs.primary.withValues(alpha: 0.08) : Colors.transparent,
             border: Border.all(
-              color: isChecked ? cs.primary : cs.outlineVariant.withValues(alpha: 0.5),
+              color: isChecked
+                  ? (enabled ? cs.primary : cs.primary.withValues(alpha: 0.4))
+                  : cs.outlineVariant.withValues(alpha: 0.5),
               width: isChecked ? 1.5 : 1.0,
             ),
             borderRadius: BorderRadius.circular(12),
@@ -1380,12 +1619,17 @@ class VehicleDetailView extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.5),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       desc,
-                      style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: enabled ? cs.onSurfaceVariant : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
                     ),
                   ],
                 ),
@@ -1396,7 +1640,7 @@ class VehicleDetailView extends StatelessWidget {
                     price,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
+                      color: enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1405,9 +1649,13 @@ class VehicleDetailView extends StatelessWidget {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: isChecked ? cs.primary : Colors.transparent,
+                      color: isChecked
+                          ? (enabled ? cs.primary : cs.primary.withValues(alpha: 0.5))
+                          : Colors.transparent,
                       border: Border.all(
-                        color: isChecked ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
+                        color: isChecked
+                            ? (enabled ? cs.primary : cs.primary.withValues(alpha: 0.5))
+                            : cs.onSurfaceVariant.withValues(alpha: enabled ? 0.4 : 0.2),
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(4),

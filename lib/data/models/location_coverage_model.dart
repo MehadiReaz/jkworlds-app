@@ -16,7 +16,9 @@ class LocationCoverageModel {
     final zone = json['zone'] as Map<String, dynamic>?;
     return LocationCoverageModel(
       covered: json['covered'] as bool? ?? false,
-      zoneId: zone?['id'] as int?,
+      zoneId: zone?['id'] is int
+          ? zone!['id'] as int
+          : int.tryParse(zone?['id']?.toString() ?? ''),
       zoneName: zone?['name'] as String?,
       zoneType: zone?['type'] as String?,
     );

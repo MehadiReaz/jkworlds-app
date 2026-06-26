@@ -15,6 +15,7 @@ class BookingModel {
   final DateTime pickupDate;
   final DateTime returnDate;
   final String pickupLocation;
+  final String dropoffLocation;
   final BookingStatus status;
   final RentalType rentalType;
   final double subtotal;
@@ -58,6 +59,7 @@ class BookingModel {
     required this.pickupDate,
     required this.returnDate,
     required this.pickupLocation,
+    this.dropoffLocation = '',
     required this.status,
     required this.rentalType,
     required this.subtotal,
@@ -173,6 +175,7 @@ class BookingModel {
       pickupDate: _parseDate(pickupMap?['datetime'] ?? json['pickup_date'] ?? json['start_date']),
       returnDate: _parseDate(dropoffMap?['datetime'] ?? json['return_date'] ?? json['end_date']),
       pickupLocation: (pickupMap?['address'] ?? json['pickup_location'] ?? '').toString(),
+      dropoffLocation: (dropoffMap?['address'] ?? json['dropoff_location'] ?? (pickupMap?['address'] ?? json['pickup_location'] ?? '')).toString(),
       status: _parseStatus(json['status']),
       rentalType: _parseRentalType(json['rental_type'] ?? json['service_type']),
       subtotal: subtotal,
@@ -210,6 +213,7 @@ class BookingModel {
         'pickup_date': pickupDate.toIso8601String(),
         'return_date': returnDate.toIso8601String(),
         'pickup_location': pickupLocation,
+        'dropoff_location': dropoffLocation,
         'status': status.name,
         'rental_type': rentalType == RentalType.chauffeur ? 'chauffeur' : 'self-drive',
         'subtotal': subtotal,

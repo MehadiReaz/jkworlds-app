@@ -18,7 +18,7 @@ class ProtectionPlanModel {
     required this.priceLabel,
   });
 
-  factory ProtectionPlanModel.fromJson(Map<String, dynamic> json) {
+  factory ProtectionPlanModel.fromJson(Map<String, dynamic> json, {double scale = 1.0}) {
     double? parseDouble(dynamic v) {
       if (v == null) return null;
       if (v is double) return v;
@@ -26,12 +26,15 @@ class ProtectionPlanModel {
       return double.tryParse(v.toString());
     }
 
+    final rawPrice = parseDouble(json['price_value']);
+    final scaledPrice = rawPrice != null ? rawPrice * scale : null;
+
     return ProtectionPlanModel(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id'].toString()) ?? 0,
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       priceType: json['price_type'] as String? ?? 'none',
-      priceValue: parseDouble(json['price_value']),
+      priceValue: scaledPrice,
       priceValueFormatted: json['price_value_formatted'] as String?,
       priceLabel: json['price_label'] as String? ?? '',
     );

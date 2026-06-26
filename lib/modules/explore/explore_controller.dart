@@ -142,6 +142,12 @@ class ExploreController extends GetxController {
     }
     errorMessage.value = '';
 
+    if (selectedServiceType.value != 'Chauffeur') {
+      isDifferentDropoff.value = false;
+      dropoffLocation.value = '';
+      dropoffLocationCtrl.clear();
+    }
+
     try {
       final cats = _categoryService.categories;
 
@@ -354,16 +360,16 @@ class ExploreController extends GetxController {
   }
 
   void selectPickupSuggestion(LocationPrediction suggestion) {
-    pickupLocationCtrl.text = suggestion.description;
-    pickupLocation.value = suggestion.description;
+    pickupLocationCtrl.text = suggestion.name;
+    pickupLocation.value = suggestion.name;
     selectedPickupPrediction.value = suggestion;
     pickupSuggestions.clear();
     applyFilters();
   }
 
   void selectDropoffSuggestion(LocationPrediction suggestion) {
-    dropoffLocationCtrl.text = suggestion.description;
-    dropoffLocation.value = suggestion.description;
+    dropoffLocationCtrl.text = suggestion.name;
+    dropoffLocation.value = suggestion.name;
     selectedDropoffPrediction.value = suggestion;
     dropoffSuggestions.clear();
     applyFilters();

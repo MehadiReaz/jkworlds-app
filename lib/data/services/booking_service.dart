@@ -7,6 +7,7 @@ import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
+import 'package:jkworlds/data/models/checkout_pricing_model.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 
 class BookingService extends GetxService {
@@ -82,7 +83,7 @@ class BookingService extends GetxService {
 
   /// Calculate checkout pricing details.
   /// POST /api/v2/checkout
-  Future<Map<String, dynamic>> calculateCheckoutPricing(Map<String, dynamic> data) async {
+  Future<CheckoutPricingModel> calculateCheckoutPricing(Map<String, dynamic> data) async {
     try {
       final response = await _api.post(
         ApiConstants.checkout,
@@ -104,7 +105,7 @@ class BookingService extends GetxService {
         throw const ServerException('Checkout response missing "data" node');
       }
 
-      return resData;
+      return CheckoutPricingModel.fromJson(resData);
     } on AppException {
       rethrow;
     } catch (e, st) {
@@ -121,6 +122,10 @@ class BookingService extends GetxService {
   }) async {
     try {
       final map = Map<String, dynamic>.from(data);
+      if (map.containsKey('addon_ids')) {
+        map['addon_ids[]'] = map.remove('addon_ids');
+      }
+
       if (driverLicensePath != null && driverLicensePath.isNotEmpty) {
         debugPrint('[BookingService] calling MultipartFile.fromFile with path: $driverLicensePath');
         final file = await MultipartFile.fromFile(

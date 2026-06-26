@@ -16,7 +16,7 @@ class CheckoutView extends StatelessWidget {
     final isLight = theme.brightness == Brightness.light;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isLight ? Colors.white : theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Checkout'),
         centerTitle: true,
@@ -27,250 +27,410 @@ class CheckoutView extends StatelessWidget {
             final isWide = constraints.maxWidth > 850;
 
             Widget buildBookingSummaryCard() {
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                ),
-                color: theme.cardColor,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header
-                      Text(
-                        'BOOKING SUMMARY',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                          letterSpacing: 0.5,
+              Widget buildTotalAmountCard() {
+                return Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isLight ? const Color(0xFFFFD4C1) : const Color(0xFF4C2A1E),
+                      width: 1.2,
+                    ),
+                  ),
+                  color: isLight ? const Color(0xFFFFF2EC) : const Color(0xFF2C1E1A),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Total Amount',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 16,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Obx(() => Text(
+                                ctrl.calculatedPayableTotalFormatted.value.isNotEmpty
+                                    ? ctrl.calculatedPayableTotalFormatted.value
+                                    : '0.00',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFFFF5403),
+                                    fontSize: 24,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              )),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Includes all selected services & fees',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-                      // Vehicle overview
-                      Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 80,
-                              height: 54,
-                              child: ctrl.vehicle.images.isNotEmpty
-                                  ? Image.network(
-                                      ctrl.vehicle.images[0],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Container(
+              Widget buildPromoCodeCard() {
+                return Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide.none,
+                  ),
+                  color: isLight ? const Color(0xFFF2F4F7) : const Color(0xFF1E293B),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'PROMO CODE',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: cs.onSurface,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: TextField(
+                                  controller: ctrl.promoCodeController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter promo code',
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    filled: true,
+                                    fillColor: isLight ? Colors.white : const Color(0xFF1E293B),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: ctrl.applyPromoCode,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFF5403),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                ),
+                                child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Obx(() => ctrl.appliedPromoCode.value.isNotEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : currencyService.formatPrice(ctrl.calculatedDiscount.value)}',
+                                  style: TextStyle(color: Colors.green.shade600, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              )
+                            : const SizedBox.shrink()),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              Widget buildDetailsCard() {
+                return Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide.none,
+                  ),
+                  color: isLight ? const Color(0xFFF2F4F7) : const Color(0xFF1E293B),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'BOOKING SUMMARY',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: cs.onSurface,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: 80,
+                                height: 54,
+                                color: isLight ? Colors.white : const Color(0xFF0F172A),
+                                child: ctrl.vehicle.images.isNotEmpty
+                                    ? Image.network(
+                                        ctrl.vehicle.images[0],
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          color: cs.surfaceContainerHighest,
+                                          child: Icon(Icons.directions_car_rounded, color: cs.primary, size: 28),
+                                        ),
+                                      )
+                                    : Container(
                                         color: cs.surfaceContainerHighest,
                                         child: Icon(Icons.directions_car_rounded, color: cs.primary, size: 28),
                                       ),
-                                    )
-                                  : Container(
-                                      color: cs.surfaceContainerHighest,
-                                      child: Icon(Icons.directions_car_rounded, color: cs.primary, size: 28),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    ctrl.vehicle.name,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: cs.onSurface,
                                     ),
+                                  ),
+                                  Text(
+                                    '${ctrl.vehicle.brand} • ${ctrl.vehicle.type}',
+                                    style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  ctrl.vehicle.name,
-                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  '${ctrl.vehicle.brand} • ${ctrl.vehicle.type}',
-                                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Breakdown rows
-                      Obx(() => _buildSummaryRow(
-                            'Base (${ctrl.totalDays}d)',
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Obx(() {
+                          final dailyRateText = ctrl.vehicle.dailyRateFormatted.isNotEmpty
+                              ? ctrl.vehicle.dailyRateFormatted
+                              : currencyService.formatPrice(ctrl.vehicle.pricePerDay);
+                          return _buildSummaryRow(
+                            'Base (${ctrl.base}d x $dailyRateText)',
                             ctrl.calculatedSubtotalFormatted.value.isNotEmpty
                                 ? ctrl.calculatedSubtotalFormatted.value
                                 : currencyService.formatPrice(ctrl.calculatedSubtotal.value),
                             cs,
-                          )),
-                      Obx(() => _buildSummaryRow(
-                            '${ctrl.calculatedProtectionTitle.value} Protection',
-                            ctrl.calculatedProtectionFormatted.value.isNotEmpty
-                                ? ctrl.calculatedProtectionFormatted.value
-                                : currencyService.formatPrice(ctrl.calculatedProtectionCost.value),
-                            cs,
-                          )),
-                      _buildSummaryRow('Rental Type', ctrl.isSelfDrive ? 'Self Drive' : 'Chauffeur', cs),
-                      _buildSummaryRow('Pickup Date', DateFormat('MMM d, yyyy').format(ctrl.pickupDate), cs),
-                      _buildSummaryRow('Return Date', DateFormat('MMM d, yyyy').format(ctrl.returnDate), cs),
-
-                      // Selected Add-ons
-                      if (ctrl.gpsAddon || ctrl.additionalDriverAddon || ctrl.childSeatAddon)
-                        Obx(() => Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const Divider(height: 24),
-                                Text(
-                                  'SELECTED ADD-ONS',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                if (ctrl.calculatedAddonsFormatted.value.isNotEmpty)
-                                  _buildSummaryRow('Add-ons Total', ctrl.calculatedAddonsFormatted.value, cs, isAddon: true)
-                                else ...[
-                                  if (ctrl.gpsAddon)
-                                    _buildSummaryRow('GPS Navigation', '+${currencyService.formatPrice(ctrl.calculatedAddonsCost.value)}', cs, isAddon: true),
-                                  if (ctrl.additionalDriverAddon)
-                                    _buildSummaryRow('Additional Driver', '+${currencyService.formatPrice(ctrl.calculatedAddonsCost.value)}', cs, isAddon: true),
-                                  if (ctrl.childSeatAddon)
-                                    _buildSummaryRow('Child Seat', '+${currencyService.formatPrice(ctrl.calculatedAddonsCost.value)}', cs, isAddon: true),
-                                ],
-                              ],
+                          );
+                        }),
+                        Obx(() => _buildSummaryRow(
+                              'Insurance',
+                              ctrl.calculatedProtectionTitle.value.isNotEmpty
+                                  ? ctrl.calculatedProtectionTitle.value
+                                  : ctrl.selectedProtection,
+                              cs,
                             )),
-
-                      // Promo Code Card
-                      const Divider(height: 24),
-                      Text(
-                        'PROMO CODE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                          letterSpacing: 0.5,
+                        Obx(() => _buildSummaryRow(
+                              'Protection Amount',
+                              ctrl.calculatedProtectionFormatted.value.isNotEmpty
+                                  ? ctrl.calculatedProtectionFormatted.value
+                                  : currencyService.formatPrice(ctrl.calculatedProtectionCost.value),
+                              cs,
+                            )),
+                        _buildSummaryRow('Service Type', ctrl.isSelfDrive ? 'Self Drive' : 'Chauffeur', cs),
+                        _buildSummaryRow('Pickup', ctrl.resolvedPickupAddress, cs),
+                        _buildSummaryRow(
+                          'Pickup Date',
+                          '${DateFormat('MMM d yyyy').format(ctrl.pickupDate)}, ${ctrl.pickupTime}',
+                          cs,
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
+                        _buildSummaryRow(
+                          'Return Date',
+                          '${DateFormat('MMM d yyyy').format(ctrl.returnDate)}, ${ctrl.returnTime}',
+                          cs,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              Widget buildSelectedAddonsCard() {
+                return Obx(() {
+                  final hasCalculatedAddons = ctrl.calculatedAddons.isNotEmpty;
+                  final hasLocalAddons = ctrl.gpsAddon || ctrl.additionalDriverAddon || ctrl.childSeatAddon || ctrl.prepaidFuelAddon;
+
+                  if (!hasCalculatedAddons && !hasLocalAddons) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide.none,
+                    ),
+                    color: isLight ? const Color(0xFFF2F4F7) : const Color(0xFF1E293B),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: TextField(
-                              controller: ctrl.promoCodeController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter promo code',
-                                isDense: true,
-                                filled: true,
-                                fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                ),
-                              ),
+                          Text(
+                            'SELECTED ADD-ONS',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurface,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: ctrl.applyPromoCode,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: cs.primary,
-                              foregroundColor: cs.onPrimary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                            child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          if (hasCalculatedAddons)
+                            ...ctrl.calculatedAddons.map((addon) {
+                              return _buildSummaryRow(
+                                addon['title']?.toString() ?? '',
+                                '+${addon['amount_formatted']?.toString() ?? currencyService.formatPrice(double.tryParse(addon['amount']?.toString() ?? '') ?? 0.0)}',
+                                cs,
+                                isAddon: true,
+                              );
+                            })
+                          else ...[
+                            if (ctrl.gpsAddon)
+                              _buildSummaryRow('GPS Navigation', '+${currencyService.formatPrice(ctrl.gpsAddonPrice)}', cs, isAddon: true),
+                            if (ctrl.additionalDriverAddon)
+                              _buildSummaryRow('Additional Driver', '+${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)}', cs, isAddon: true),
+                            if (ctrl.childSeatAddon)
+                              _buildSummaryRow('Child Seat', '+${currencyService.formatPrice(ctrl.childSeatAddonPrice)}', cs, isAddon: true),
+                            if (ctrl.prepaidFuelAddon)
+                              _buildSummaryRow('Prepaid Fuel', '+${currencyService.formatPrice(ctrl.prepaidFuelAddonPrice)}', cs, isAddon: true),
+                          ],
+                          const SizedBox(height: 12),
+                          _buildSummaryRow(
+                            'Add-ons Total',
+                            ctrl.calculatedAddonsFormatted.value.isNotEmpty
+                                ? ctrl.calculatedAddonsFormatted.value
+                                : currencyService.formatPrice(ctrl.calculatedAddonsCost.value),
+                            cs,
+                            isBoldValue: true,
                           ),
                         ],
                       ),
-                      Obx(() => ctrl.appliedPromoCode.value.isNotEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : currencyService.formatPrice(ctrl.calculatedDiscount.value)}',
-                                style: TextStyle(color: Colors.green.shade600, fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                            )
-                          : const SizedBox.shrink()),
+                    ),
+                  );
+                });
+              }
 
-                      // Dynamic Service Fee / Taxes & Security Deposit
-                      Obx(() => ctrl.calculatedServiceFee.value > 0
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: _buildSummaryRow('Taxes & Fees', ctrl.calculatedServiceFeeFormatted.value, cs),
-                            )
-                          : const SizedBox.shrink()),
-                      Obx(() => ctrl.calculatedSecurityDeposit.value > 0
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: _buildSummaryRow('Security Deposit', ctrl.calculatedSecurityDepositFormatted.value, cs),
-                            )
-                          : const SizedBox.shrink()),
+              Widget buildTaxesAndFeesCard() {
+                return Obx(() {
+                  final hasCalculatedFees = ctrl.calculatedFees.isNotEmpty;
 
-                      const Divider(height: 24),
-
-                      // Total Amount Card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50.withValues(alpha: isLight ? 1.0 : 0.05),
-                          border: Border.all(color: Colors.orange.shade200, width: 1.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Total Amount',
-                                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Obx(() => Text(
-                                      ctrl.calculatedPayableTotalFormatted.value.isNotEmpty
-                                          ? ctrl.calculatedPayableTotalFormatted.value
-                                          : currencyService.formatPrice(ctrl.calculatedPayableTotal.value),
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.w900,
-                                        color: cs.primary,
-                                      ),
-                                    )),
-                              ],
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide.none,
+                    ),
+                    color: isLight ? const Color(0xFFF2F4F7) : const Color(0xFF1E293B),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'TAXES & FEES',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurface,
+                              letterSpacing: 0.5,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Includes all selected services & fees',
-                              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 12),
+                          if (hasCalculatedFees)
+                            ...ctrl.calculatedFees.map((fee) {
+                              return _buildSummaryRow(
+                                fee['title']?.toString() ?? '',
+                                '+${fee['amount_formatted']?.toString() ?? currencyService.formatPrice(double.tryParse(fee['amount']?.toString() ?? '') ?? 0.0)}',
+                                cs,
+                                isAddon: true,
+                              );
+                            })
+                          else ...[
+                            _buildSummaryRow(
+                              'VAT',
+                              '+${ctrl.calculatedServiceFeeFormatted.value.isNotEmpty ? ctrl.calculatedServiceFeeFormatted.value : currencyService.formatPrice(ctrl.calculatedServiceFee.value)}',
+                              cs,
+                              isAddon: true,
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          _buildSummaryRow(
+                            'Taxes & Fees Total',
+                            ctrl.calculatedServiceFeeFormatted.value.isNotEmpty
+                                ? ctrl.calculatedServiceFeeFormatted.value
+                                : currencyService.formatPrice(ctrl.calculatedServiceFee.value),
+                              cs,
+                              isBoldValue: true,
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                    );
+                  });
+                }
 
-                      // Secure Checkout badge
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.lock_rounded, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              'Secure checkout - No hidden fees',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  buildTotalAmountCard(),
+                  const SizedBox(height: 12),
+                  buildPromoCodeCard(),
+                  const SizedBox(height: 12),
+                  buildDetailsCard(),
+                  const SizedBox(height: 12),
+                  buildSelectedAddonsCard(),
+                  const SizedBox(height: 12),
+                  buildTaxesAndFeesCard(),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock_rounded, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Secure checkout - No hidden fees',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               );
             }
 
@@ -477,14 +637,16 @@ class CheckoutView extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Flight number
-                  _buildFormInput(
-                    label: 'FLIGHT NUMBER (optional)',
-                    controller: ctrl.flightNumberController,
-                    hint: 'Enter your flight number',
-                    cs: cs,
-                    theme: theme,
-                  ),
-                  const SizedBox(height: 16),
+                  if (!ctrl.isSelfDrive) ...[
+                    _buildFormInput(
+                      label: 'FLIGHT NUMBER (optional)',
+                      controller: ctrl.flightNumberController,
+                      hint: 'Enter your flight number',
+                      cs: cs,
+                      theme: theme,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Special Requests
                   Text(
@@ -633,9 +795,15 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String title, String value, ColorScheme cs, {bool isAddon = false}) {
+  Widget _buildSummaryRow(
+    String title,
+    String value,
+    ColorScheme cs, {
+    bool isAddon = false,
+    bool isBoldValue = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -645,16 +813,20 @@ class CheckoutView extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontWeight: isAddon ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-                color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                fontWeight: isBoldValue ? FontWeight.bold : FontWeight.normal,
+                fontSize: 14,
+                color: cs.onSurface,
               ),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            style: TextStyle(
+              fontWeight: (isAddon || isBoldValue) ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+              color: cs.onSurface,
+            ),
           ),
         ],
       ),

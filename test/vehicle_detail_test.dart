@@ -100,6 +100,7 @@ void main() {
 
       // Configure dates and times on the controller directly
       final now = DateTime.now();
+      controller.pickupLocation.value = 'Lekki';
       controller.pickupDate.value = DateTime(now.year, now.month, now.day + 1);
       controller.returnDate.value = DateTime(
         now.year,

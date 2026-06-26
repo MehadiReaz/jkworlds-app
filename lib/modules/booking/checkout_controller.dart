@@ -7,16 +7,24 @@ import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
+import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
 import 'package:jkworlds/modules/orders/orders_controller.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/core/utils/image_picker_helper.dart';
 import 'package:jkworlds/core/utils/logger.dart';
+import 'package:jkworlds/data/models/checkout_pricing_model.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 class CheckoutController extends GetxController {
   late final Map<String, dynamic> args;
+
+  // ── Checkout Pricing Model State ────────────────────────────────
+  final checkoutPricing = Rxn<CheckoutPricingModel>();
+
+  // Expose the duration (rental days) as base to match the view's requirements
+  int get base => checkoutPricing.value?.rentalDays ?? totalDays;
 
   // Serialized values passed from details configurator
   late final VehicleModel vehicle;
@@ -29,6 +37,7 @@ class CheckoutController extends GetxController {
   late final bool gpsAddon;
   late final bool additionalDriverAddon;
   late final bool childSeatAddon;
+  late final bool prepaidFuelAddon;
 
   // ── Form Controllers ─────────────────────────────────────────────
   late final TextEditingController fullNameController;
@@ -71,12 +80,79 @@ class CheckoutController extends GetxController {
   // Active payment gateways from API
   final paymentMethods = <Map<String, dynamic>>[].obs;
 
+  // Itemized addons and fees from checkout API
+  final calculatedAddons = <Map<String, dynamic>>[].obs;
+  final calculatedFees = <Map<String, dynamic>>[].obs;
+
+  // Addon price helpers for local calculations/fallbacks
+  double get gpsAddonPrice {
+    final addons = vehicle.rentalAddons.where((a) => a.title.toLowerCase().contains('gps'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      return addons.first.priceValue!;
+    }
+    return 5000.0;
+  }
+
+  double get additionalDriverAddonPrice {
+    final addons = vehicle.rentalAddons.where((a) => a.title.toLowerCase().contains('driver'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      final addon = addons.first;
+      if (addon.priceType == 'percentage') {
+        final sub = subtotal;
+        return (sub * (addon.priceValue! / 100.0)) / (totalDays > 0 ? totalDays : 1);
+      }
+      return addon.priceValue!;
+    }
+    return 8000.0;
+  }
+
+  double get childSeatAddonPrice {
+    final addons = vehicle.rentalAddons.where((a) => a.title.toLowerCase().contains('seat') || a.title.toLowerCase().contains('child'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      final addon = addons.first;
+      if (addon.priceType == 'percentage') {
+        final sub = subtotal;
+        return (sub * (addon.priceValue! / 100.0)) / (totalDays > 0 ? totalDays : 1);
+      }
+      return addon.priceValue!;
+    }
+    return 4000.0;
+  }
+
+  double get prepaidFuelAddonPrice {
+    final addons = vehicle.rentalAddons.where((a) => a.title.toLowerCase().contains('fuel') || a.title.toLowerCase().contains('prepaid'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      final addon = addons.first;
+      if (addon.priceType == 'percentage') {
+        final sub = subtotal;
+        return (sub * (addon.priceValue! / 100.0));
+      }
+      return addon.priceValue!;
+    }
+    return 15000.0;
+  }
+
+  double get subtotal {
+    return calculatedSubtotal.value > 0
+        ? calculatedSubtotal.value
+        : vehicle.pricePerDay * totalDays;
+  }
+
+  // Resolved coordinates & addresses
+  double resolvedPickupLat = 9.0579;
+  double resolvedPickupLng = 7.4951;
+  double resolvedDropoffLat = 9.0765;
+  double resolvedDropoffLng = 7.3986;
+  String resolvedPickupAddress = '';
+  String resolvedDropoffAddress = '';
+
   final isLoading = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     args = Get.arguments as Map<String, dynamic>;
+    logger.i('[CheckoutController] args: $args');
 
     // Unpack arguments
     vehicle = args['vehicle'] as VehicleModel;
@@ -89,6 +165,7 @@ class CheckoutController extends GetxController {
     gpsAddon = args['gpsAddon'] as bool;
     additionalDriverAddon = args['additionalDriverAddon'] as bool;
     childSeatAddon = args['childSeatAddon'] as bool;
+    prepaidFuelAddon = args['prepaidFuelAddon'] as bool? ?? false;
 
     // Prefill form from AuthService
     final auth = Get.find<AuthService>();
@@ -96,8 +173,102 @@ class CheckoutController extends GetxController {
     emailController = TextEditingController(text: auth.userEmail.value);
     phoneController = TextEditingController(text: auth.userPhone.value);
 
-    // Fetch initial pricing calculations
-    fetchCheckoutPricing();
+    // Resolve location details then fetch initial pricing calculations
+    _initiateCheckoutFlow();
+  }
+
+  Future<void> _initiateCheckoutFlow() async {
+    await resolveLocations();
+    await fetchCheckoutPricing();
+  }
+
+  Future<void> resolveLocations() async {
+    // 1. Initial fallbacks
+    resolvedPickupAddress = args['pickupLocation'] as String? ?? '';
+    if (resolvedPickupAddress.trim().isEmpty) {
+      resolvedPickupAddress = vehicle.location.isNotEmpty ? vehicle.location : 'Lekki, Lagos';
+    }
+
+    final isDifferentDropoff = args['isDifferentDropoff'] as bool? ?? false;
+    if (isDifferentDropoff) {
+      resolvedDropoffAddress = args['dropoffLocation'] as String? ?? '';
+      if (resolvedDropoffAddress.trim().isEmpty) {
+        resolvedDropoffAddress = vehicle.location.isNotEmpty ? vehicle.location : 'Lekki, Lagos';
+      }
+    } else {
+      resolvedDropoffAddress = resolvedPickupAddress;
+    }
+
+    // 2. Fetch coordinates & detailed addresses from predictions if available
+    final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
+    
+    final pickupPred = args['selectedPickupPrediction'] as LocationPrediction? ??
+        exploreCtrl?.selectedPickupPrediction.value;
+        
+    if (pickupPred != null) {
+      try {
+        final details = await Get.find<LocationService>().fetchLocationDetails(pickupPred.id);
+        if (details != null) {
+          resolvedPickupLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0579;
+          resolvedPickupLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.4951;
+          
+          final addr = details['address']?.toString() ?? '';
+          final nm = details['name']?.toString() ?? '';
+          if (addr.trim().isNotEmpty) {
+            resolvedPickupAddress = addr;
+          } else if (nm.trim().isNotEmpty) {
+            resolvedPickupAddress = nm;
+          } else if (pickupPred.description.trim().isNotEmpty) {
+            resolvedPickupAddress = pickupPred.description;
+          }
+        }
+      } catch (e) {
+        logger.e('[CheckoutController] Error fetching pickup details: $e');
+      }
+    }
+
+    if (isDifferentDropoff) {
+      final dropoffPred = args['selectedDropoffPrediction'] as LocationPrediction? ??
+          exploreCtrl?.selectedDropoffPrediction.value;
+          
+      if (dropoffPred != null) {
+        try {
+          final details = await Get.find<LocationService>().fetchLocationDetails(dropoffPred.id);
+          if (details != null) {
+            resolvedDropoffLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0765;
+            resolvedDropoffLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.3986;
+            
+            final addr = details['address']?.toString() ?? '';
+            final nm = details['name']?.toString() ?? '';
+            if (addr.trim().isNotEmpty) {
+              resolvedDropoffAddress = addr;
+            } else if (nm.trim().isNotEmpty) {
+              resolvedDropoffAddress = nm;
+            } else if (dropoffPred.description.trim().isNotEmpty) {
+              resolvedDropoffAddress = dropoffPred.description;
+            }
+          }
+        } catch (e) {
+          logger.e('[CheckoutController] Error fetching dropoff details: $e');
+        }
+      }
+    } else {
+      resolvedDropoffLat = resolvedPickupLat;
+      resolvedDropoffLng = resolvedPickupLng;
+      resolvedDropoffAddress = resolvedPickupAddress;
+    }
+
+    // Double check that neither address is empty/blank after resolving
+    if (resolvedPickupAddress.trim().isEmpty) {
+      resolvedPickupAddress = vehicle.location.isNotEmpty ? vehicle.location : 'Lekki, Lagos';
+    }
+    if (resolvedDropoffAddress.trim().isEmpty) {
+      resolvedDropoffAddress = resolvedPickupAddress;
+    }
+
+    logger.i('[CheckoutController] Location resolution complete: '
+             'Pickup: ($resolvedPickupLat, $resolvedPickupLng) - $resolvedPickupAddress, '
+             'Dropoff: ($resolvedDropoffLat, $resolvedDropoffLng) - $resolvedDropoffAddress');
   }
 
   int get totalDays => returnDate.difference(pickupDate).inDays;
@@ -141,39 +312,15 @@ class CheckoutController extends GetxController {
         );
         if (addon != null) addonIds.add(addon.id);
       }
+      if (prepaidFuelAddon) {
+        final addon = vehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('fuel') || a.title.toLowerCase().contains('prepaid'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
 
       final pickupDateStr = DateFormat('yyyy-MM-dd').format(pickupDate);
       final returnDateStr = DateFormat('yyyy-MM-dd').format(returnDate);
-
-      // Resolve coordinates asynchronously (using Nigeria coordinates as default fallback)
-      double pickupLat = 9.0579;
-      double pickupLng = 7.4951;
-      double dropoffLat = 9.0765;
-      double dropoffLng = 7.3986;
-      String pickupAddress = vehicle.location;
-      String dropoffAddress = vehicle.location;
-
-      final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
-      if (exploreCtrl != null) {
-        final pickupPred = exploreCtrl.selectedPickupPrediction.value;
-        if (pickupPred != null) {
-          final details = await Get.find<LocationService>().fetchLocationDetails(pickupPred.id);
-          if (details != null) {
-            pickupLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0579;
-            pickupLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.4951;
-            pickupAddress = details['address']?.toString() ?? details['name']?.toString() ?? pickupPred.description;
-          }
-        }
-        final dropoffPred = exploreCtrl.selectedDropoffPrediction.value;
-        if (dropoffPred != null) {
-          final details = await Get.find<LocationService>().fetchLocationDetails(dropoffPred.id);
-          if (details != null) {
-            dropoffLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0765;
-            dropoffLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.3986;
-            dropoffAddress = details['address']?.toString() ?? details['name']?.toString() ?? dropoffPred.description;
-          }
-        }
-      }
 
       final payload = {
         'vehicle_id': int.tryParse(vehicle.id) ?? 0,
@@ -182,74 +329,59 @@ class CheckoutController extends GetxController {
         'pickup_time': pickupTime,
         'return_date': returnDateStr,
         'return_time': returnTime,
-        'pickup_latitude': pickupLat,
-        'pickup_longitude': pickupLng,
-        if (!isSelfDrive) ...{
-          'dropoff_latitude': dropoffLat,
-          'dropoff_longitude': dropoffLng,
-          'dropoff_location_name': dropoffAddress,
-          'dropoff_address': dropoffAddress,
-        },
-        'pickup_location_name': pickupAddress,
-        'pickup_address': pickupAddress,
+        'pickup_latitude': resolvedPickupLat,
+        'pickup_longitude': resolvedPickupLng,
+        'dropoff_latitude': resolvedDropoffLat,
+        'dropoff_longitude': resolvedDropoffLng,
+        'dropoff_location_name': resolvedDropoffAddress,
+        'dropoff_address': resolvedDropoffAddress,
+        'pickup_location_name': resolvedPickupAddress,
+        'pickup_address': resolvedPickupAddress,
         if (protectionPlanId != null) 'protection_plan_id': protectionPlanId,
         if (addonIds.isNotEmpty) 'addon_ids': addonIds,
         if (appliedPromoCode.value.isNotEmpty) 'coupon_code': appliedPromoCode.value,
       };
 
-      final data = await Get.find<BookingService>().calculateCheckoutPricing(payload);
+      final model = await Get.find<BookingService>().calculateCheckoutPricing(payload);
+      checkoutPricing.value = model;
 
       // Update reactive states
-      calculatedCurrency.value = data['currency']?.toString() ?? 'USD';
+      calculatedCurrency.value = model.currency;
 
-      final baseMap = data['base'] as Map<String, dynamic>?;
-      calculatedSubtotal.value = double.tryParse(baseMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedSubtotalFormatted.value = baseMap?['amount_formatted']?.toString() ?? '';
+      calculatedSubtotal.value = model.base.amount;
+      calculatedSubtotalFormatted.value = model.base.amountFormatted;
 
-      final protectionMap = data['protection'] as Map<String, dynamic>?;
-      calculatedProtectionCost.value = double.tryParse(protectionMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedProtectionTitle.value = protectionMap?['title']?.toString() ?? 'Basic';
-      calculatedProtectionFormatted.value = protectionMap?['amount_formatted']?.toString() ?? '';
+      calculatedProtectionCost.value = model.protection.amount;
+      calculatedProtectionTitle.value = model.protection.title ?? 'Basic';
+      calculatedProtectionFormatted.value = model.protection.amountFormatted;
 
-      final addonsTotalMap = data['addons_total'] as Map<String, dynamic>?;
-      calculatedAddonsCost.value = double.tryParse(addonsTotalMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedAddonsFormatted.value = addonsTotalMap?['amount_formatted']?.toString() ?? '';
+      calculatedAddonsCost.value = model.addonsTotal.amount;
+      calculatedAddonsFormatted.value = model.addonsTotal.amountFormatted;
 
-      final feesTotalMap = data['fees_total'] as Map<String, dynamic>?;
-      calculatedServiceFee.value = double.tryParse(feesTotalMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedServiceFeeFormatted.value = feesTotalMap?['amount_formatted']?.toString() ?? '';
+      calculatedServiceFee.value = model.feesTotal.amount;
+      calculatedServiceFeeFormatted.value = model.feesTotal.amountFormatted;
 
-      final depositMap = data['deposit'] as Map<String, dynamic>?;
-      calculatedSecurityDeposit.value = double.tryParse(depositMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedSecurityDepositFormatted.value = depositMap?['amount_formatted']?.toString() ?? '';
+      calculatedSecurityDeposit.value = model.deposit.amount;
+      calculatedSecurityDepositFormatted.value = model.deposit.amountFormatted;
 
-      final discountMap = data['discount'] as Map<String, dynamic>?;
-      calculatedDiscount.value = double.tryParse(discountMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedDiscountFormatted.value = discountMap?['amount_formatted']?.toString() ?? '';
+      calculatedDiscount.value = model.discount.amount;
+      calculatedDiscountFormatted.value = model.discount.amountFormatted;
 
-      final totalMap = data['total'] as Map<String, dynamic>?;
-      calculatedTotal.value = double.tryParse(totalMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedTotalFormatted.value = totalMap?['amount_formatted']?.toString() ?? '';
+      calculatedTotal.value = model.total.amount;
+      calculatedTotalFormatted.value = model.total.amountFormatted;
 
-      final payableMap = data['payable_total'] as Map<String, dynamic>?;
-      calculatedPayableTotal.value = double.tryParse(payableMap?['amount']?.toString() ?? '') ?? 0.0;
-      calculatedPayableTotalFormatted.value = payableMap?['amount_formatted']?.toString() ?? '';
+      calculatedPayableTotal.value = model.payableTotal.amount;
+      calculatedPayableTotalFormatted.value = model.payableTotal.amountFormatted;
+
+      calculatedAddons.assignAll(model.addons);
+      calculatedFees.assignAll(model.fees);
 
       // Update payment methods list
-      final methodsList = data['payment_methods'] as List?;
-      if (methodsList != null) {
-        final List<Map<String, dynamic>> mapped = [];
-        for (var item in methodsList) {
-          if (item is Map) {
-            mapped.add(Map<String, dynamic>.from(item));
-          }
-        }
-        paymentMethods.assignAll(mapped);
-        if (paymentMethods.isNotEmpty) {
-          final defaultMethod = paymentMethods.firstWhereOrNull((m) => m['enabled'] == true);
-          if (defaultMethod != null) {
-            selectedPaymentMethod.value = defaultMethod['key']?.toString() ?? 'stripe';
-          }
+      paymentMethods.assignAll(model.paymentMethods);
+      if (paymentMethods.isNotEmpty) {
+        final defaultMethod = paymentMethods.firstWhereOrNull((m) => m['enabled'] == true);
+        if (defaultMethod != null) {
+          selectedPaymentMethod.value = defaultMethod['key']?.toString() ?? 'stripe';
         }
       }
     } catch (e) {
@@ -331,36 +463,6 @@ class CheckoutController extends GetxController {
     final pickupDateStr = DateFormat('yyyy-MM-dd').format(pickupDate);
     final returnDateStr = DateFormat('yyyy-MM-dd').format(returnDate);
 
-    // Resolve coordinates
-    double pickupLat = 9.0579;
-    double pickupLng = 7.4951;
-    double dropoffLat = 9.0765;
-    double dropoffLng = 7.3986;
-    String pickupAddress = vehicle.location;
-    String dropoffAddress = vehicle.location;
-
-    final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
-    if (exploreCtrl != null) {
-      final pickupPred = exploreCtrl.selectedPickupPrediction.value;
-      if (pickupPred != null) {
-        final details = await Get.find<LocationService>().fetchLocationDetails(pickupPred.id);
-        if (details != null) {
-          pickupLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0579;
-          pickupLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.4951;
-          pickupAddress = details['address']?.toString() ?? details['name']?.toString() ?? pickupPred.description;
-        }
-      }
-      final dropoffPred = exploreCtrl.selectedDropoffPrediction.value;
-      if (dropoffPred != null) {
-        final details = await Get.find<LocationService>().fetchLocationDetails(dropoffPred.id);
-        if (details != null) {
-          dropoffLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0765;
-          dropoffLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.3986;
-          dropoffAddress = details['address']?.toString() ?? details['name']?.toString() ?? dropoffPred.description;
-        }
-      }
-    }
-
     final bookingPayload = {
       'vehicle_id': int.tryParse(vehicle.id) ?? 0,
       'service_type': isSelfDrive ? 'self_drive' : 'chauffeur',
@@ -368,16 +470,14 @@ class CheckoutController extends GetxController {
       'pickup_time': pickupTime,
       'return_date': returnDateStr,
       'return_time': returnTime,
-      'pickup_latitude': pickupLat,
-      'pickup_longitude': pickupLng,
-      if (!isSelfDrive) ...{
-        'dropoff_latitude': dropoffLat,
-        'dropoff_longitude': dropoffLng,
-        'dropoff_location_name': dropoffAddress,
-        'dropoff_address': dropoffAddress,
-      },
-      'pickup_location_name': pickupAddress,
-      'pickup_address': pickupAddress,
+      'pickup_latitude': resolvedPickupLat,
+      'pickup_longitude': resolvedPickupLng,
+      'dropoff_latitude': resolvedDropoffLat,
+      'dropoff_longitude': resolvedDropoffLng,
+      'dropoff_location_name': resolvedDropoffAddress,
+      'dropoff_address': resolvedDropoffAddress,
+      'pickup_location_name': resolvedPickupAddress,
+      'pickup_address': resolvedPickupAddress,
       if (protectionPlanId != null) 'protection_plan_id': protectionPlanId,
       if (addonIds.isNotEmpty) 'addon_ids': addonIds,
       if (appliedPromoCode.value.isNotEmpty) 'coupon_code': appliedPromoCode.value,

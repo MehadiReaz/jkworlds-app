@@ -945,11 +945,43 @@ class ExploreView extends StatelessWidget {
                               final suggestion = ctrl.pickupSuggestions[index];
                               return ListTile(
                                 leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
-                                title: Text(
-                                  suggestion.description,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      suggestion.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (suggestion.typeLabel.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        suggestion.typeLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: cs.secondary,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                    if (suggestion.address.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        suggestion.address,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 dense: true,
                                 onTap: () => ctrl.selectPickupSuggestion(suggestion),
@@ -960,23 +992,29 @@ class ExploreView extends StatelessWidget {
                       }),
                       const SizedBox(height: 12),
 
-                      // Different Drop-off Toggle
-                      Obx(() => SwitchListTile.adaptive(
-                            value: ctrl.isDifferentDropoff.value,
-                            onChanged: (val) {
-                              ctrl.isDifferentDropoff.value = val;
-                              if (!val) {
-                                ctrl.dropoffLocation.value = '';
-                              }
-                              ctrl.applyFilters();
-                            },
-                            title: const Text(
-                              'Different Drop-off Location',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                            ),
-                            activeColor: cs.primary,
-                            contentPadding: EdgeInsets.zero,
-                          )),
+                      // Different Drop-off Toggle (Only visible for Chauffeur/Airport Transfer)
+                      Obx(() {
+                        final isChauffeur = ctrl.selectedServiceType.value == 'Chauffeur' || ctrl.isChauffeurRequired.value;
+                        if (!isChauffeur) {
+                          return const SizedBox.shrink();
+                        }
+                        return SwitchListTile.adaptive(
+                          value: ctrl.isDifferentDropoff.value,
+                          onChanged: (val) {
+                            ctrl.isDifferentDropoff.value = val;
+                            if (!val) {
+                              ctrl.dropoffLocation.value = '';
+                            }
+                            ctrl.applyFilters();
+                          },
+                          title: const Text(
+                            'Different Drop-off Location',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                          activeColor: cs.primary,
+                          contentPadding: EdgeInsets.zero,
+                        );
+                      }),
 
                       // Drop-off Location Input (Conditional)
                       Obx(() => ctrl.isDifferentDropoff.value
@@ -1029,11 +1067,43 @@ class ExploreView extends StatelessWidget {
                                           final suggestion = ctrl.dropoffSuggestions[index];
                                           return ListTile(
                                             leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
-                                            title: Text(
-                                              suggestion.description,
-                                              style: theme.textTheme.bodyMedium?.copyWith(
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                            title: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  suggestion.name,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                if (suggestion.typeLabel.isNotEmpty) ...[
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    suggestion.typeLabel,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: theme.textTheme.bodySmall?.copyWith(
+                                                      color: cs.secondary,
+                                                      fontWeight: FontWeight.w500,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ],
+                                                if (suggestion.address.isNotEmpty) ...[
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    suggestion.address,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: theme.textTheme.bodySmall?.copyWith(
+                                                      color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
                                             ),
                                             dense: true,
                                             onTap: () => ctrl.selectDropoffSuggestion(suggestion),

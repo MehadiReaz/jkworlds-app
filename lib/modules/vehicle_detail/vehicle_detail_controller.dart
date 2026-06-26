@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 
@@ -7,6 +9,9 @@ import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/review_model.dart';
 import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
+import 'package:jkworlds/data/models/location_prediction.dart';
+import 'package:jkworlds/data/services/location_service.dart';
+import 'package:jkworlds/modules/explore/explore_controller.dart';
 
 class VehicleDetailController extends GetxController {
   // The vehicle starts as the list-page preview; replaced with full detail after fetch.
@@ -34,7 +39,101 @@ class VehicleDetailController extends GetxController {
   final gpsAddon = false.obs;
   final additionalDriverAddon = false.obs;
   final childSeatAddon = false.obs;
+  final prepaidFuelAddon = false.obs;
   final isLoading = false.obs;
+
+  // ── Location & Autocomplete States ──────────────────────────────
+  final pickupLocation = ''.obs;
+  final isDifferentDropoff = false.obs;
+  final dropoffLocation = ''.obs;
+
+  final selectedPickupPrediction = Rxn<LocationPrediction>();
+  final selectedDropoffPrediction = Rxn<LocationPrediction>();
+
+  final pickupLocationCtrl = TextEditingController();
+  final dropoffLocationCtrl = TextEditingController();
+
+  final pickupSuggestions = <LocationPrediction>[].obs;
+  final dropoffSuggestions = <LocationPrediction>[].obs;
+  final isLoadingPickup = false.obs;
+  final isLoadingDropoff = false.obs;
+
+  Timer? _pickupDebounceTimer;
+  Timer? _dropoffDebounceTimer;
+
+  LocationService get _locationService => Get.find<LocationService>();
+
+  bool get isAirportTransfer {
+    final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
+    return exploreCtrl?.selectedServiceType.value == 'Chauffeur';
+  }
+
+  bool get isFromFeatured {
+    final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
+    return exploreCtrl == null || exploreCtrl.pickupLocation.value.isEmpty;
+  }
+
+  Future<void> _fetchPickupSuggestions(String query) async {
+    if (query.trim().isEmpty) {
+      pickupSuggestions.clear();
+      return;
+    }
+    isLoadingPickup.value = true;
+    try {
+      final results = await _locationService.searchLocations(query);
+      pickupSuggestions.assignAll(results);
+    } catch (_) {
+      pickupSuggestions.clear();
+    } finally {
+      isLoadingPickup.value = false;
+    }
+  }
+
+  Future<void> _fetchDropoffSuggestions(String query) async {
+    if (query.trim().isEmpty) {
+      dropoffSuggestions.clear();
+      return;
+    }
+    isLoadingDropoff.value = true;
+    try {
+      final results = await _locationService.searchLocations(query);
+      dropoffSuggestions.assignAll(results);
+    } catch (_) {
+      dropoffSuggestions.clear();
+    } finally {
+      isLoadingDropoff.value = false;
+    }
+  }
+
+  void updatePickupLocation(String val) {
+    pickupLocation.value = val;
+    _pickupDebounceTimer?.cancel();
+    _pickupDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _fetchPickupSuggestions(val);
+    });
+  }
+
+  void updateDropoffLocation(String val) {
+    dropoffLocation.value = val;
+    _dropoffDebounceTimer?.cancel();
+    _dropoffDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _fetchDropoffSuggestions(val);
+    });
+  }
+
+  void selectPickupSuggestion(LocationPrediction suggestion) {
+    pickupLocationCtrl.text = suggestion.name;
+    pickupLocation.value = suggestion.name;
+    selectedPickupPrediction.value = suggestion;
+    pickupSuggestions.clear();
+  }
+
+  void selectDropoffSuggestion(LocationPrediction suggestion) {
+    dropoffLocationCtrl.text = suggestion.name;
+    dropoffLocation.value = suggestion.name;
+    selectedDropoffPrediction.value = suggestion;
+    dropoffSuggestions.clear();
+  }
 
   CategoryService get _categoryService => Get.find<CategoryService>();
 
@@ -53,6 +152,44 @@ class VehicleDetailController extends GetxController {
         _fetchVehicleDetail();
       });
     }
+
+    // Determine booking mode and pre-populate search criteria
+    final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
+    if (exploreCtrl != null) {
+      if (isAirportTransfer) {
+        additionalDriverAddon.value = true;
+        isSelfDrive.value = false;
+      }
+      
+      if (exploreCtrl.pickupLocation.value.isNotEmpty) {
+        pickupLocation.value = exploreCtrl.pickupLocation.value;
+        pickupLocationCtrl.text = exploreCtrl.pickupLocation.value;
+        selectedPickupPrediction.value = exploreCtrl.selectedPickupPrediction.value;
+      }
+      if (exploreCtrl.pickupDateTime.value != null) {
+        pickupDate.value = exploreCtrl.pickupDateTime.value;
+        pickupTime.value = DateFormat('h:mm a').format(exploreCtrl.pickupDateTime.value!);
+      }
+      if (exploreCtrl.dropoffDateTime.value != null) {
+        returnDate.value = exploreCtrl.dropoffDateTime.value;
+        returnTime.value = DateFormat('h:mm a').format(exploreCtrl.dropoffDateTime.value!);
+      }
+      if (exploreCtrl.isDifferentDropoff.value && exploreCtrl.dropoffLocation.value.isNotEmpty) {
+        isDifferentDropoff.value = true;
+        dropoffLocation.value = exploreCtrl.dropoffLocation.value;
+        dropoffLocationCtrl.text = exploreCtrl.dropoffLocation.value;
+        selectedDropoffPrediction.value = exploreCtrl.selectedDropoffPrediction.value;
+      }
+    }
+
+    // Reset different drop-off if additional driver addon is unchecked
+    ever(additionalDriverAddon, (bool hasDriver) {
+      if (!hasDriver) {
+        isDifferentDropoff.value = false;
+        dropoffLocation.value = '';
+        dropoffLocationCtrl.clear();
+      }
+    });
   }
 
   /// Fetches the full vehicle detail from the API endpoint
@@ -193,11 +330,25 @@ class VehicleDetailController extends GetxController {
     return 4000.0;
   }
 
+  double get prepaidFuelAddonPrice {
+    final v = vehicleRx.value ?? vehicle;
+    final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('fuel') || a.title.toLowerCase().contains('prepaid'));
+    if (addons.isNotEmpty && addons.first.priceValue != null) {
+      final addon = addons.first;
+      if (addon.priceType == 'percentage') {
+        return (subtotal * (addon.priceValue! / 100.0));
+      }
+      return addon.priceValue!;
+    }
+    return 15000.0;
+  }
+
   double get addonsCost {
     double cost = 0.0;
     if (gpsAddon.value) cost += gpsAddonPrice * totalDays;
     if (additionalDriverAddon.value) cost += additionalDriverAddonPrice * totalDays;
     if (childSeatAddon.value) cost += childSeatAddonPrice * totalDays;
+    if (prepaidFuelAddon.value) cost += prepaidFuelAddonPrice; // Flat/One-time fee
     return cost;
   }
 
@@ -219,11 +370,16 @@ class VehicleDetailController extends GetxController {
   }
 
   bool get canBook {
+    final needsPickupSelection = pickupLocation.value.trim().isEmpty;
+    final needsDropoffSelection = isDifferentDropoff.value && dropoffLocation.value.trim().isEmpty;
+
     return pickupDate.value != null &&
         returnDate.value != null &&
         pickupTime.value.isNotEmpty &&
         returnTime.value.isNotEmpty &&
-        totalDays > 0;
+        totalDays > 0 &&
+        !needsPickupSelection &&
+        !needsDropoffSelection;
   }
 
   /// Validates if a date is selectable based on unavailable dates
@@ -510,12 +666,18 @@ class VehicleDetailController extends GetxController {
       'gpsAddon': gpsAddon.value,
       'additionalDriverAddon': additionalDriverAddon.value,
       'childSeatAddon': childSeatAddon.value,
+      'prepaidFuelAddon': prepaidFuelAddon.value,
       'subtotal': subtotal,
       'protectionCost': protectionCost,
       'addonsCost': addonsCost,
       'serviceFee': serviceFee,
       'securityDeposit': securityDeposit,
       'total': total,
+      'pickupLocation': pickupLocation.value,
+      'dropoffLocation': isDifferentDropoff.value ? dropoffLocation.value : pickupLocation.value,
+      'selectedPickupPrediction': selectedPickupPrediction.value,
+      'selectedDropoffPrediction': selectedDropoffPrediction.value,
+      'isDifferentDropoff': isDifferentDropoff.value,
     };
 
     // Navigate to Checkout Screen
@@ -524,6 +686,10 @@ class VehicleDetailController extends GetxController {
 
   @override
   void onClose() {
+    _pickupDebounceTimer?.cancel();
+    _dropoffDebounceTimer?.cancel();
+    pickupLocationCtrl.dispose();
+    dropoffLocationCtrl.dispose();
     scrollController.dispose();
     super.onClose();
   }
@@ -541,16 +707,25 @@ class VehicleDetailController extends GetxController {
     returnDate.value = null;
     selectedProtection.value = 'Basic';
     gpsAddon.value = false;
-    additionalDriverAddon.value = false;
+    additionalDriverAddon.value = isAirportTransfer;
     childSeatAddon.value = false;
+
+    // Reset location states
+    isDifferentDropoff.value = false;
+    pickupLocation.value = '';
+    dropoffLocation.value = '';
+    pickupLocationCtrl.clear();
+    dropoffLocationCtrl.clear();
+    selectedPickupPrediction.value = null;
+    selectedDropoffPrediction.value = null;
 
     _fetchVehicleDetail();
 
     if (scrollController.hasClients) {
       scrollController.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+         0.0,
+         duration: const Duration(milliseconds: 300),
+         curve: Curves.easeOut,
       );
     }
   }

@@ -426,62 +426,7 @@ class HomeView extends StatelessWidget {
                             ),
                             const SizedBox(height: 14),
 
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Different drop-off location?',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: cs.onSurface,
-                                  ),
-                                ),
-                                Obx(() => Switch(
-                                      value: exploreCtrl.isDifferentDropoff.value,
-                                      activeColor: cs.primary,
-                                      activeTrackColor: cs.primary.withValues(alpha: 0.35),
-                                      inactiveThumbColor: isLight ? Colors.grey.shade100 : Colors.grey.shade400,
-                                      inactiveTrackColor: isLight ? Colors.grey.shade300 : Colors.grey.shade700,
-                                      onChanged: (val) {
-                                        exploreCtrl.isDifferentDropoff.value = val;
-                                        if (!val) {
-                                          exploreCtrl.dropoffLocation.value = '';
-                                          exploreCtrl.dropoffLocationCtrl.clear();
-                                        }
-                                      },
-                                    )),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
 
-                            Obx(() {
-                              if (!exploreCtrl.isDifferentDropoff.value) return const SizedBox.shrink();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _buildInputLabel('DROP-OFF LOCATION', cs),
-                                  const SizedBox(height: 6),
-                                  _buildLocationField(
-                                    controller: exploreCtrl.dropoffLocationCtrl,
-                                    hint: 'Enter drop-off location',
-                                    icon: Icons.location_on_rounded,
-                                    onChanged: (val) {
-                                      exploreCtrl.updateDropoffLocation(val);
-                                    },
-                                    isLoading: exploreCtrl.isLoadingDropoff.value,
-                                    cs: cs,
-                                    isLight: isLight,
-                                  ),
-                                  _buildSuggestionsList(
-                                    suggestions: exploreCtrl.dropoffSuggestions,
-                                    onSelect: (val) => exploreCtrl.selectDropoffSuggestion(val),
-                                    theme: theme,
-                                    cs: cs,
-                                  ),
-                                  const SizedBox(height: 14),
-                                ],
-                              );
-                            }),
 
                             _buildDateTimeRow(
                               label: 'PICK-UP DATE & TIME',
@@ -511,11 +456,9 @@ class HomeView extends StatelessWidget {
                                 Get.back(); // Dismiss bottom sheet
                                 exploreCtrl.selectedServiceType.value = 'All';
                                 exploreCtrl.isChauffeurRequired.value = false;
-                                if (exploreCtrl.dropoffLocation.value.isNotEmpty) {
-                                  exploreCtrl.isDifferentDropoff.value = true;
-                                } else {
-                                  exploreCtrl.isDifferentDropoff.value = false;
-                                }
+                                exploreCtrl.isDifferentDropoff.value = false;
+                                exploreCtrl.dropoffLocation.value = '';
+                                exploreCtrl.dropoffLocationCtrl.clear();
                                 exploreCtrl.applyFilters();
                                 ctrl.navigateToExplore(resetToAll: false);
                               },
@@ -777,12 +720,45 @@ class HomeView extends StatelessWidget {
             final suggestion = suggestions[index];
             return ListTile(
               leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 18),
-              title: Text(
-                suggestion.description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    suggestion.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (suggestion.typeLabel.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      suggestion.typeLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.secondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                  if (suggestion.address.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      suggestion.address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               dense: true,
               onTap: () => onSelect(suggestion),

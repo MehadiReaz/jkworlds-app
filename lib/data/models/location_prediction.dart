@@ -1,10 +1,16 @@
 class LocationPrediction {
   final String id;
   final String description;
+  final String name;
+  final String typeLabel;
+  final String address;
 
   LocationPrediction({
     required this.id,
     required this.description,
+    this.name = '',
+    this.typeLabel = '',
+    this.address = '',
   });
 
   factory LocationPrediction.fromJson(Map<String, dynamic> json) {
@@ -18,9 +24,16 @@ class LocationPrediction {
                               json['name'] ?? 
                               '').toString();
 
+    final String nameValue = (json['name'] ?? '').toString();
+    final String typeLabelValue = (json['type_label'] ?? json['type'] ?? '').toString();
+    final String addressValue = (json['address'] ?? '').toString();
+
     return LocationPrediction(
       id: idValue,
       description: descValue,
+      name: nameValue.isNotEmpty ? nameValue : descValue,
+      typeLabel: typeLabelValue,
+      address: addressValue,
     );
   }
 }

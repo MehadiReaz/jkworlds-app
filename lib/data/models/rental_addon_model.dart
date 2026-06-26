@@ -20,7 +20,7 @@ class RentalAddonModel {
     this.isCheckbox = true,
   });
 
-  factory RentalAddonModel.fromJson(Map<String, dynamic> json) {
+  factory RentalAddonModel.fromJson(Map<String, dynamic> json, {double scale = 1.0}) {
     double? parseDouble(dynamic v) {
       if (v == null) return null;
       if (v is double) return v;
@@ -28,12 +28,15 @@ class RentalAddonModel {
       return double.tryParse(v.toString());
     }
 
+    final rawPrice = parseDouble(json['price_value']);
+    final scaledPrice = rawPrice != null ? rawPrice * scale : null;
+
     return RentalAddonModel(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id'].toString()) ?? 0,
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       priceType: json['price_type'] as String? ?? 'fixed',
-      priceValue: parseDouble(json['price_value']),
+      priceValue: scaledPrice,
       priceValueFormatted: json['price_value_formatted'] as String?,
       priceLabel: json['price_label'] as String? ?? '',
       isCheckbox: json['is_checkbox'] is bool ? json['is_checkbox'] as bool : true,

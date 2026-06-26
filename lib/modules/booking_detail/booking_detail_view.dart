@@ -333,7 +333,7 @@ class BookingDetailsView extends StatelessWidget {
               title: 'Return',
               dateStr: dateFormat.format(booking.returnDate),
               timeStr: timeFormat.format(booking.returnDate),
-              location: 'Selected Return Location',
+              location: booking.dropoffLocation.isNotEmpty ? booking.dropoffLocation : 'Selected Return Location',
               icon: Icons.logout_rounded,
               iconColor: Colors.orange.shade700,
               cs: cs,

@@ -288,7 +288,7 @@ void main() {
 
     // Verify summary breakdown calculations render correctly
     expect(find.text('BOOKING SUMMARY'), findsOneWidget);
-    expect(find.text('Base (2d)'), findsOneWidget);
+    expect(find.textContaining('Base (2d'), findsOneWidget);
     expect(find.text('₦110,000'), findsOneWidget);
     expect(find.text('₦214,500'), findsOneWidget); // Total amount returned by calculation API
 
