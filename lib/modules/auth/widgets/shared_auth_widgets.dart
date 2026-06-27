@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:jkworlds/core/constants/image_assets.dart';
+
 /// Reusable card layout for auth screens.
 class AuthCard extends StatelessWidget {
   final Widget child;
@@ -117,7 +119,7 @@ class SocialSignInSection extends StatelessWidget {
         SocialSignInButton(
           onPressed: isLoading ? null : onGooglePressed,
           icon: Image.asset(
-            'assets/pictures/google.png',
+            ImageAssets.google,
             width: 20,
             height: 20,
           ),

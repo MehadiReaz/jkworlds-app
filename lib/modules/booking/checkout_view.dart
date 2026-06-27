@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
+import 'package:jkworlds/core/constants/image_assets.dart';
 import 'checkout_controller.dart';
 
 class CheckoutView extends StatelessWidget {
@@ -963,7 +964,7 @@ class CheckoutView extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.asset(
-        'assets/pictures/stripe.png',
+        ImageAssets.stripe,
         width: 38,
         height: 38,
         fit: BoxFit.contain,
@@ -994,7 +995,7 @@ class CheckoutView extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.asset(
-        'assets/pictures/paypal.png',
+        ImageAssets.paypal,
         width: 38,
         height: 38,
         fit: BoxFit.contain,
@@ -1010,7 +1011,7 @@ class CheckoutView extends StatelessWidget {
             child: Text(
               'P',
               style: TextStyle(
-                color: const Color(0xFF003087),
+                color: Color(0xFF003087),
                 fontWeight: FontWeight.w900,
                 fontSize: 22,
                 fontStyle: FontStyle.italic,
@@ -1026,7 +1027,7 @@ class CheckoutView extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.asset(
-        'assets/pictures/flutterwave.png',
+        ImageAssets.flutterwave,
         width: 38,
         height: 38,
         fit: BoxFit.contain,

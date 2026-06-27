@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'splash_controller.dart';
+import 'package:jkworlds/core/constants/image_assets.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -172,7 +173,7 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                                   child: Padding(
                                     padding: const EdgeInsets.all(16.0),
                                     child: Image.asset(
-                                      'assets/pictures/logo.png',
+                                      ImageAssets.logo,
                                       fit: BoxFit.contain,
                                     ),
                                   ),

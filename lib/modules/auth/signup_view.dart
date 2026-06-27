@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'auth_controller.dart';
 import 'widgets/shared_auth_widgets.dart';
+import 'package:jkworlds/core/constants/image_assets.dart';
 
 class SignupView extends GetView<AuthController> {
   const SignupView({super.key});
@@ -35,7 +36,7 @@ class SignupView extends GetView<AuthController> {
                             margin: const EdgeInsets.only(bottom: 24),
                             height: 64,
                             child: Image.asset(
-                              'assets/pictures/logo.png',
+                              ImageAssets.logo,
                               fit: BoxFit.contain,
                             ),
                           ),
