@@ -53,4 +53,11 @@ class ApiConstants {
 
   // ── App Data Endpoint ────────────────────────────────────────
   static const String appData = '/api/app-data';
+
+  // ── New API Endpoints ────────────────────────────────────────
+  static const String contact = '/api/contact';
+  static const String account = '/api/account';
+  static const String ratings = '/api/ratings';
+  static const String damageReports = '/api/damage-reports';
+  static String damageReportDetail(dynamic id) => '/api/damage-reports/$id';
 }

@@ -61,6 +61,26 @@ class VehicleModel {
   final List<RentalAddonModel> rentalAddons;
   final List<UnavailableDateModel> unavailableDates;
 
+  // Additional fields from response data
+  final String slug;
+  final String model;
+  final String categoryName;
+  final String categorySlug;
+  final String serviceTypeLabel;
+  final int doors;
+  final String transmissionLabel;
+  final String fuelTypeLabel;
+  final bool additionalDriverEnabled;
+  final String additionalDriverPriceType;
+  final double additionalDriverPriceValue;
+  final String additionalDriverPriceFormatted;
+  final String weeklyRateFormatted;
+  final String monthlyRateFormatted;
+  final String chauffeurRatePerDayFormatted;
+  final String extraKmChargeFormatted;
+  final String overtimeChargePerHourFormatted;
+  final String securityDepositAmountFormatted;
+
   const VehicleModel({
     required this.id,
     required this.name,
@@ -108,6 +128,24 @@ class VehicleModel {
     this.protectionPlans = const [],
     this.rentalAddons = const [],
     this.unavailableDates = const [],
+    this.slug = '',
+    this.model = '',
+    this.categoryName = '',
+    this.categorySlug = '',
+    this.serviceTypeLabel = '',
+    this.doors = 4,
+    this.transmissionLabel = '',
+    this.fuelTypeLabel = '',
+    this.additionalDriverEnabled = false,
+    this.additionalDriverPriceType = '',
+    this.additionalDriverPriceValue = 0.0,
+    this.additionalDriverPriceFormatted = '',
+    this.weeklyRateFormatted = '',
+    this.monthlyRateFormatted = '',
+    this.chauffeurRatePerDayFormatted = '',
+    this.extraKmChargeFormatted = '',
+    this.overtimeChargePerHourFormatted = '',
+    this.securityDepositAmountFormatted = '',
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -302,6 +340,33 @@ class VehicleModel {
     final cancellationTitle = cancellationMap?['title'] as String?;
     final cancellationDescription = cancellationMap?['description'] as String?;
 
+    // New properties
+    final slug = json['slug'] as String? ?? '';
+    final model = json['model'] as String?
+        ?? (json['vehicle_model'] is Map<String, dynamic> ? json['vehicle_model']['name'] as String? : null)
+        ?? '';
+    final categoryName = categoryMap?['name'] as String? ?? json['category_name'] as String? ?? '';
+    final categorySlug = categoryMap?['slug'] as String? ?? json['category_slug'] as String? ?? '';
+    final serviceTypeLabel = json['service_type_label'] as String? ?? '';
+    final doors = _parseInt(specsMap?['doors'] ?? json['doors']);
+    final transmissionLabel = specsMap?['transmission_label'] as String? ?? json['transmission_label'] as String? ?? '';
+    final fuelTypeLabel = specsMap?['fuel_type_label'] as String? ?? json['fuel_type_label'] as String? ?? '';
+
+    final additionalDriverMap = json['additional_driver'] is Map<String, dynamic>
+        ? json['additional_driver'] as Map<String, dynamic>
+        : null;
+    final additionalDriverEnabled = _parseBool(additionalDriverMap?['enabled'] ?? json['additional_driver_enabled']);
+    final additionalDriverPriceType = additionalDriverMap?['price_type'] as String? ?? '';
+    final additionalDriverPriceValue = _parseDouble(additionalDriverMap?['price_value'] ?? json['additional_driver_price']) * scale;
+    final additionalDriverPriceFormatted = additionalDriverMap?['price_value_formatted'] as String? ?? '';
+
+    final weeklyRateFormatted = pricingDetailsMap?['weekly_rate_formatted'] as String? ?? '';
+    final monthlyRateFormatted = pricingDetailsMap?['monthly_rate_formatted'] as String? ?? '';
+    final chauffeurRatePerDayFormatted = pricingDetailsMap?['chauffeur_rate_per_day_formatted'] as String? ?? '';
+    final extraKmChargeFormatted = pricingDetailsMap?['extra_km_charge_formatted'] as String? ?? '';
+    final overtimeChargePerHourFormatted = pricingDetailsMap?['overtime_charge_per_hour_formatted'] as String? ?? '';
+    final securityDepositAmountFormatted = secDepMap?['amount_formatted'] as String? ?? pricingDetailsMap?['security_deposit_formatted'] as String? ?? '';
+
     // Lists of strings/objects
     List<String> parseStringList(dynamic v) {
       if (v is List) {
@@ -400,6 +465,24 @@ class VehicleModel {
       dailyRateFormatted: dailyRateFormatted,
       totalPrice: totalPrice,
       totalPriceFormatted: totalPriceFormatted,
+      slug: slug,
+      model: model,
+      categoryName: categoryName,
+      categorySlug: categorySlug,
+      serviceTypeLabel: serviceTypeLabel,
+      doors: doors,
+      transmissionLabel: transmissionLabel,
+      fuelTypeLabel: fuelTypeLabel,
+      additionalDriverEnabled: additionalDriverEnabled,
+      additionalDriverPriceType: additionalDriverPriceType,
+      additionalDriverPriceValue: additionalDriverPriceValue,
+      additionalDriverPriceFormatted: additionalDriverPriceFormatted,
+      weeklyRateFormatted: weeklyRateFormatted,
+      monthlyRateFormatted: monthlyRateFormatted,
+      chauffeurRatePerDayFormatted: chauffeurRatePerDayFormatted,
+      extraKmChargeFormatted: extraKmChargeFormatted,
+      overtimeChargePerHourFormatted: overtimeChargePerHourFormatted,
+      securityDepositAmountFormatted: securityDepositAmountFormatted,
     );
   }
 
@@ -447,6 +530,24 @@ class VehicleModel {
         'protection_plans': protectionPlans.map((e) => e.toJson()).toList(),
         'rental_addons': rentalAddons.map((e) => e.toJson()).toList(),
         'unavailable_dates': unavailableDates.map((e) => e.toJson()).toList(),
+        'slug': slug,
+        'model': model,
+        'category_name': categoryName,
+        'category_slug': categorySlug,
+        'service_type_label': serviceTypeLabel,
+        'doors': doors,
+        'transmission_label': transmissionLabel,
+        'fuel_type_label': fuelTypeLabel,
+        'additional_driver_enabled': additionalDriverEnabled,
+        'additional_driver_price_type': additionalDriverPriceType,
+        'additional_driver_price_value': additionalDriverPriceValue,
+        'additional_driver_price_formatted': additionalDriverPriceFormatted,
+        'weekly_rate_formatted': weeklyRateFormatted,
+        'monthly_rate_formatted': monthlyRateFormatted,
+        'chauffeur_rate_per_day_formatted': chauffeurRatePerDayFormatted,
+        'extra_km_charge_formatted': extraKmChargeFormatted,
+        'overtime_charge_per_hour_formatted': overtimeChargePerHourFormatted,
+        'security_deposit_amount_formatted': securityDepositAmountFormatted,
       };
 }
 

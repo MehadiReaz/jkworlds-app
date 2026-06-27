@@ -298,6 +298,45 @@ class AuthService extends GetxService {
     return response.data['message'] as String? ?? 'OTP verified successfully';
   }
 
+  /// Delete the authenticated user's account.
+  /// POST /api/account with _method=DELETE (Laravel method-spoofing).
+  Future<void> deleteAccount() async {
+    try {
+      final response = await _api.post(
+        ApiConstants.account,
+        data: {'_method': 'DELETE'},
+      );
+      _requireSuccess(response, fallbackMessage: 'Failed to delete account');
+    } finally {
+      await logout();
+    }
+  }
+
+  /// Manually trigger token refresh.
+  Future<void> refreshToken() async {
+    final oldToken = _prefs.getString(_tokenKey);
+    if (oldToken == null || oldToken.isEmpty) return;
+
+    try {
+      final response = await _api.post(ApiConstants.refreshToken);
+      final body = response.data;
+      if (body != null) {
+        final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+        if (success && body['data'] != null) {
+          final newToken = body['data']['token'] as String?;
+          if (newToken != null && newToken.isNotEmpty) {
+            await _prefs.setString(_tokenKey, newToken);
+          }
+        }
+      }
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[AuthService] refreshToken error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
   /// Fetch the authenticated user's profile from the server
   /// and refresh local state and persisted cache.
   Future<void> fetchProfile() async {

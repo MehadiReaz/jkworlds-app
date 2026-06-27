@@ -107,6 +107,10 @@ class VehicleDetailController extends GetxController {
 
   void updatePickupLocation(String val) {
     pickupLocation.value = val;
+    if (!isDifferentDropoff.value) {
+      dropoffLocation.value = val;
+      dropoffLocationCtrl.text = val;
+    }
     _pickupDebounceTimer?.cancel();
     _pickupDebounceTimer = Timer(const Duration(milliseconds: 500), () {
       _fetchPickupSuggestions(val);
@@ -126,6 +130,11 @@ class VehicleDetailController extends GetxController {
     pickupLocation.value = suggestion.name;
     selectedPickupPrediction.value = suggestion;
     pickupSuggestions.clear();
+    if (!isDifferentDropoff.value) {
+      dropoffLocationCtrl.text = suggestion.name;
+      dropoffLocation.value = suggestion.name;
+      selectedDropoffPrediction.value = suggestion;
+    }
   }
 
   void selectDropoffSuggestion(LocationPrediction suggestion) {
@@ -174,22 +183,60 @@ class VehicleDetailController extends GetxController {
         returnDate.value = exploreCtrl.dropoffDateTime.value;
         returnTime.value = DateFormat('h:mm a').format(exploreCtrl.dropoffDateTime.value!);
       }
-      if (exploreCtrl.isDifferentDropoff.value && exploreCtrl.dropoffLocation.value.isNotEmpty) {
-        isDifferentDropoff.value = true;
-        dropoffLocation.value = exploreCtrl.dropoffLocation.value;
-        dropoffLocationCtrl.text = exploreCtrl.dropoffLocation.value;
-        selectedDropoffPrediction.value = exploreCtrl.selectedDropoffPrediction.value;
+      if (additionalDriverAddon.value) {
+        if (exploreCtrl.isDifferentDropoff.value && exploreCtrl.dropoffLocation.value.isNotEmpty) {
+          isDifferentDropoff.value = true;
+          dropoffLocation.value = exploreCtrl.dropoffLocation.value;
+          dropoffLocationCtrl.text = exploreCtrl.dropoffLocation.value;
+          selectedDropoffPrediction.value = exploreCtrl.selectedDropoffPrediction.value;
+        }
+      } else {
+        isDifferentDropoff.value = false;
+        dropoffLocation.value = pickupLocation.value;
+        dropoffLocationCtrl.text = pickupLocationCtrl.text;
+        selectedDropoffPrediction.value = selectedPickupPrediction.value;
       }
     }
 
-    // Reset different drop-off if additional driver addon is unchecked
+    // Bind driving mode and reset drop-off details if additional driver addon changes
     ever(additionalDriverAddon, (bool hasDriver) {
+      isSelfDrive.value = !hasDriver;
       if (!hasDriver) {
         isDifferentDropoff.value = false;
-        dropoffLocation.value = '';
-        dropoffLocationCtrl.clear();
+        dropoffLocation.value = pickupLocation.value;
+        dropoffLocationCtrl.text = pickupLocationCtrl.text;
+        selectedDropoffPrediction.value = selectedPickupPrediction.value;
       }
     });
+
+    // Sync drop-off with pickup if "Different Drop-off Location" is toggled off
+    ever(isDifferentDropoff, (bool diff) {
+      if (!diff) {
+        dropoffLocation.value = pickupLocation.value;
+        dropoffLocationCtrl.text = pickupLocationCtrl.text;
+        selectedDropoffPrediction.value = selectedPickupPrediction.value;
+      }
+    });
+
+    // Also sync if pickup details change while different dropoff is disabled
+    ever(pickupLocation, (String pickup) {
+      if (!isDifferentDropoff.value) {
+        dropoffLocation.value = pickup;
+        dropoffLocationCtrl.text = pickupLocationCtrl.text;
+      }
+    });
+
+    ever(selectedPickupPrediction, (LocationPrediction? pred) {
+      if (!isDifferentDropoff.value) {
+        selectedDropoffPrediction.value = pred;
+      }
+    });
+
+    // Auto-adjust selectedPriceTab based on date range duration
+    ever(pickupDate, (_) => _updatePriceTabAutomatically());
+    ever(returnDate, (_) => _updatePriceTabAutomatically());
+
+    _updatePriceTabAutomatically();
   }
 
   /// Fetches the full vehicle detail from the API endpoint
@@ -226,8 +273,19 @@ class VehicleDetailController extends GetxController {
     selectedPriceTab.value = tab;
   }
 
+  void _updatePriceTabAutomatically() {
+    final days = totalDays;
+    if (days >= 30) {
+      selectedPriceTab.value = 2;
+    } else if (days >= 7) {
+      selectedPriceTab.value = 1;
+    } else {
+      selectedPriceTab.value = 0;
+    }
+  }
+
   void toggleDriveMode() {
-    isSelfDrive.value = !isSelfDrive.value;
+    additionalDriverAddon.value = !additionalDriverAddon.value;
   }
 
   void toggleWishlist() {
@@ -269,7 +327,14 @@ class VehicleDetailController extends GetxController {
 
   double get subtotal {
     final v = vehicleRx.value ?? vehicle;
-    return totalDays * v.pricePerDay;
+    switch (selectedPriceTab.value) {
+      case 1:
+        return totalDays * (v.pricePerWeek / 7.0);
+      case 2:
+        return totalDays * (v.pricePerMonth / 30.0);
+      default:
+        return totalDays * v.pricePerDay;
+    }
   }
 
   double get protectionCost {
@@ -306,7 +371,10 @@ class VehicleDetailController extends GetxController {
 
   double get additionalDriverAddonPrice {
     final v = vehicleRx.value ?? vehicle;
-    final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('driver'));
+    if (v.chauffeurRatePerDay != null && v.chauffeurRatePerDay! > 0) {
+      return v.chauffeurRatePerDay!;
+    }
+    final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('driver') || a.title.toLowerCase().contains('chauffeur'));
     if (addons.isNotEmpty && addons.first.priceValue != null) {
       final addon = addons.first;
       if (addon.priceType == 'percentage') {
@@ -468,6 +536,227 @@ class VehicleDetailController extends GetxController {
 
   Future<void> selectReturnTime(BuildContext context) async {
     _showTimeListBottomSheet(context, returnTime);
+  }
+
+  void showRatePlansSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final currencyService = Get.find<CurrencyService>();
+    final v = vehicleRx.value ?? vehicle;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            top: 8,
+            left: 20,
+            right: 20,
+          ),
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Rental Rate Plans',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.close_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Obx(() {
+                return Column(
+                  children: [
+                    _buildRatePlanCard(
+                      title: 'Daily Plan',
+                      subtitle: 'Standard rate for daily bookings',
+                      priceText: v.dailyRateFormatted.isNotEmpty
+                          ? '${v.dailyRateFormatted}/day'
+                          : '${currencyService.formatPrice(v.pricePerDay)}/day',
+                      theme: theme,
+                      cs: cs,
+                    ),
+                    const SizedBox(height: 12),
+                    if (v.pricePerWeek > 0) ...[
+                      _buildRatePlanCard(
+                        title: 'Weekly Plan',
+                        subtitle: 'Best value for 7+ days rentals',
+                        priceText: v.weeklyRateFormatted.isNotEmpty
+                            ? '${v.weeklyRateFormatted}/week'
+                            : '${currencyService.formatPrice(v.pricePerWeek)}/week',
+                        equivalentText: 'Equivalent to ${currencyService.formatPrice(v.pricePerWeek / 7.0)}/day',
+                        badgeText: 'Save 14%',
+                        theme: theme,
+                        cs: cs,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (v.pricePerMonth > 0) ...[
+                      _buildRatePlanCard(
+                        title: 'Monthly Plan',
+                        subtitle: 'Super saver for 30+ days rentals',
+                        priceText: v.monthlyRateFormatted.isNotEmpty
+                            ? '${v.monthlyRateFormatted}/month'
+                            : '${currencyService.formatPrice(v.pricePerMonth)}/month',
+                        equivalentText: 'Equivalent to ${currencyService.formatPrice(v.pricePerMonth / 30.0)}/day',
+                        badgeText: 'Save 20%',
+                        theme: theme,
+                        cs: cs,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
+                );
+              }),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: cs.primary, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Total rental prices will be adjusted automatically during checkout according to your selected dates.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRatePlanCard({
+    required String title,
+    required String subtitle,
+    required String priceText,
+    String? equivalentText,
+    String? badgeText,
+    required ThemeData theme,
+    required ColorScheme cs,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5), width: 1.0),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    if (badgeText != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+                if (equivalentText != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    equivalentText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.primary.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            priceText,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: cs.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showTimeListBottomSheet(BuildContext context, RxString timeRx) {
@@ -678,6 +967,7 @@ class VehicleDetailController extends GetxController {
       'selectedPickupPrediction': selectedPickupPrediction.value,
       'selectedDropoffPrediction': selectedDropoffPrediction.value,
       'isDifferentDropoff': isDifferentDropoff.value,
+      'selectedPriceTab': selectedPriceTab.value,
     };
 
     // Navigate to Checkout Screen

@@ -1,30 +1,45 @@
 # JKWORLDS - Implemented Features
 
-A brief overview of the features implemented in the JKWORLDS Flutter application:
+A comprehensive overview of the features implemented in the JKWORLDS Flutter application:
 
 1. **User Authentication & Profiles**
-   Full authentication flow including Login, Signup, OTP Verification, Password Reset, and profile customization (avatar/display details).
+   * Full authentication flows including Login, Signup, OTP Verification, and Password Reset.
+   * Profile management including avatar upload and profile details updates.
    
 2. **Dynamic Dashboard (Home Screen)**
-   Displays personalized greeting (morning/afternoon/evening), auto-scrolling promotional banners, dynamic category lists, and featured/top-rated vehicle displays.
+   * Personalized greeting (matching morning/afternoon/evening time periods).
+   * Auto-scrolling promotional banners, category filters, and featured/top-rated vehicle displays.
 
 3. **Advanced Search & Autocomplete**
-   Location autocomplete for pickup and drop-off points powered by a location search service to streamline address selections.
+   * Autocomplete suggestions for pickup and drop-off points.
+   * **Structured Multi-Line Suggestions**: Displays name, type label (e.g. Airport, Hotel), and address on separate lines.
+   * **Clean Text Selection**: On choosing a suggestion, only the location name is populated into the text input field.
 
 4. **Multi-Parameter Vehicle Filters**
-   Comprehensive options to narrow down search results by service type (self-drive/chauffeur), vehicle category, transmission type, and fuel type.
+   * Rich filters to narrow down search results by service type (self-drive/chauffeur), vehicle category, transmission type, and fuel type.
 
 5. **Paginated Results & Sorting**
-   Smooth scroll-based pagination (infinite scroll) supporting sorting by "Top Rated", "Price: Low to High", and "Price: High to Low".
+   * Infinite scroll pagination for vehicle results.
+   * Multiple sorting modes: "Top Rated", "Price: Low to High", and "Price: High to Low".
 
 6. **Detailed Vehicle Showcase**
-   View specs (seats, mileage, transmission), interactive image galleries, built-in features (GPS, AC, Bluetooth), vendor information, and customer reviews.
+   * Complete vehicle specifications (seats, mileage, transmission), interactive image galleries, built-in features (GPS, AC, Bluetooth), vendor reviews, and customer ratings.
 
-7. **Booking Wizard & Add-ons**
-   Multi-step reservation wizard defining pickup/dropoff times, chauffeur options, and selection of optional protection plans (Basic, Collision, Premium).
+7. **Booking Wizard & Checkout**
+   * Multi-step reservation wizard defining pickup/dropoff times, chauffeur preferences, and dynamic protection plans (Basic, Collision, Premium).
 
-9. **Secure Payment & Checkout**
-   Supports credit/debit cards, digital mobile wallets (such as bKash, Nagad, Rocket), and flexible offline/cash payment options.
+8. **Location Coverage Validation**
+   * Validates that coordinate inputs fall within active service area coverage zones (`checkCoverage`) with support for geocoding providers like Nominatim, Google, and Mapbox.
+
+9. **Interactive Booking Details**
+   * Rich dashboard for individual bookings displaying reference details, real-time status headers (pending, active, completed, cancelled), trip itineraries (dates, times, locations), payment status, and full itemized cost breakdowns (with support for dynamic currency conversions).
 
 10. **Order Tracking & Booking History**
-    View upcoming, active, completed, or cancelled booking records with a complete cost breakdown and status tracking.
+    * Complete records of upcoming, active, completed, or cancelled bookings with status tracking and dynamic actions (e.g. initiating payment or support chats).
+
+11. **Secure Payment Gateways**
+    * Integrated checkout with credit/debit cards, digital mobile wallets (such as bKash, Nagad, Rocket), and flexible cash-on-delivery options.
+
+12. **In-App Support Ticket & Chat System**
+    * Full inbox to list, search, and filter support cases by status and priority (Low, Medium, High).
+    * Dynamic, real-time messaging updates with auto-adjusted polling frequencies and support for image attachments/uploads.

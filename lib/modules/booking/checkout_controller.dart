@@ -57,6 +57,7 @@ class CheckoutController extends GetxController {
   final appliedPromoCode = ''.obs;
 
   // ── Dynamic Pricing State (from API) ─────────────────────────────
+  int selectedPriceTab = 0;
   final calculatedSubtotal = 0.0.obs;
   final calculatedProtectionCost = 0.0.obs;
   final calculatedAddonsCost = 0.0.obs;
@@ -133,9 +134,15 @@ class CheckoutController extends GetxController {
   }
 
   double get subtotal {
-    return calculatedSubtotal.value > 0
-        ? calculatedSubtotal.value
-        : vehicle.pricePerDay * totalDays;
+    if (calculatedSubtotal.value > 0) return calculatedSubtotal.value;
+    switch (selectedPriceTab) {
+      case 1:
+        return totalDays * (vehicle.pricePerWeek / 7.0);
+      case 2:
+        return totalDays * (vehicle.pricePerMonth / 30.0);
+      default:
+        return vehicle.pricePerDay * totalDays;
+    }
   }
 
   // Resolved coordinates & addresses
@@ -166,6 +173,15 @@ class CheckoutController extends GetxController {
     additionalDriverAddon = args['additionalDriverAddon'] as bool;
     childSeatAddon = args['childSeatAddon'] as bool;
     prepaidFuelAddon = args['prepaidFuelAddon'] as bool? ?? false;
+    // Auto-adjust selectedPriceTab based on date range duration
+    final days = returnDate.difference(pickupDate).inDays;
+    if (days >= 30) {
+      selectedPriceTab = 2;
+    } else if (days >= 7) {
+      selectedPriceTab = 1;
+    } else {
+      selectedPriceTab = 0;
+    }
 
     // Prefill form from AuthService
     final auth = Get.find<AuthService>();

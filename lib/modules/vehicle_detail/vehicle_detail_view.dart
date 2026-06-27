@@ -223,7 +223,7 @@ class VehicleDetailView extends StatelessWidget {
                     context: context,
                     icon: Icons.location_on_outlined,
                     label: 'LOCATION',
-                    value: vehicle.location.split(',')[0],
+                    value: vehicle.location.isNotEmpty ? vehicle.location.split(',')[0] : 'N/A',
                     cs: cs,
                     theme: theme,
                   ),
@@ -270,47 +270,34 @@ class VehicleDetailView extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Plate & Mileage & Color Card
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    Icon(Icons.directions_car_filled_outlined, size: 18, color: cs.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Plate: ',
-                      style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
+              // Plate & Mileage & Color Badges
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _buildSpecificationBadge(
+                    icon: Icons.directions_car_filled_outlined,
+                    label: 'Plate',
+                    value: vehicle.plateNumber ?? 'N/A',
+                    cs: cs,
+                    theme: theme,
+                  ),
+                  _buildSpecificationBadge(
+                    icon: Icons.speed_rounded,
+                    label: 'Mileage',
+                    value: vehicle.mileage != null ? '${NumberFormat('#,###').format(vehicle.mileage)} km' : 'N/A',
+                    cs: cs,
+                    theme: theme,
+                  ),
+                  if (vehicle.color != null && vehicle.color!.isNotEmpty)
+                    _buildSpecificationBadge(
+                      icon: Icons.palette_outlined,
+                      label: 'Color',
+                      value: vehicle.color!,
+                      cs: cs,
+                      theme: theme,
                     ),
-                    Text(
-                      vehicle.plateNumber ?? 'N/A',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 24),
-                    Icon(Icons.speed_rounded, size: 18, color: cs.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Mileage: ',
-                      style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
-                    ),
-                    Text(
-                      vehicle.mileage != null ? '${NumberFormat('#,###').format(vehicle.mileage)} km' : 'N/A',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    if (vehicle.color != null && vehicle.color!.isNotEmpty) ...[
-                      const SizedBox(width: 24),
-                      Icon(Icons.palette_outlined, size: 18, color: cs.onSurfaceVariant),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Color: ',
-                        style: TextStyle(fontWeight: FontWeight.normal, color: cs.onSurfaceVariant),
-                      ),
-                      Text(
-                        vehicle.color!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ],
-                ),
+                ],
               ),
               const SizedBox(height: 28),
 
@@ -333,144 +320,133 @@ class VehicleDetailView extends StatelessWidget {
               const SizedBox(height: 28),
 
               // 6. Policy Cards
-              _buildPolicyCard(
-                context: context,
-                icon: Icons.timer_outlined,
-                title: 'Mileage Policy',
-                points: vehicle.mileagePolicies.isNotEmpty
-                    ? vehicle.mileagePolicies
-                    : [
-                        'Unlimited mileage included',
-                        'No extra distance charges',
-                        'Travel anywhere within Nigeria'
-                      ],
-                cs: cs,
-                theme: theme,
-              ),
-              const SizedBox(height: 16),
-              _buildPolicyCard(
-                context: context,
-                icon: Icons.assignment_outlined,
-                title: 'Rental Requirements',
-                points: vehicle.rentalRequirements.isNotEmpty
-                    ? vehicle.rentalRequirements
-                    : [
-                        'Valid Driver License',
-                        'Minimum Driver Age 25+',
-                        'Government Issued ID',
-                        'Refundable Security Deposit'
-                      ],
-                cs: cs,
-                theme: theme,
-              ),
-              const SizedBox(height: 16),
-              _buildPolicyCard(
-                context: context,
-                icon: Icons.shield_outlined,
-                title: "What's Included",
-                points: vehicle.includedItems.isNotEmpty
-                    ? vehicle.includedItems
-                    : [
-                        'Basic Insurance',
-                        '24/7 Support',
-                        'Roadside Assistance',
-                        'Sanitized Vehicle',
-                        'Free Cancellation',
-                        'Vehicle Inspection'
-                      ],
-                cs: cs,
-                theme: theme,
-              ),
-              const SizedBox(height: 28),
+              if (vehicle.mileagePolicies.isNotEmpty) ...[
+                _buildPolicyCard(
+                  context: context,
+                  icon: Icons.timer_outlined,
+                  title: 'Mileage Policy',
+                  points: vehicle.mileagePolicies,
+                  cs: cs,
+                  theme: theme,
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (vehicle.rentalRequirements.isNotEmpty) ...[
+                _buildPolicyCard(
+                  context: context,
+                  icon: Icons.assignment_outlined,
+                  title: 'Rental Requirements',
+                  points: vehicle.rentalRequirements,
+                  cs: cs,
+                  theme: theme,
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (vehicle.includedItems.isNotEmpty) ...[
+                _buildPolicyCard(
+                  context: context,
+                  icon: Icons.shield_outlined,
+                  title: "What's Included",
+                  points: vehicle.includedItems,
+                  cs: cs,
+                  theme: theme,
+                ),
+                const SizedBox(height: 28),
+              ],
 
               // 7. Security Deposit Warning Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50.withValues(alpha: isLight ? 1.0 : 0.05),
-                  border: Border.all(color: Colors.amber.shade300, width: 1.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade100.withValues(alpha: isLight ? 1.0 : 0.2),
-                        borderRadius: BorderRadius.circular(8),
+              if (vehicle.securityDepositDescription != null && vehicle.securityDepositDescription!.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50.withValues(alpha: isLight ? 1.0 : 0.05),
+                    border: Border.all(color: Colors.amber.shade300, width: 1.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100.withValues(alpha: isLight ? 1.0 : 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.lock_outline_rounded, color: Colors.amber, size: 20),
                       ),
-                      child: const Icon(Icons.lock_outline_rounded, color: Colors.amber, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Refundable Security Deposit',
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            vehicle.securityDepositDescription ??
-                                '₦${NumberFormat('#,###').format(ctrl.securityDeposit)} deposit is authorized at pickup and fully released after vehicle inspection upon return.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isLight ? Colors.amber.shade900 : Colors.amber.shade200,
-                              height: 1.4,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Refundable Security Deposit',
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              vehicle.securityDepositDescription!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isLight ? Colors.amber.shade900 : Colors.amber.shade200,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
 
               // Free Cancellation Alert Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50.withValues(alpha: isLight ? 1.0 : 0.05),
-                  border: Border.all(color: Colors.green.shade300, width: 1.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade100.withValues(alpha: isLight ? 1.0 : 0.2),
-                        borderRadius: BorderRadius.circular(8),
+              if (vehicle.cancellationTitle != null && vehicle.cancellationTitle!.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50.withValues(alpha: isLight ? 1.0 : 0.05),
+                    border: Border.all(color: Colors.green.shade300, width: 1.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100.withValues(alpha: isLight ? 1.0 : 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 20),
                       ),
-                      child: const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            vehicle.cancellationTitle ?? 'Free Cancellation',
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            vehicle.cancellationDescription ?? 'Cancel up to 24 hours before pickup for a full refund — no questions asked.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isLight ? Colors.green.shade900 : Colors.green.shade200,
-                              height: 1.4,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              vehicle.cancellationTitle!,
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
-                          ),
-                        ],
+                            if (vehicle.cancellationDescription != null && vehicle.cancellationDescription!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                vehicle.cancellationDescription!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: isLight ? Colors.green.shade900 : Colors.green.shade200,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 28),
+                const SizedBox(height: 28),
+              ],
 
               // 8. Customer Reviews Section
               Row(
@@ -581,26 +557,78 @@ class VehicleDetailView extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              vehicle.dailyRateFormatted.isNotEmpty
-                                  ? vehicle.dailyRateFormatted
-                                  : currencyService.formatPrice(vehicle.pricePerDay),
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            Text(
-                              '/day',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        GestureDetector(
+                          onTap: () => ctrl.showRatePlansSheet(context),
+                          behavior: HitTestBehavior.opaque,
+                          child: Obx(() {
+                            final priceText = ctrl.selectedPriceTab.value == 0
+                                ? (vehicle.dailyRateFormatted.isNotEmpty
+                                    ? vehicle.dailyRateFormatted
+                                    : currencyService.formatPrice(vehicle.pricePerDay))
+                                : ctrl.selectedPriceTab.value == 1
+                                    ? currencyService.formatPrice(vehicle.pricePerWeek)
+                                    : currencyService.formatPrice(vehicle.pricePerMonth);
+
+                            final suffixText = ctrl.selectedPriceTab.value == 0
+                                ? '/day'
+                                : ctrl.selectedPriceTab.value == 1
+                                    ? '/week'
+                                    : '/month';
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      priceText,
+                                      style: theme.textTheme.headlineMedium?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: cs.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      suffixText,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (vehicle.pricePerWeek > 0 || vehicle.pricePerMonth > 0) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: cs.primary.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'Rate details',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: cs.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            );
+                          }),
                         ),
                         // Self-Drive vs Chauffeur toggler
                         Obx(() => ChoiceChip(
@@ -680,42 +708,48 @@ class VehicleDetailView extends StatelessWidget {
 
                     // Pickup Location Selector (if direct selection / featured vehicles flow)
                     if (ctrl.isFromFeatured) ...[
-                      Text(
-                        'PICKUP LOCATION',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+                      Obx(() => Text(
+                            ctrl.additionalDriverAddon.value
+                                ? 'PICKUP LOCATION'
+                                : 'PICK-UP & DROP-OFF LOCATION',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                              letterSpacing: 0.5,
+                            ),
+                          )),
                       const SizedBox(height: 6),
-                      TextField(
-                        controller: ctrl.pickupLocationCtrl,
-                        onChanged: (val) {
-                          ctrl.updatePickupLocation(val);
-                        },
-                        decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
-                          labelText: 'Pick-up Location',
-                          hintText: 'Enter city or neighborhood',
-                          filled: true,
-                          fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                          ),
-                          suffixIcon: Obx(() => ctrl.isLoadingPickup.value
-                              ? const Padding(
-                                  padding: EdgeInsets.all(12.0),
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                )
-                              : const SizedBox.shrink()),
-                        ),
-                      ),
+                      Obx(() => TextField(
+                            controller: ctrl.pickupLocationCtrl,
+                            onChanged: (val) {
+                              ctrl.updatePickupLocation(val);
+                            },
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
+                              labelText: ctrl.additionalDriverAddon.value
+                                  ? 'Pick-up Location'
+                                  : 'Pick-up & Drop-off Location',
+                              hintText: ctrl.additionalDriverAddon.value
+                                  ? 'Enter city or neighborhood'
+                                  : 'Enter pick-up & drop-off location',
+                              filled: true,
+                              fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                              ),
+                              suffixIcon: ctrl.isLoadingPickup.value
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(12.0),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          )),
                       Obx(() {
                         if (ctrl.pickupSuggestions.isEmpty) return const SizedBox.shrink();
                         return Container(
@@ -912,128 +946,134 @@ class VehicleDetailView extends StatelessWidget {
                       );
                     }),
 
-                    // Pickup & Return inputs side-by-side
+                    // Pickup Date & Time Row
+                    Text(
+                      'PICK-UP DATE & TIME',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        // Pickup Column
+                        // Pickup Date
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'PICKUP',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              InkWell(
-                                onTap: () => ctrl.selectPickupDate(context),
+                          child: InkWell(
+                            onTap: () => ctrl.selectPickupDate(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Obx(() => Text(
-                                        ctrl.pickupDate.value == null
-                                            ? 'Select date'
-                                            : DateFormat('MMM d, yyyy').format(ctrl.pickupDate.value!),
-                                        style: TextStyle(
-                                          fontWeight: ctrl.pickupDate.value == null ? FontWeight.normal : FontWeight.bold,
-                                          color: ctrl.pickupDate.value == null ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
-                                        ),
-                                      )),
-                                ),
                               ),
-                              const SizedBox(height: 10),
-                              InkWell(
-                                onTap: () => ctrl.selectPickupTime(context),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Obx(() => Text(
-                                        ctrl.pickupTime.value.isEmpty
-                                            ? 'Select Time'
-                                            : _formatTimeDisplay(ctrl.pickupTime.value),
-                                        style: TextStyle(
-                                          fontWeight: ctrl.pickupTime.value.isEmpty ? FontWeight.normal : FontWeight.bold,
-                                          color: ctrl.pickupTime.value.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
-                                        ),
-                                      )),
-                                ),
-                              ),
-                            ],
+                              child: Obx(() => Text(
+                                    ctrl.pickupDate.value == null
+                                        ? 'Select Date'
+                                        : DateFormat('MMM d, yyyy').format(ctrl.pickupDate.value!),
+                                    style: TextStyle(
+                                      fontWeight: ctrl.pickupDate.value == null ? FontWeight.normal : FontWeight.bold,
+                                      color: ctrl.pickupDate.value == null ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  )),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        // Return Column
+                        const SizedBox(width: 12),
+                        // Pickup Time
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'RETURN',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              InkWell(
-                                onTap: () => ctrl.selectReturnDate(context),
+                          child: InkWell(
+                            onTap: () => ctrl.selectPickupTime(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Obx(() => Text(
-                                        ctrl.returnDate.value == null
-                                            ? 'Select date'
-                                            : DateFormat('MMM d, yyyy').format(ctrl.returnDate.value!),
-                                        style: TextStyle(
-                                          fontWeight: ctrl.returnDate.value == null ? FontWeight.normal : FontWeight.bold,
-                                          color: ctrl.returnDate.value == null ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
-                                        ),
-                                      )),
-                                ),
                               ),
-                              const SizedBox(height: 10),
-                              InkWell(
-                                onTap: () => ctrl.selectReturnTime(context),
+                              child: Obx(() => Text(
+                                    ctrl.pickupTime.value.isEmpty
+                                        ? 'Select Time'
+                                        : _formatTimeDisplay(ctrl.pickupTime.value),
+                                    style: TextStyle(
+                                      fontWeight: ctrl.pickupTime.value.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                      color: ctrl.pickupTime.value.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  )),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Return Date & Time Row
+                    Text(
+                      'RETURN DATE & TIME',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        // Return Date
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => ctrl.selectReturnDate(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Obx(() => Text(
-                                        ctrl.returnTime.value.isEmpty
-                                            ? 'Select Time'
-                                            : _formatTimeDisplay(ctrl.returnTime.value),
-                                        style: TextStyle(
-                                          fontWeight: ctrl.returnTime.value.isEmpty ? FontWeight.normal : FontWeight.bold,
-                                          color: ctrl.returnTime.value.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
-                                        ),
-                                      )),
-                                ),
                               ),
-                            ],
+                              child: Obx(() => Text(
+                                    ctrl.returnDate.value == null
+                                        ? 'Select Date'
+                                        : DateFormat('MMM d, yyyy').format(ctrl.returnDate.value!),
+                                    style: TextStyle(
+                                      fontWeight: ctrl.returnDate.value == null ? FontWeight.normal : FontWeight.bold,
+                                      color: ctrl.returnDate.value == null ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  )),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Return Time
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => ctrl.selectReturnTime(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Obx(() => Text(
+                                    ctrl.returnTime.value.isEmpty
+                                        ? 'Select Time'
+                                        : _formatTimeDisplay(ctrl.returnTime.value),
+                                    style: TextStyle(
+                                      fontWeight: ctrl.returnTime.value.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                      color: ctrl.returnTime.value.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  )),
+                            ),
                           ),
                         ),
                       ],
@@ -1041,151 +1081,93 @@ class VehicleDetailView extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Protection Plans
-                    Text(
-                      'Protection Plans',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                        letterSpacing: 0.5,
+                    if (vehicle.protectionPlans.isNotEmpty) ...[
+                      Text(
+                        'Protection Plans',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Column(
-                      children: vehicle.protectionPlans.isNotEmpty
-                          ? vehicle.protectionPlans.map((plan) {
-                              String badge = '';
-                              if (plan.priceType == 'percentage' && plan.priceValue != null) {
-                                badge = '+${plan.priceValue!.toStringAsFixed(0)}%';
-                              } else if (plan.priceType == 'fixed' && plan.priceValue != null) {
-                                badge = '+${currencyService.formatPrice(plan.priceValue!)}';
-                              } else {
-                                badge = plan.priceLabel.isNotEmpty ? plan.priceLabel : 'Included';
-                              }
-                              
-                              String selectedValue = 'Basic';
-                              if (plan.title.toLowerCase().contains('premium')) {
-                                selectedValue = 'Premium';
-                              } else if (plan.title.toLowerCase().contains('full')) {
-                                selectedValue = 'Full';
-                              }
+                      const SizedBox(height: 10),
+                      Column(
+                        children: vehicle.protectionPlans.map((plan) {
+                          String badge = '';
+                          if (plan.priceType == 'percentage' && plan.priceValue != null) {
+                            badge = '+${plan.priceValue!.toStringAsFixed(0)}%';
+                          } else if (plan.priceType == 'fixed' && plan.priceValue != null) {
+                            badge = '+${currencyService.formatPrice(plan.priceValue!)}';
+                          } else {
+                            badge = plan.priceLabel.isNotEmpty ? plan.priceLabel : 'Included';
+                          }
+                          
+                          String selectedValue = 'Basic';
+                          if (plan.title.toLowerCase().contains('premium')) {
+                            selectedValue = 'Premium';
+                          } else if (plan.title.toLowerCase().contains('full')) {
+                            selectedValue = 'Full';
+                          }
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: _buildProtectionRadio(
-                                  value: selectedValue,
-                                  title: plan.title,
-                                  desc: plan.description,
-                                  badge: badge,
-                                  ctrl: ctrl,
-                                  theme: theme,
-                                  cs: cs,
-                                ),
-                              );
-                            }).toList()
-                          : [
-                              _buildProtectionRadio(
-                                value: 'Basic',
-                                title: 'Basic Protection',
-                                desc: 'Third-party liability coverage',
-                                badge: 'Included',
-                                ctrl: ctrl,
-                                theme: theme,
-                                cs: cs,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildProtectionRadio(
-                                value: 'Premium',
-                                title: 'Premium Protection',
-                                desc: 'Collision damage waiver',
-                                badge: '+15%',
-                                ctrl: ctrl,
-                                theme: theme,
-                                cs: cs,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildProtectionRadio(
-                                value: 'Full',
-                                title: 'Full Coverage',
-                                desc: 'Zero excess & full protection',
-                                badge: '+25%',
-                                ctrl: ctrl,
-                                theme: theme,
-                                cs: cs,
-                              ),
-                            ],
-                    ),
-                    const SizedBox(height: 24),
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: _buildProtectionRadio(
+                              value: selectedValue,
+                              title: plan.title,
+                              desc: plan.description,
+                              badge: badge,
+                              ctrl: ctrl,
+                              theme: theme,
+                              cs: cs,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Rental Add-ons
-                    Text(
-                      'Rental Add-ons',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                        letterSpacing: 0.5,
+                    if (vehicle.rentalAddons.isNotEmpty) ...[
+                      Text(
+                        'Rental Add-ons',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Column(
-                      children: vehicle.rentalAddons.isNotEmpty
-                          ? vehicle.rentalAddons.asMap().entries.map((entry) {
-                              final addon = entry.value;
-                              final isLast = entry.key == vehicle.rentalAddons.length - 1;
-                              
-                              final labelRx = addon.title.toLowerCase().contains('gps')
-                                  ? ctrl.gpsAddon
-                                  : addon.title.toLowerCase().contains('driver')
-                                      ? ctrl.additionalDriverAddon
-                                      : addon.title.toLowerCase().contains('seat') || addon.title.toLowerCase().contains('child')
-                                          ? ctrl.childSeatAddon
-                                          : addon.title.toLowerCase().contains('fuel') || addon.title.toLowerCase().contains('prepaid')
-                                              ? ctrl.prepaidFuelAddon
-                                              : ctrl.gpsAddon; // Default fallback
+                      const SizedBox(height: 10),
+                      Column(
+                        children: vehicle.rentalAddons.asMap().entries.map((entry) {
+                          final addon = entry.value;
+                          final isLast = entry.key == vehicle.rentalAddons.length - 1;
+                          
+                          final labelRx = addon.title.toLowerCase().contains('gps')
+                              ? ctrl.gpsAddon
+                              : addon.title.toLowerCase().contains('driver')
+                                  ? ctrl.additionalDriverAddon
+                                  : addon.title.toLowerCase().contains('seat') || addon.title.toLowerCase().contains('child')
+                                      ? ctrl.childSeatAddon
+                                      : addon.title.toLowerCase().contains('fuel') || addon.title.toLowerCase().contains('prepaid')
+                                          ? ctrl.prepaidFuelAddon
+                                          : ctrl.gpsAddon; // Default fallback
 
-                              return Padding(
-                                padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
-                                child: _buildAddonCheckbox(
-                                  labelRx: labelRx,
-                                  title: addon.title,
-                                  desc: addon.description,
-                                  price: addon.priceLabel,
-                                  theme: theme,
-                                  cs: cs,
-                                  enabled: !addon.title.toLowerCase().contains('driver') || !ctrl.isAirportTransfer,
-                                ),
-                              );
-                            }).toList()
-                          : [
-                              _buildAddonCheckbox(
-                                labelRx: ctrl.gpsAddon,
-                                title: 'GPS Navigation',
-                                desc: 'Turn-by-turn navigation',
-                                price: '${currencyService.formatPrice(ctrl.gpsAddonPrice)} /day',
-                                theme: theme,
-                                cs: cs,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildAddonCheckbox(
-                                labelRx: ctrl.additionalDriverAddon,
-                                title: 'Additional Driver',
-                                desc: 'Add another licensed driver',
-                                price: '${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)} /day',
-                                theme: theme,
-                                cs: cs,
-                                enabled: !ctrl.isAirportTransfer,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildAddonCheckbox(
-                                labelRx: ctrl.childSeatAddon,
-                                title: 'Child Seat',
-                                desc: 'Safety seat for children',
-                                price: '${currencyService.formatPrice(ctrl.childSeatAddonPrice)} /day',
-                                theme: theme,
-                                cs: cs,
-                              ),
-                            ],
-                    ),
-                    const SizedBox(height: 24),
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+                            child: _buildAddonCheckbox(
+                              labelRx: labelRx,
+                              title: addon.title,
+                              desc: addon.description,
+                              price: addon.priceLabel,
+                              theme: theme,
+                              cs: cs,
+                              enabled: !addon.title.toLowerCase().contains('driver') || !ctrl.isAirportTransfer,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Interactive Calculations / Breakdown
                     Obx(() {
@@ -1214,7 +1196,16 @@ class VehicleDetailView extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildBreakdownRow('Rental Rate', '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : currencyService.formatPrice(vehicle.pricePerDay)} x $days days', currencyService.formatPrice(ctrl.subtotal), cs),
+                            _buildBreakdownRow(
+                              'Rental Rate',
+                              ctrl.selectedPriceTab.value == 0
+                                  ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : currencyService.formatPrice(vehicle.pricePerDay)} x $days days'
+                                  : ctrl.selectedPriceTab.value == 1
+                                      ? '${currencyService.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
+                                      : '${currencyService.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
+                              currencyService.formatPrice(ctrl.subtotal),
+                              cs,
+                            ),
                             if (ctrl.selectedProtection.value != 'Basic')
                               _buildBreakdownRow(
                                 '${ctrl.selectedProtection.value} Protection',
@@ -1816,5 +1807,42 @@ class VehicleDetailView extends StatelessWidget {
     final displayHourStr = displayHour.toString().padLeft(2, '0');
     final displayMinuteStr = minute.toString().padLeft(2, '0');
     return '$displayHourStr:$displayMinuteStr $period';
+  }
+
+  Widget _buildSpecificationBadge({
+    required IconData icon,
+    required String label,
+    required String value,
+    required ColorScheme cs,
+    required ThemeData theme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: cs.primary),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: cs.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

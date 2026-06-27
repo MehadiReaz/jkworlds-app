@@ -7,6 +7,7 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
+import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_controller.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_binding.dart';
@@ -47,7 +48,45 @@ void main() {
 
       // 4. Navigate to details view with arguments
       // Use RAV4 (index 10) as test vehicle
-      final testVehicle = mockVehicles[10];
+      final testVehicle = VehicleModel(
+        id: 'v11',
+        name: 'RAV4',
+        brand: 'Toyota',
+        type: 'SUV',
+        year: 2023,
+        transmission: 'Automatic',
+        seats: 5,
+        fuelType: 'Hybrid',
+        pricePerDay: 55000,
+        pricePerWeek: 330000,
+        pricePerMonth: 1150000,
+        images: const ['https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&q=80&w=600'],
+        features: const ['Hybrid Engine', 'Toyota Safety Sense', 'JBL Audio', 'Power Tailgate', 'AWD'],
+        rating: 4.6,
+        reviewCount: 44,
+        hasChauffeur: false,
+        location: 'Lekki, Lagos',
+        description: 'Go further, spend less on fuel. The Toyota RAV4 Hybrid combines eco-friendly efficiency with rugged SUV capability — a smart choice for the environmentally conscious traveler.',
+        plateNumber: 'LG-890-IKJ',
+        mileage: 9500,
+        securityDepositAmount: 100000.0,
+        securityDepositDescription: 'Fully refunded within 3 days after rental ends.',
+        cancellationTitle: 'Free Cancellation',
+        cancellationDescription: 'Cancel up to 24h before rental',
+        mileagePolicies: const ['300 km/day limit', 'Overlimit charge ₦150/km'],
+        rentalRequirements: const ['Driver license', 'Age limit 21+', 'Refundable Security Deposit'],
+        includedItems: const ['Insurance coverage', 'Roadside support', 'Free Cancellation'],
+        protectionPlans: const [
+          ProtectionPlanModel(id: 1, title: 'Basic Protection', description: 'Basic insurance', priceType: 'included', priceValue: 0.0, priceLabel: 'Included'),
+          ProtectionPlanModel(id: 2, title: 'Premium Protection', description: 'Premium insurance', priceType: 'percentage', priceValue: 15.0, priceLabel: '+15%'),
+          ProtectionPlanModel(id: 3, title: 'Full Protection', description: 'Full coverage', priceType: 'percentage', priceValue: 25.0, priceLabel: '+25%'),
+        ],
+        rentalAddons: const [
+          RentalAddonModel(id: 1, title: 'GPS Navigation', description: 'GPS navigator', priceType: 'fixed', priceValue: 5000.0, priceLabel: '₦5,000/day'),
+          RentalAddonModel(id: 2, title: 'Additional Driver', description: 'Chauffeur driver', priceType: 'fixed', priceValue: 8000.0, priceLabel: '₦8,000/day'),
+        ],
+      );
+      mockVehicles[10] = testVehicle;
       Get.to(
         () => const VehicleDetailView(),
         arguments: testVehicle,

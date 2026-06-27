@@ -1,11 +1,12 @@
 import 'package:get/get.dart';
 import 'package:jkworlds/core/utils/logger.dart';
+import 'package:jkworlds/core/constants/api_constants.dart';
+import 'package:jkworlds/data/providers/api_provider.dart';
 
 /// Contact/support message service.
-///
-/// Currently mocks the submission flow. When your backend contact API
-/// is ready, replace the TODO-marked section with a real HTTP call.
 class ContactService extends GetxService {
+  ApiProvider get _api => Get.find<ApiProvider>();
+
   // ── State ───────────────────────────────────────────────────
   final isSubmitting = false.obs;
 
@@ -22,21 +23,24 @@ class ContactService extends GetxService {
     isSubmitting.value = true;
 
     try {
-      // TODO: Replace with real API call, e.g.:
-      //
-      //   final response = await _api.post('/contact', body: {
-      //     'name': name,
-      //     'phone': phone,
-      //     'email': email,
-      //     'subject': subject,
-      //     'message': message,
-      //   });
-      //   if (response.statusCode != 200) throw Exception('Failed');
+      final response = await _api.post(
+        ApiConstants.contact,
+        data: {
+          'name': name,
+          'phone': phone,
+          'email': email,
+          'subject': subject,
+          'message': message,
+        },
+      );
 
-      // ── Mock implementation ──────────────────────────────────
-      await Future.delayed(const Duration(milliseconds: 1000));
+      final body = response.data;
+      final success = body != null && (body['success'] as bool? ?? body['status'] as bool? ?? false);
+      if (!success) {
+        throw Exception(body?['message'] ?? 'Failed to submit contact message');
+      }
 
-      logger.i('[ContactService] Message submitted:\n'
+      logger.i('[ContactService] Message submitted successfully:\n'
           '  Name: $name\n'
           '  Phone: $phone\n'
           '  Email: $email\n'

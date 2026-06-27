@@ -1,0 +1,1945 @@
+{
+  "info": {
+    "_postman_id": "04e89bdb-622d-4ad2-8496-8099c7336bd1",
+    "name": "JK World - Rent",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "11852020"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response JSON",
+                  "let jsonData = pm.response.json();",
+                  "",
+                  "// Validate response structure",
+                  "pm.test(\"Login response has token\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"data\");",
+                  "    pm.expect(jsonData.data).to.have.property(\"token\");",
+                  "});",
+                  "",
+                  "// Extract token",
+                  "let token = jsonData.data.token;",
+                  "",
+                  "// Save token to environment",
+                  "if (token) {",
+                  "    pm.environment.set(\"token\", token);",
+                  "}",
+                  "",
+                  "// Optional: also save user info if needed",
+                  "if (jsonData.data.user) {",
+                  "    pm.environment.set(\"user_id\", jsonData.data.user.id);",
+                  "    pm.environment.set(\"username\", jsonData.data.user.username);",
+                  "}",
+                  "",
+                  "// Debug log",
+                  "console.log(\"Token saved:\", token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "john@example.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "password",
+                  "value": "password123",
+                  "type": "text",
+                  "uuid": "c4ecd95c-f16f-4efd-91b7-0b40137ad007"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "rabin",
+                  "type": "text",
+                  "uuid": "e621ff19-7082-4036-8234-0ccbc324db47"
+                },
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "password",
+                  "value": "12345678",
+                  "type": "text",
+                  "uuid": "c4ecd95c-f16f-4efd-91b7-0b40137ad007"
+                },
+                {
+                  "key": "password_confirmation",
+                  "value": "12345678",
+                  "type": "text",
+                  "uuid": "b0f25d91-3244-4582-8490-bfbe94b3d1be"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "508658",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/refresh-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "refresh-token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "otp",
+                  "value": "508658",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/verify-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "verify-otp"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile & Settings",
+      "item": [
+        {
+          "name": "User Profile",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Profile Update",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Arif",
+                  "type": "text",
+                  "uuid": "0c032dc0-e3f3-43be-9f6f-d9393c2392f0"
+                },
+                {
+                  "key": "email",
+                  "value": "arif@mail.com",
+                  "type": "text",
+                  "uuid": "230d9fbe-82a9-47dc-a3a9-a8d04137c801"
+                },
+                {
+                  "key": "phone",
+                  "value": "123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "country_code",
+                  "value": "US",
+                  "type": "text"
+                },
+                {
+                  "key": "address",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "country",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "date_of_birth",
+                  "value": "10-10-2000",
+                  "type": "text"
+                },
+                {
+                  "key": "license_number",
+                  "value": "12345678",
+                  "type": "text"
+                },
+                {
+                  "key": "license_expiry",
+                  "value": "10-10-2028",
+                  "type": "text"
+                },
+                {
+                  "key": "preferred_language",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "preferred_country",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "preferred_currency",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "preferred_timezone",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "preferred_service",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "location_latitude",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "location_longitude",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/Users/arif/Downloads/Logo 2.png"
+                },
+                {
+                  "key": "_method",
+                  "value": "PUT",
+                  "type": "text",
+                  "uuid": "cda0ebdc-bd66-405c-9a4b-5b89195911fe"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "current_password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "password",
+                  "value": "12345678",
+                  "type": "text",
+                  "uuid": "d06d9d99-065f-42d0-857a-e17115d0e954"
+                },
+                {
+                  "key": "_method",
+                  "value": "put",
+                  "type": "text",
+                  "uuid": "003a99da-c5f8-4434-8c44-6c844665e165"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "_method",
+                  "value": "DELETE",
+                  "type": "text",
+                  "uuid": "003a99da-c5f8-4434-8c44-6c844665e165"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "account"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vehicle & Category",
+      "item": [
+        {
+          "name": "Vehicles",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "currency",
+                "value": "NGN",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles?search&category_id&service_type=self_drive&transmission&fuel_type&featured&sort",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": null
+                },
+                {
+                  "key": "category_id",
+                  "value": null
+                },
+                {
+                  "key": "service_type",
+                  "value": "self_drive",
+                  "description": "all, self_drive, chauffeur"
+                },
+                {
+                  "key": "transmission",
+                  "value": null,
+                  "description": "all, auto, manual"
+                },
+                {
+                  "key": "fuel_type",
+                  "value": null,
+                  "description": "all, petrol, diesel, hybrid, electric\n"
+                },
+                {
+                  "key": "featured",
+                  "value": null
+                },
+                {
+                  "key": "sort",
+                  "value": null,
+                  "description": "top_rated, price_low, price_high, newest"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle Filter Options",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "filters"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicles Details",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "currency",
+                "value": "NGN",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/6",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Categories",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Category wise vehicles",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/categories/1/vehicles?search=&category=&service_type=&transmission=&fuel_type=&featured=&sort=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "service_type",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "transmission",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "fuel_type",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "featured",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Booking Details",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bookings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Support Message",
+      "item": [
+        {
+          "name": "Ticket List",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/support-tickets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "support-tickets"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Ticket",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "subject",
+                  "value": "aa",
+                  "type": "text",
+                  "uuid": "9c4fffe5-9f31-48e9-b74d-7d83bd0f2b6a"
+                },
+                {
+                  "key": "message",
+                  "value": "bb",
+                  "type": "text",
+                  "uuid": "1e1dfa0d-4eaf-44e8-bc41-fda794789285"
+                },
+                {
+                  "key": "priority",
+                  "value": "low",
+                  "description": "high,medium,low",
+                  "type": "text",
+                  "uuid": "340434b8-2617-45bc-a1ec-affee35f16c0"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/support-tickets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "support-tickets"
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST \"{{base_url}}/support-tickets\" -H \"Content-Type: application/json\" -d \"{\\n    \\\"subject\\\": \\\"\\\",\\n    \\\"message\\\": \\\"\\\",\\n    \\\"priority\\\": \\\"\\\"\\n}\""
+          },
+          "response": []
+        },
+        {
+          "name": "Ticket Details with Messages",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/support-tickets/1?light=1&after_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "support-tickets",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "light",
+                  "value": "1"
+                },
+                {
+                  "key": "after_id",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "message",
+                  "value": "Hello",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91",
+                  "src": "/Users/arif/Downloads/Screenshot at Mar 19 13-49-28.png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/support-tickets/1/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "support-tickets",
+                "1",
+                "messages"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Damage Report",
+      "item": [
+        {
+          "name": "Damage Report",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/damage-reports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "damage-reports"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Damage Report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "rabin3@gmail.com",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "otp",
+                  "value": "766993",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "password",
+                  "value": "123456789",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/damage-reports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "damage-reports"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Damage Report Details",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/damage-reports/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "damage-reports",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Review",
+      "item": [
+        {
+          "name": "Ratings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/ratings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ratings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Rating",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "booking_id",
+                  "value": "1",
+                  "type": "text",
+                  "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+                },
+                {
+                  "key": "rating",
+                  "value": "4",
+                  "type": "text",
+                  "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+                },
+                {
+                  "key": "comment",
+                  "value": "Nice",
+                  "type": "text",
+                  "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/ratings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ratings"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "App Static Data",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "email",
+              "value": "rabin3@gmail.com",
+              "type": "text",
+              "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+            },
+            {
+              "key": "otp",
+              "value": "766993",
+              "type": "text",
+              "uuid": "c656633f-96d0-449b-8e8c-989860158d91"
+            },
+            {
+              "key": "password",
+              "value": "123456789",
+              "type": "text",
+              "uuid": "007d10e4-78b2-4ad9-ab29-d483e7a9966d"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/app-data",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "app-data"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Contact Form",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response JSON",
+              "let jsonData = pm.response.json();",
+              "",
+              "// Validate response structure",
+              "pm.test(\"Login response has token\", function () {",
+              "    pm.expect(jsonData).to.have.property(\"data\");",
+              "    pm.expect(jsonData.data).to.have.property(\"token\");",
+              "});",
+              "",
+              "// Extract token",
+              "let token = jsonData.data.token;",
+              "",
+              "// Save token to environment",
+              "if (token) {",
+              "    pm.environment.set(\"token\", token);",
+              "}",
+              "",
+              "// Optional: also save user info if needed",
+              "if (jsonData.data.user) {",
+              "    pm.environment.set(\"user_id\", jsonData.data.user.id);",
+              "    pm.environment.set(\"username\", jsonData.data.user.username);",
+              "}",
+              "",
+              "// Debug log",
+              "console.log(\"Token saved:\", token);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "name",
+              "value": "password123",
+              "type": "text",
+              "uuid": "c4ecd95c-f16f-4efd-91b7-0b40137ad007"
+            },
+            {
+              "key": "email",
+              "value": "john@example.com",
+              "type": "text",
+              "uuid": "f0b0d255-7b3e-4603-815b-a5241051a2f2"
+            },
+            {
+              "key": "phone",
+              "value": "112312",
+              "type": "text",
+              "uuid": "9eaef83d-fc16-40f7-9e6b-43c2a79e854a"
+            },
+            {
+              "key": "message",
+              "value": "safsdfsdf",
+              "type": "text",
+              "uuid": "2a98c944-5821-4f96-87de-0bc1a0762e46"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/contact",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "contact"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}
