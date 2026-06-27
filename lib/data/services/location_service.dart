@@ -7,6 +7,7 @@ import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/models/location_coverage_model.dart';
+import 'package:jkworlds/data/models/location_model.dart';
 
 class LocationService extends GetxService {
   ApiProvider get _api => Get.find<ApiProvider>();
@@ -56,7 +57,7 @@ class LocationService extends GetxService {
 
   /// Fetch details of a specific location.
   /// GET /api/location/details?id={id}
-  Future<Map<String, dynamic>?> fetchLocationDetails(String locationId) async {
+  Future<LocationModel?> fetchLocationDetails(String locationId) async {
     if (locationId.trim().isEmpty) return null;
 
     try {
@@ -77,7 +78,7 @@ class LocationService extends GetxService {
 
       final data = body['data'];
       if (data != null && data['location'] is Map) {
-        return Map<String, dynamic>.from(data['location'] as Map);
+        return LocationModel.fromJson(Map<String, dynamic>.from(data['location'] as Map));
       }
       return null;
     } on AppException {

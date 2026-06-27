@@ -8,6 +8,7 @@ import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
+import 'package:jkworlds/data/models/location_model.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
 import 'package:jkworlds/modules/orders/orders_controller.dart';
@@ -223,13 +224,13 @@ class CheckoutController extends GetxController {
         
     if (pickupPred != null) {
       try {
-        final details = await Get.find<LocationService>().fetchLocationDetails(pickupPred.id);
+        final LocationModel? details = await Get.find<LocationService>().fetchLocationDetails(pickupPred.id);
         if (details != null) {
-          resolvedPickupLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0579;
-          resolvedPickupLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.4951;
+          resolvedPickupLat = details.latitude ?? 9.0579;
+          resolvedPickupLng = details.longitude ?? 7.4951;
           
-          final addr = details['address']?.toString() ?? '';
-          final nm = details['name']?.toString() ?? '';
+          final addr = details.address;
+          final nm = details.name;
           if (addr.trim().isNotEmpty) {
             resolvedPickupAddress = addr;
           } else if (nm.trim().isNotEmpty) {
@@ -249,13 +250,13 @@ class CheckoutController extends GetxController {
           
       if (dropoffPred != null) {
         try {
-          final details = await Get.find<LocationService>().fetchLocationDetails(dropoffPred.id);
+          final LocationModel? details = await Get.find<LocationService>().fetchLocationDetails(dropoffPred.id);
           if (details != null) {
-            resolvedDropoffLat = double.tryParse(details['latitude']?.toString() ?? '') ?? 9.0765;
-            resolvedDropoffLng = double.tryParse(details['longitude']?.toString() ?? '') ?? 7.3986;
+            resolvedDropoffLat = details.latitude ?? 9.0765;
+            resolvedDropoffLng = details.longitude ?? 7.3986;
             
-            final addr = details['address']?.toString() ?? '';
-            final nm = details['name']?.toString() ?? '';
+            final addr = details.address;
+            final nm = details.name;
             if (addr.trim().isNotEmpty) {
               resolvedDropoffAddress = addr;
             } else if (nm.trim().isNotEmpty) {
