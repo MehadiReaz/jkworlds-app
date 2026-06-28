@@ -9,6 +9,7 @@ import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/models/location_model.dart';
+import 'package:jkworlds/data/models/initiate_booking_response_model.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
 import 'package:jkworlds/modules/orders/orders_controller.dart';
@@ -509,12 +510,12 @@ class CheckoutController extends GetxController {
     isLoading.value = true;
     try {
       logger.i('[CheckoutController] calling initiateBooking...');
-      final res = await Get.find<BookingService>().initiateBooking(
+      final InitiateBookingResponseModel res = await Get.find<BookingService>().initiateBooking(
         bookingPayload,
         driverLicensePath: isSelfDrive ? selectedLicensePath.value : null,
       );
 
-      final reference = res['reference']?.toString() ?? '';
+      final reference = res.reference;
       final gateway = selectedPaymentMethod.value.toLowerCase();
       logger.i('[CheckoutController] reference: $reference, gateway: $gateway');
 
@@ -528,7 +529,7 @@ class CheckoutController extends GetxController {
           arguments: {
             'gateway': gateway,
             'reference': reference,
-            'initData': res['gateway'] as Map<String, dynamic>,
+            'initData': res.gateway,
             'fullName': fullNameController.text.trim(),
             'email': emailController.text.trim(),
             'phone': phoneController.text.trim(),
@@ -577,48 +578,5 @@ class CheckoutController extends GetxController {
       isLoading.value = false;
       logger.i('[CheckoutController] confirmAndPay finished');
     }
-  }
-
-  Future<bool?> _showSimulatedPaymentDialog(String gateway, String reference) async {
-    // Return mock payment result; if in headless/widget test, return true directly
-    if (Get.key.currentState == null || Platform.environment.containsKey('FLUTTER_TEST')) {
-      return true;
-    }
-
-    return Get.dialog<bool>(
-      AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.payment_rounded, color: Get.theme.colorScheme.primary),
-            const SizedBox(width: 10),
-            Text('Simulate ${gateway.toUpperCase()}'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Booking Reference: $reference', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text('Choose a payment outcome to simulate. Real gateway SDK payment sheets will be used in production.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: const Text('Cancel / Fail Payment', style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () => Get.back(result: true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Get.theme.colorScheme.primary,
-              foregroundColor: Get.theme.colorScheme.onPrimary,
-            ),
-            child: const Text('Complete Payment'),
-          ),
-        ],
-      ),
-      barrierDismissible: false,
-    );
   }
 }

@@ -5,8 +5,6 @@ import 'package:get/get.dart';
 import 'package:jkworlds/app/routes/app_pages.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
-import 'package:jkworlds/data/mock/mock_bookings.dart';
-import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_controller.dart';

@@ -3,14 +3,11 @@ import 'package:get/get.dart' hide Response, FormData;
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/contact_service.dart';
 import 'package:jkworlds/data/services/review_service.dart';
 import 'package:jkworlds/data/services/damage_report_service.dart';
-import 'package:jkworlds/data/models/review_model.dart';
-import 'package:jkworlds/data/models/damage_report_model.dart';
 
 class LocalMockApiProvider extends ApiProvider {
   final Map<String, dynamic> mockResponses;

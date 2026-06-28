@@ -6,6 +6,7 @@ import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/models/support_ticket_model.dart';
 import 'package:jkworlds/data/models/support_message_model.dart';
+import 'package:jkworlds/data/models/support_ticket_summary_model.dart';
 
 class SupportTicketService extends GetxService {
   ApiProvider get _api => Get.find<ApiProvider>();
@@ -247,7 +248,7 @@ class SupportTicketService extends GetxService {
 
   /// Retrieves a summary mapping of unread message counts for all active tickets.
   /// GET /api/support-tickets/unread-summary
-  Future<Map<String, dynamic>> fetchUnreadSummary() async {
+  Future<SupportTicketSummaryModel> fetchUnreadSummary() async {
     try {
       final response = await _api.get(ApiConstants.supportTicketsUnreadSummary);
       final body = response.data;
@@ -262,11 +263,7 @@ class SupportTicketService extends GetxService {
       }
 
       final data = body['data'] as Map<String, dynamic>? ?? {};
-      return {
-        'total_unread': data['total_unread'] as int? ?? 0,
-        'tickets': data['tickets'] as Map<String, dynamic>? ?? {},
-        'polling': data['polling'] as Map<String, dynamic>? ?? {},
-      };
+      return SupportTicketSummaryModel.fromJson(data);
     } on AppException {
       rethrow;
     } catch (e, st) {
@@ -277,7 +274,7 @@ class SupportTicketService extends GetxService {
 
   /// Batch checks multiple tickets to see if new messages have arrived.
   /// POST /api/support-tickets/sync
-  Future<Map<String, dynamic>> syncTickets(Map<String, int> ticketCursors) async {
+  Future<SupportTicketSummaryModel> syncTickets(Map<String, int> ticketCursors) async {
     try {
       // API expects format: {"tickets": {"12": 143, "15": 150}}
       // Ensure key is String inside body
@@ -301,12 +298,7 @@ class SupportTicketService extends GetxService {
       }
 
       final data = body['data'] as Map<String, dynamic>? ?? {};
-      return {
-        'has_new': data['has_new'] as Map<String, dynamic>? ?? {},
-        'total_unread': data['total_unread'] as int? ?? 0,
-        'tickets': data['tickets'] as Map<String, dynamic>? ?? {},
-        'polling': data['polling'] as Map<String, dynamic>? ?? {},
-      };
+      return SupportTicketSummaryModel.fromJson(data);
     } on AppException {
       rethrow;
     } catch (e, st) {

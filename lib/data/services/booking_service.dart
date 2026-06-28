@@ -8,6 +8,9 @@ import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/models/checkout_pricing_model.dart';
+import 'package:jkworlds/data/models/initiate_booking_response_model.dart';
+import 'package:jkworlds/data/models/cancel_payment_response_model.dart';
+import 'package:jkworlds/data/models/airport_transfer_distance_model.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 
 class BookingService extends GetxService {
@@ -116,7 +119,7 @@ class BookingService extends GetxService {
 
   /// Initiate a new booking.
   /// POST /api/v2/bookings
-  Future<Map<String, dynamic>> initiateBooking(
+  Future<InitiateBookingResponseModel> initiateBooking(
     Map<String, dynamic> data, {
     String? driverLicensePath,
   }) async {
@@ -160,7 +163,7 @@ class BookingService extends GetxService {
         throw const ServerException('Bookings response missing "data" node');
       }
 
-      return resData;
+      return InitiateBookingResponseModel.fromJson(resData);
     } on AppException {
       debugPrint('[BookingService] initiateBooking caught AppException');
       rethrow;
@@ -213,7 +216,7 @@ class BookingService extends GetxService {
 
   /// Cancel booking payment.
   /// POST /api/v2/payments/{gateway}/cancel
-  Future<Map<String, dynamic>> cancelPayment(
+  Future<CancelPaymentResponseModel> cancelPayment(
     String gateway, {
     required String reference,
   }) async {
@@ -240,7 +243,7 @@ class BookingService extends GetxService {
         throw const ServerException('Payment cancel response missing "data" node');
       }
 
-      return resData;
+      return CancelPaymentResponseModel.fromJson(resData);
     } on AppException {
       rethrow;
     } catch (e, st) {
@@ -251,7 +254,7 @@ class BookingService extends GetxService {
 
   /// Preview airport transfer distance and fare.
   /// POST /api/airport-transfer/distance
-  Future<Map<String, dynamic>> fetchAirportTransferDistance({
+  Future<AirportTransferDistanceModel> fetchAirportTransferDistance({
     required double pickupLatitude,
     required double pickupLongitude,
     required double dropoffLatitude,
@@ -285,7 +288,7 @@ class BookingService extends GetxService {
         throw const ServerException('Airport transfer distance response missing "data" node');
       }
 
-      return resData;
+      return AirportTransferDistanceModel.fromJson(resData);
     } on AppException {
       rethrow;
     } catch (e, st) {
