@@ -18,6 +18,7 @@ import 'package:jkworlds/modules/contact/contact_us_view.dart';
 import 'package:jkworlds/modules/promo/promo_codes_view.dart';
 import 'package:jkworlds/modules/profile/profile_binding.dart';
 import 'package:jkworlds/modules/profile/edit_profile_view.dart';
+import 'package:jkworlds/modules/profile/post_rating_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_binding.dart';
 import 'package:jkworlds/modules/booking/checkout_view.dart';
@@ -102,6 +103,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.editProfile,
       page: () => const EditProfileView(),
+      binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.postRating,
+      page: () => const PostRatingView(),
       binding: ProfileBinding(),
     ),
     GetPage(

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
+import 'package:jkworlds/data/services/review_service.dart';
+import 'package:jkworlds/data/models/booking_model.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 class ProfileController extends GetxController {
   static const _localeKey = 'locale';
@@ -18,8 +22,19 @@ class ProfileController extends GetxController {
     {'name': 'Igbo', 'locale': Locale('ig', 'NG')},
   ];
 
+  // ── Rating Form State ────────────────────────────────────────
+  final selectedBookingId = RxnString();
+  final selectedRating = RxnDouble();
+  final commentController = TextEditingController();
+  final isSubmittingRating = false.obs;
+
   SharedPreferences get _prefs => Get.find<SharedPreferences>();
   AuthService get _auth => Get.find<AuthService>();
+  BookingService get _bookingService => Get.find<BookingService>();
+  ReviewService get _reviewService => Get.find<ReviewService>();
+
+  List<BookingModel> get bookings => _bookingService.bookings;
+  bool get isLoadingBookings => _bookingService.isLoading.value;
 
   @override
   void onInit() {
@@ -27,6 +42,63 @@ class ProfileController extends GetxController {
     _restoreDarkMode();
     // Refresh user profile from server in the background (non-blocking)
     _auth.fetchProfile();
+
+    // Fetch bookings if user is logged in, and listen to login state changes
+    if (_auth.isLoggedIn.value) {
+      _bookingService.fetchBookings();
+    }
+    ever(_auth.isLoggedIn, (bool loggedIn) {
+      if (loggedIn) {
+        _bookingService.fetchBookings();
+      } else {
+        // Clear bookings if logged out
+        _bookingService.bookings.clear();
+        _resetRatingForm();
+      }
+    });
+  }
+
+  void _resetRatingForm() {
+    selectedBookingId.value = null;
+    selectedRating.value = null;
+    commentController.clear();
+  }
+
+  // ── Submit Rating ─────────────────────────────────────────────
+  Future<void> submitRating() async {
+    final bookingId = selectedBookingId.value;
+    final rating = selectedRating.value;
+    final comment = commentController.text.trim();
+
+    if (bookingId == null || bookingId.isEmpty) {
+      SnackbarHelper.showError('Please select a booking.');
+      return;
+    }
+
+    if (rating == null) {
+      SnackbarHelper.showError('Please select a rating.');
+      return;
+    }
+
+    if (comment.isEmpty) {
+      SnackbarHelper.showError('Please write your experience.');
+      return;
+    }
+
+    isSubmittingRating.value = true;
+    try {
+      await _reviewService.createRating(
+        bookingId: bookingId,
+        rating: rating,
+        comment: comment,
+      );
+      SnackbarHelper.showSuccess('Rating submitted successfully!');
+      _resetRatingForm();
+    } catch (e) {
+      SnackbarHelper.showError(e.toString());
+    } finally {
+      isSubmittingRating.value = false;
+    }
   }
 
   // ── Dark Mode ────────────────────────────────────────────────
@@ -61,5 +133,11 @@ class ProfileController extends GetxController {
     final parts = saved.split('_');
     if (parts.length != 2) return null;
     return Locale(parts[0], parts[1]);
+  }
+
+  @override
+  void onClose() {
+    commentController.dispose();
+    super.onClose();
   }
 }

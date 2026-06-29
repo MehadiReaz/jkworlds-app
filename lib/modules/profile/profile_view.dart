@@ -34,7 +34,7 @@ class ProfileView extends StatelessWidget {
           // ── General Section ───────────────────────────────────
           _buildSectionHeader(context, 'general'.tr),
           const SizedBox(height: 8),
-          _buildMenuCard(context, [
+          Obx(() => _buildMenuCard(context, [
             _MenuItem(
               icon: Icons.local_offer_rounded,
               iconBg: cs.tertiaryContainer,
@@ -49,7 +49,15 @@ class ProfileView extends StatelessWidget {
               title: 'notification_settings'.tr,
               onTap: () => Get.toNamed(AppRoutes.notificationSettings),
             ),
-          ]),
+            if (auth.isLoggedIn.value)
+              _MenuItem(
+                icon: Icons.star_outline_rounded,
+                iconBg: cs.primaryContainer,
+                iconColor: cs.onPrimaryContainer,
+                title: 'Rate Your Experience',
+                onTap: () => Get.toNamed(AppRoutes.postRating),
+              ),
+          ])),
 
           const SizedBox(height: 24),
 
