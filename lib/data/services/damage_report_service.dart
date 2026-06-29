@@ -11,31 +11,92 @@ import 'package:jkworlds/data/models/damage_report_model.dart';
 class DamageReportService extends GetxService {
   ApiProvider get _api => Get.find<ApiProvider>();
 
+  /// Fetch damage reports dashboard containing stats and reports list.
+  /// GET /api/damage-reports
+  Future<Map<String, dynamic>> fetchDamageReportsDashboard() async {
+    try {
+      final response = await _api.get(ApiConstants.damageReports);
+      final body = response.data;
+
+      Map<String, dynamic> stats = {
+        'total': 0,
+        'pending': 0,
+        'resolved': 0,
+      };
+      List<DamageReportModel> reports = [];
+
+      if (body is Map<String, dynamic>) {
+        final data = body['data'];
+        if (data is Map<String, dynamic>) {
+          // Parse stats
+          if (data['stats'] is Map<String, dynamic>) {
+            final s = data['stats'] as Map<String, dynamic>;
+            stats = {
+              'total': int.tryParse(s['total']?.toString() ?? '') ?? 0,
+              'pending': int.tryParse(s['pending']?.toString() ?? '') ?? 0,
+              'resolved': int.tryParse(s['resolved']?.toString() ?? '') ?? 0,
+            };
+          }
+
+          // Parse reports
+          final reportsRaw = data['reports'];
+          final List<dynamic> list;
+          if (reportsRaw is Map<String, dynamic> && reportsRaw['data'] is List) {
+            list = reportsRaw['data'] as List;
+          } else if (reportsRaw is List) {
+            list = reportsRaw;
+          } else {
+            list = [];
+          }
+          reports = list
+              .whereType<Map<String, dynamic>>()
+              .map(DamageReportModel.fromJson)
+              .toList();
+        } else if (data is List) {
+          // Fallback for tests
+          reports = data
+              .whereType<Map<String, dynamic>>()
+              .map(DamageReportModel.fromJson)
+              .toList();
+          stats = {
+            'total': reports.length,
+            'pending': reports.where((r) => r.status == 'pending' || r.status == 'submitted').length,
+            'resolved': reports.where((r) => r.status == 'resolved').length,
+          };
+        }
+      } else if (body is List) {
+        reports = body
+            .whereType<Map<String, dynamic>>()
+            .map(DamageReportModel.fromJson)
+            .toList();
+        stats = {
+          'total': reports.length,
+          'pending': reports.where((r) => r.status == 'pending' || r.status == 'submitted').length,
+          'resolved': reports.where((r) => r.status == 'resolved').length,
+        };
+      }
+
+      return {
+        'stats': stats,
+        'reports': reports,
+      };
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[DamageReportService] fetchDamageReportsDashboard error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
   /// Fetch all damage reports for the authenticated user.
   /// GET /api/damage-reports
   Future<List<DamageReportModel>> fetchDamageReports() async {
     try {
-      final response = await _api.get(ApiConstants.damageReports);
-      final body = response.data;
-      if (body == null) return [];
-
-      final List<dynamic> list;
-      if (body is List) {
-        list = body;
-      } else if (body is Map<String, dynamic>) {
-        list = body['data'] is List ? body['data'] as List : [];
-      } else {
-        list = [];
-      }
-
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(DamageReportModel.fromJson)
-          .toList();
+      final dash = await fetchDamageReportsDashboard();
+      return dash['reports'] as List<DamageReportModel>;
     } on AppException {
       rethrow;
-    } catch (e, st) {
-      logger.e('[DamageReportService] fetchDamageReports error', error: e, stackTrace: st);
+    } catch (e) {
       throw UnknownException(e.toString());
     }
   }
@@ -67,12 +128,16 @@ class DamageReportService extends GetxService {
   /// POST /api/damage-reports
   Future<DamageReportModel> createDamageReport({
     required String bookingId,
+    required String title,
+    required String severity,
     required String description,
     List<String>? imagePaths,
   }) async {
     try {
       final fields = <String, dynamic>{
         'booking_id': bookingId,
+        'title': title,
+        'severity': severity,
         'description': description,
       };
 

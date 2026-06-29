@@ -57,6 +57,14 @@ class ProfileView extends StatelessWidget {
                 title: 'Rate Your Experience',
                 onTap: () => Get.toNamed(AppRoutes.postRating),
               ),
+            if (auth.isLoggedIn.value)
+              _MenuItem(
+                icon: Icons.report_problem_outlined,
+                iconBg: cs.errorContainer,
+                iconColor: cs.onErrorContainer,
+                title: 'report_damage'.tr,
+                onTap: () => Get.toNamed(AppRoutes.damageReports),
+              ),
           ])),
 
           const SizedBox(height: 24),

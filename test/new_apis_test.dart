@@ -224,6 +224,8 @@ void main() {
 
     final newReport = await service.createDamageReport(
       bookingId: '100',
+      title: 'Flat tire',
+      severity: 'minor',
       description: 'Flat tire'
     );
     expect(newReport.description, equals('Flat tire'));

@@ -4,8 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/review_service.dart';
+import 'package:jkworlds/data/services/damage_report_service.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
+import 'package:jkworlds/data/models/damage_report_model.dart';
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
+import 'package:jkworlds/core/utils/image_picker_helper.dart';
 
 class ProfileController extends GetxController {
   static const _localeKey = 'locale';
@@ -28,10 +31,26 @@ class ProfileController extends GetxController {
   final commentController = TextEditingController();
   final isSubmittingRating = false.obs;
 
+  // ── Damage Report Form State ─────────────────────────────────
+  final damageSelectedBookingId = RxnString();
+  final damageTitleController = TextEditingController();
+  final damageSeverity = 'minor'.obs; // 'minor', 'moderate', 'severe'
+  final damageDescriptionController = TextEditingController();
+  final damageSelectedImages = <String>[].obs;
+  final isSubmittingDamageReport = false.obs;
+
+  // ── Damage Reports Dashboard State ───────────────────────────
+  final damageReports = <DamageReportModel>[].obs;
+  final totalDamageReports = 0.obs;
+  final pendingDamageReports = 0.obs;
+  final resolvedDamageReports = 0.obs;
+  final isLoadingReportsList = false.obs;
+
   SharedPreferences get _prefs => Get.find<SharedPreferences>();
   AuthService get _auth => Get.find<AuthService>();
   BookingService get _bookingService => Get.find<BookingService>();
   ReviewService get _reviewService => Get.find<ReviewService>();
+  DamageReportService get _damageReportService => Get.find<DamageReportService>();
 
   List<BookingModel> get bookings => _bookingService.bookings;
   bool get isLoadingBookings => _bookingService.isLoading.value;
@@ -46,14 +65,18 @@ class ProfileController extends GetxController {
     // Fetch bookings if user is logged in, and listen to login state changes
     if (_auth.isLoggedIn.value) {
       _bookingService.fetchBookings();
+      loadDamageReportsDashboard();
     }
     ever(_auth.isLoggedIn, (bool loggedIn) {
       if (loggedIn) {
         _bookingService.fetchBookings();
+        loadDamageReportsDashboard();
       } else {
         // Clear bookings if logged out
         _bookingService.bookings.clear();
+        damageReports.clear();
         _resetRatingForm();
+        _resetDamageForm();
       }
     });
   }
@@ -62,6 +85,14 @@ class ProfileController extends GetxController {
     selectedBookingId.value = null;
     selectedRating.value = null;
     commentController.clear();
+  }
+
+  void _resetDamageForm() {
+    damageSelectedBookingId.value = null;
+    damageTitleController.clear();
+    damageSeverity.value = 'minor';
+    damageDescriptionController.clear();
+    damageSelectedImages.clear();
   }
 
   // ── Submit Rating ─────────────────────────────────────────────
@@ -98,6 +129,84 @@ class ProfileController extends GetxController {
       SnackbarHelper.showError(e.toString());
     } finally {
       isSubmittingRating.value = false;
+    }
+  }
+
+  // ── Submit Damage Report ──────────────────────────────────────
+  Future<void> submitDamageReport() async {
+    final bookingId = damageSelectedBookingId.value;
+    final title = damageTitleController.text.trim();
+    final severity = damageSeverity.value;
+    final description = damageDescriptionController.text.trim();
+
+    if (bookingId == null || bookingId.isEmpty) {
+      SnackbarHelper.showError('Please select a booking.');
+      return;
+    }
+
+    if (title.isEmpty) {
+      SnackbarHelper.showError('Please enter a damage title.');
+      return;
+    }
+
+    if (severity.isEmpty) {
+      SnackbarHelper.showError('Please select severity level.');
+      return;
+    }
+
+    isSubmittingDamageReport.value = true;
+    try {
+      await _damageReportService.createDamageReport(
+        bookingId: bookingId,
+        title: title,
+        severity: severity,
+        description: description,
+        imagePaths: damageSelectedImages,
+      );
+      SnackbarHelper.showSuccess('Damage report submitted successfully!');
+      _resetDamageForm();
+      loadDamageReportsDashboard();
+      Get.back();
+    } catch (e) {
+      SnackbarHelper.showError(e.toString());
+    } finally {
+      isSubmittingDamageReport.value = false;
+    }
+  }
+
+  // ── Load Damage Reports Dashboard ─────────────────────────────
+  Future<void> loadDamageReportsDashboard() async {
+    isLoadingReportsList.value = true;
+    try {
+      final data = await _damageReportService.fetchDamageReportsDashboard();
+      
+      final reportsList = data['reports'] as List<DamageReportModel>;
+      damageReports.assignAll(reportsList);
+
+      final stats = data['stats'] as Map<String, dynamic>;
+      totalDamageReports.value = stats['total'] ?? 0;
+      pendingDamageReports.value = stats['pending'] ?? 0;
+      resolvedDamageReports.value = stats['resolved'] ?? 0;
+    } catch (e) {
+      SnackbarHelper.showError('Failed to load damage reports: ${e.toString()}');
+    } finally {
+      isLoadingReportsList.value = false;
+    }
+  }
+
+  // ── Image Picker Handlers ─────────────────────────────────────
+  Future<void> pickDamageImage() async {
+    final path = await ImagePickerHelper.pickImageWithBottomSheet(
+      title: 'select_image_source'.tr,
+    );
+    if (path != null) {
+      damageSelectedImages.add(path);
+    }
+  }
+
+  void removeDamageImage(int index) {
+    if (index >= 0 && index < damageSelectedImages.length) {
+      damageSelectedImages.removeAt(index);
     }
   }
 
@@ -138,6 +247,8 @@ class ProfileController extends GetxController {
   @override
   void onClose() {
     commentController.dispose();
+    damageTitleController.dispose();
+    damageDescriptionController.dispose();
     super.onClose();
   }
 }

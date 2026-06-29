@@ -19,6 +19,8 @@ import 'package:jkworlds/modules/promo/promo_codes_view.dart';
 import 'package:jkworlds/modules/profile/profile_binding.dart';
 import 'package:jkworlds/modules/profile/edit_profile_view.dart';
 import 'package:jkworlds/modules/profile/post_rating_view.dart';
+import 'package:jkworlds/modules/profile/report_damage_view.dart';
+import 'package:jkworlds/modules/profile/car_damage_reports_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_view.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_binding.dart';
 import 'package:jkworlds/modules/booking/checkout_view.dart';
@@ -110,6 +112,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.postRating,
       page: () => const PostRatingView(),
+      binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.reportDamage,
+      page: () => const ReportDamageView(),
+      binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.damageReports,
+      page: () => const CarDamageReportsView(),
       binding: ProfileBinding(),
     ),
     GetPage(

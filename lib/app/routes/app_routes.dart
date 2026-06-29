@@ -20,6 +20,8 @@ abstract class AppRoutes {
   static const promoCodes      = '/promo-codes';
   static const editProfile     = '/edit-profile';
   static const postRating      = '/post-rating';
+  static const reportDamage    = '/report-damage';
+  static const damageReports   = '/damage-reports';
   static const vehicleDetail   = '/vehicle-detail';
   static const checkout        = '/checkout';
   static const about           = '/about';
