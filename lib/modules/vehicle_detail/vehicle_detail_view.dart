@@ -561,19 +561,27 @@ class VehicleDetailView extends StatelessWidget {
                           onTap: () => ctrl.showRatePlansSheet(context),
                           behavior: HitTestBehavior.opaque,
                           child: Obx(() {
-                            final priceText = ctrl.selectedPriceTab.value == 0
-                                ? (vehicle.dailyRateFormatted.isNotEmpty
-                                    ? vehicle.dailyRateFormatted
-                                    : currencyService.formatPrice(vehicle.pricePerDay))
-                                : ctrl.selectedPriceTab.value == 1
-                                    ? currencyService.formatPrice(vehicle.pricePerWeek)
-                                    : currencyService.formatPrice(vehicle.pricePerMonth);
+                            final priceText = ctrl.isAirportTransfer
+                                ? (vehicle.servicePricing?.applicable?.estimated != null
+                                    ? vehicle.servicePricing!.applicable!.estimated!.amountFormatted
+                                    : (vehicle.servicePricing?.applicable != null
+                                        ? '${vehicle.servicePricing!.applicable!.perKmRateFormatted}/km'
+                                        : '${currencyService.formatPrice(ctrl.displayPrice)}/km'))
+                                : ctrl.selectedPriceTab.value == 0
+                                    ? (vehicle.dailyRateFormatted.isNotEmpty
+                                        ? vehicle.dailyRateFormatted
+                                        : currencyService.formatPrice(vehicle.pricePerDay))
+                                    : ctrl.selectedPriceTab.value == 1
+                                        ? currencyService.formatPrice(vehicle.pricePerWeek)
+                                        : currencyService.formatPrice(vehicle.pricePerMonth);
 
-                            final suffixText = ctrl.selectedPriceTab.value == 0
-                                ? '/day'
-                                : ctrl.selectedPriceTab.value == 1
-                                    ? '/week'
-                                    : '/month';
+                            final suffixText = ctrl.isAirportTransfer
+                                ? (vehicle.servicePricing?.applicable?.estimated != null ? '/transfer' : 'distance rate')
+                                : ctrl.selectedPriceTab.value == 0
+                                    ? '/day'
+                                    : ctrl.selectedPriceTab.value == 1
+                                        ? '/week'
+                                        : '/month';
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -606,7 +614,7 @@ class VehicleDetailView extends StatelessWidget {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    if (vehicle.pricePerWeek > 0 || vehicle.pricePerMonth > 0) ...[
+                                    if (!ctrl.isAirportTransfer && (vehicle.pricePerWeek > 0 || vehicle.pricePerMonth > 0)) ...[
                                       const SizedBox(width: 6),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1172,6 +1180,56 @@ class VehicleDetailView extends StatelessWidget {
                     // Interactive Calculations / Breakdown
                     Obx(() {
                       final days = ctrl.totalDays;
+
+                      if (ctrl.isAirportTransfer) {
+                        if (ctrl.pickupLocation.value.trim().isEmpty || (ctrl.isDifferentDropoff.value && ctrl.dropoffLocation.value.trim().isEmpty)) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cs.errorContainer.withValues(alpha: 0.15),
+                              border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.location_on_rounded, color: cs.error),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Please select pick-up & drop-off locations to calculate transfer pricing.',
+                                    style: TextStyle(color: cs.onErrorContainer, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        final app = vehicle.servicePricing?.applicable;
+                        if (app != null && !app.available) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cs.errorContainer.withValues(alpha: 0.15),
+                              border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: cs.error),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Airport Transfer service is not available for the selected locations.',
+                                    style: TextStyle(color: cs.onErrorContainer, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+
                       if (days == 0) {
                         return Container(
                           padding: const EdgeInsets.all(12),
@@ -1197,12 +1255,16 @@ class VehicleDetailView extends StatelessWidget {
                         child: Column(
                           children: [
                             _buildBreakdownRow(
-                              'Rental Rate',
-                              ctrl.selectedPriceTab.value == 0
-                                  ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : currencyService.formatPrice(vehicle.pricePerDay)} x $days days'
-                                  : ctrl.selectedPriceTab.value == 1
-                                      ? '${currencyService.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
-                                      : '${currencyService.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
+                              ctrl.isAirportTransfer ? 'Airport Transfer' : 'Rental Rate',
+                              ctrl.isAirportTransfer
+                                  ? (vehicle.servicePricing?.applicable?.estimated != null
+                                      ? '${vehicle.servicePricing!.applicable!.estimated!.distanceKm.toStringAsFixed(1)} km at ${vehicle.servicePricing!.applicable!.perKmRateFormatted}/km'
+                                      : 'Distance-based transfer rate')
+                                  : ctrl.selectedPriceTab.value == 0
+                                      ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : currencyService.formatPrice(vehicle.pricePerDay)} x $days days'
+                                      : ctrl.selectedPriceTab.value == 1
+                                          ? '${currencyService.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
+                                          : '${currencyService.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
                               currencyService.formatPrice(ctrl.subtotal),
                               cs,
                             ),

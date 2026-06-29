@@ -9,6 +9,8 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/app/currency/currency_model.dart';
 import 'package:jkworlds/data/models/faq_model.dart';
 import 'package:jkworlds/data/models/static_page_model.dart';
+import 'package:jkworlds/data/models/slider_model.dart';
+import 'package:jkworlds/data/models/contact_us_model.dart';
 
 class AppDataService extends GetxService {
   ApiProvider get _api => Get.find<ApiProvider>();
@@ -16,9 +18,13 @@ class AppDataService extends GetxService {
 
   static const _faqsCacheKey = 'cached_app_data_faqs';
   static const _pagesCacheKey = 'cached_app_data_pages';
+  static const _slidersCacheKey = 'cached_app_data_sliders';
+  static const _contactUsCacheKey = 'cached_app_data_contact_us';
 
   final faqs = <FaqModel>[].obs;
   final pages = <StaticPageModel>[].obs;
+  final sliders = <SliderModel>[].obs;
+  final contactUs = Rxn<ContactUsModel>();
   final isLoading = false.obs;
 
   @override
@@ -49,6 +55,28 @@ class AppDataService extends GetxService {
         pages.assignAll(decoded.map((e) => StaticPageModel.fromJson(e as Map<String, dynamic>)).toList());
       } catch (e) {
         logger.e('[AppDataService] Error loading cached Pages: $e');
+      }
+    }
+
+    // Load Sliders
+    final cachedSliders = prefs.getString(_slidersCacheKey);
+    if (cachedSliders != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(cachedSliders) as List<dynamic>;
+        sliders.assignAll(decoded.map((e) => SliderModel.fromJson(e as Map<String, dynamic>)).toList());
+      } catch (e) {
+        logger.e('[AppDataService] Error loading cached Sliders: $e');
+      }
+    }
+
+    // Load Contact Us
+    final cachedContactUs = prefs.getString(_contactUsCacheKey);
+    if (cachedContactUs != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(cachedContactUs) as Map<String, dynamic>;
+        contactUs.value = ContactUsModel.fromJson(decoded);
+      } catch (e) {
+        logger.e('[AppDataService] Error loading cached Contact Us: $e');
       }
     }
   }
@@ -100,6 +128,25 @@ class AppDataService extends GetxService {
             .toList();
         pages.assignAll(pagesList);
         prefs.setString(_pagesCacheKey, jsonEncode(pagesList.map((e) => e.toJson()).toList()));
+      }
+
+      // Parse Sliders
+      final slidersRaw = data['sliders'];
+      if (slidersRaw is List) {
+        final slidersList = slidersRaw
+            .whereType<Map<String, dynamic>>()
+            .map(SliderModel.fromJson)
+            .toList();
+        sliders.assignAll(slidersList);
+        prefs.setString(_slidersCacheKey, jsonEncode(slidersList.map((e) => e.toJson()).toList()));
+      }
+
+      // Parse Contact Us
+      final contactUsRaw = data['contact_us'];
+      if (contactUsRaw is Map<String, dynamic>) {
+        final contactModel = ContactUsModel.fromJson(contactUsRaw);
+        contactUs.value = contactModel;
+        prefs.setString(_contactUsCacheKey, jsonEncode(contactModel.toJson()));
       }
 
       logger.i('[AppDataService] App data successfully loaded and cached');

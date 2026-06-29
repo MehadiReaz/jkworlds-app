@@ -529,19 +529,16 @@ class BookingDetailsView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            _buildDetailRow('Rental Fare', booking.baseAmountFormatted ?? csService.formatPrice(booking.subtotal), cs, theme),
+            _buildDetailRow('Rental Fare', booking.baseAmountFormatted ?? '', cs, theme),
             const SizedBox(height: 8),
             _buildDetailRow(
               'Service Fee & Taxes',
-              booking.addonsTotalFormatted ??
-                  csService.formatPrice(
-                    (booking.totalPrice - booking.subtotal) > 0 ? (booking.totalPrice - booking.subtotal) : booking.serviceFee,
-                  ),
+              booking.addonsTotalFormatted ?? '',
               cs,
               theme,
             ),
             const SizedBox(height: 8),
-            _buildDetailRow('Security Deposit', booking.depositAmountFormatted ?? csService.formatPrice(booking.securityDeposit), cs, theme),
+            _buildDetailRow('Security Deposit', booking.depositAmountFormatted ?? '', cs, theme),
             const Divider(height: 24),
             Container(
               padding: const EdgeInsets.all(12),
@@ -558,7 +555,7 @@ class BookingDetailsView extends StatelessWidget {
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    booking.totalAmountFormatted ?? booking.payableAmountFormatted ?? csService.formatPrice(booking.totalPrice),
+                    booking.totalAmountFormatted ?? booking.payableAmountFormatted ?? '',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: cs.primary,

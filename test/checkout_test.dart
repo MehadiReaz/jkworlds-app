@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/data/services/booking_service.dart';
+import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
@@ -230,16 +231,41 @@ void main() {
       }
     };
 
+    final mockCheckCoverageJson = {
+      'success': true,
+      'status': true,
+      'data': {
+        'covered': true,
+      }
+    };
+
+    final mockAirportDistanceJson = {
+      'success': true,
+      'status': true,
+      'data': {
+        'currency': 'NGN',
+        'distance': {
+          'method': 'haversine',
+          'raw_km': 10.8,
+          'billable_km': 10.8,
+          'min_billable_km': 1
+        }
+      }
+    };
+
     final mockApi = MockApiProvider(mockResponses: {
       '/api/checkout': mockCheckoutPricingJson,
       '/api/bookings': mockBookingsV2Json,
       '/api/payments/stripe/success': mockSuccessJson,
+      '/api/location/check-coverage': mockCheckCoverageJson,
+      '/api/airport-transfer/distance': mockAirportDistanceJson,
     });
     Get.put<ApiProvider>(mockApi, permanent: true);
 
     // 3. Initialize global services
     Get.put(AuthService(), permanent: true);
     Get.put(CurrencyService(), permanent: true);
+    Get.put(LocationService(), permanent: true);
     Get.put(BookingService(), permanent: true);
 
     // 4. Pump the GetMaterialApp with empty scaffold

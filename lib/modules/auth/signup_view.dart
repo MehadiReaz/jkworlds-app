@@ -127,7 +127,7 @@ class SignupView extends GetView<AuthController> {
                         Obx(
                           () => TextFormField(
                             controller: controller.passwordCtrl,
-                            obscureText: controller.obscurePassword.value,
+                            obscureText: controller.obscureSignupPassword.value,
                             textInputAction: TextInputAction.next,
                             validator: controller.validatePassword,
                             decoration: buildAuthInputDecoration(
@@ -136,7 +136,7 @@ class SignupView extends GetView<AuthController> {
                               theme: theme,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  controller.obscurePassword.value
+                                  controller.obscureSignupPassword.value
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                   color: cs.onSurfaceVariant.withValues(
@@ -144,7 +144,7 @@ class SignupView extends GetView<AuthController> {
                                   ),
                                 ),
                                 onPressed: () =>
-                                    controller.obscurePassword.toggle(),
+                                    controller.obscureSignupPassword.toggle(),
                               ),
                             ),
                           ),
@@ -167,7 +167,7 @@ class SignupView extends GetView<AuthController> {
                           () => TextFormField(
                             controller: controller.confirmPasswordCtrl,
                             obscureText:
-                                controller.obscureConfirmPassword.value,
+                                controller.obscureSignupConfirmPassword.value,
                             textInputAction: TextInputAction.done,
                             validator: controller.validateConfirmPassword,
                             decoration: buildAuthInputDecoration(
@@ -176,7 +176,7 @@ class SignupView extends GetView<AuthController> {
                               theme: theme,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  controller.obscureConfirmPassword.value
+                                  controller.obscureSignupConfirmPassword.value
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                   color: cs.onSurfaceVariant.withValues(
@@ -184,7 +184,7 @@ class SignupView extends GetView<AuthController> {
                                   ),
                                 ),
                                 onPressed: () =>
-                                    controller.obscureConfirmPassword.toggle(),
+                                    controller.obscureSignupConfirmPassword.toggle(),
                               ),
                             ),
                           ),

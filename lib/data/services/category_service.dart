@@ -62,10 +62,18 @@ class CategoryService extends GetxService {
     String? sort,          // e.g. price_asc, price_desc, rating
     int? page,
     int? perPage,
+    double? pickupLatitude,
+    double? pickupLongitude,
+    double? dropoffLatitude,
+    double? dropoffLongitude,
   }) async {
     final queryParams = <String, dynamic>{};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
-    if (category != null && category.isNotEmpty) queryParams['category'] = category;
+    if (category != null && category.isNotEmpty) {
+      queryParams['category'] = category;
+    } else {
+      queryParams['category_id'] = categoryId;
+    }
     if (serviceType != null && serviceType.isNotEmpty) queryParams['service_type'] = serviceType;
     if (page != null) queryParams['page'] = page;
     if (perPage != null) queryParams['per_page'] = perPage;
@@ -94,9 +102,19 @@ class CategoryService extends GetxService {
       queryParams['sort'] = normSort;
     }
 
+    final bool hasCoordinates = pickupLatitude != null && pickupLongitude != null;
+    if (hasCoordinates) {
+      queryParams['pickup_latitude'] = pickupLatitude;
+      queryParams['pickup_longitude'] = pickupLongitude;
+      if (dropoffLatitude != null) queryParams['dropoff_latitude'] = dropoffLatitude;
+      if (dropoffLongitude != null) queryParams['dropoff_longitude'] = dropoffLongitude;
+    }
+
+    final endpoint = hasCoordinates ? ApiConstants.vehiclesV2 : ApiConstants.categoryVehicles(categoryId);
+
     try {
       final response = await _api.get(
-        ApiConstants.categoryVehicles(categoryId),
+        endpoint,
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
 
@@ -125,6 +143,10 @@ class CategoryService extends GetxService {
     String? sort,
     int? page,
     int? perPage,
+    double? pickupLatitude,
+    double? pickupLongitude,
+    double? dropoffLatitude,
+    double? dropoffLongitude,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -157,8 +179,18 @@ class CategoryService extends GetxService {
         queryParams['sort'] = normSort;
       }
 
+      final bool hasCoordinates = pickupLatitude != null && pickupLongitude != null;
+      if (hasCoordinates) {
+        queryParams['pickup_latitude'] = pickupLatitude;
+        queryParams['pickup_longitude'] = pickupLongitude;
+        if (dropoffLatitude != null) queryParams['dropoff_latitude'] = dropoffLatitude;
+        if (dropoffLongitude != null) queryParams['dropoff_longitude'] = dropoffLongitude;
+      }
+
+      final endpoint = hasCoordinates ? ApiConstants.vehiclesV2 : ApiConstants.vehicles;
+
       final response = await _api.get(
-        ApiConstants.vehicles,
+        endpoint,
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
 
@@ -173,7 +205,7 @@ class CategoryService extends GetxService {
     } on AppException {
       rethrow;
     } catch (e, st) {
-      logger.e('[CategoryService] fetchAllVehicles error using /api/vehicles', error: e, stackTrace: st);
+      logger.e('[CategoryService] fetchAllVehicles error using vehicles API', error: e, stackTrace: st);
       return [];
     }
   }

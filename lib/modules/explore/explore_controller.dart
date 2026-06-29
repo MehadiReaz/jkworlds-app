@@ -6,6 +6,7 @@ import 'package:jkworlds/data/services/category_service.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
+import 'package:jkworlds/core/utils/logger.dart';
 
 class ExploreController extends GetxController {
   // ── Search Form States ──────────────────────────────────────────
@@ -151,6 +152,38 @@ class ExploreController extends GetxController {
     try {
       final cats = _categoryService.categories;
 
+      double? pickupLat;
+      double? pickupLng;
+      double? dropoffLat;
+      double? dropoffLng;
+
+      if (selectedPickupPrediction.value != null) {
+        try {
+          final details = await _locationService.fetchLocationDetails(selectedPickupPrediction.value!.id);
+          if (details != null) {
+            pickupLat = details.latitude;
+            pickupLng = details.longitude;
+          }
+        } catch (e) {
+          logger.e('[ExploreController] Error resolving pickup coordinates: $e');
+        }
+      }
+
+      if (isDifferentDropoff.value && selectedDropoffPrediction.value != null) {
+        try {
+          final details = await _locationService.fetchLocationDetails(selectedDropoffPrediction.value!.id);
+          if (details != null) {
+            dropoffLat = details.latitude;
+            dropoffLng = details.longitude;
+          }
+        } catch (e) {
+          logger.e('[ExploreController] Error resolving dropoff coordinates: $e');
+        }
+      } else {
+        dropoffLat = pickupLat;
+        dropoffLng = pickupLng;
+      }
+
       // Build query params for the API
       final serviceType = selectedServiceType.value == 'All'
           ? null
@@ -180,6 +213,10 @@ class ExploreController extends GetxController {
             sort: sort,
             page: currentPage.value,
             perPage: _perPage,
+            pickupLatitude: pickupLat,
+            pickupLongitude: pickupLng,
+            dropoffLatitude: dropoffLat,
+            dropoffLongitude: dropoffLng,
           );
         } else {
           // Fallback to fetch all and filter by type client-side
@@ -191,6 +228,10 @@ class ExploreController extends GetxController {
             sort: sort,
             page: currentPage.value,
             perPage: _perPage,
+            pickupLatitude: pickupLat,
+            pickupLongitude: pickupLng,
+            dropoffLatitude: dropoffLat,
+            dropoffLongitude: dropoffLng,
           );
           results = results
               .where((v) => v.type.toLowerCase() == selectedCategory.value.toLowerCase())
@@ -205,6 +246,10 @@ class ExploreController extends GetxController {
           sort: sort,
           page: currentPage.value,
           perPage: _perPage,
+          pickupLatitude: pickupLat,
+          pickupLongitude: pickupLng,
+          dropoffLatitude: dropoffLat,
+          dropoffLongitude: dropoffLng,
         );
       }
 

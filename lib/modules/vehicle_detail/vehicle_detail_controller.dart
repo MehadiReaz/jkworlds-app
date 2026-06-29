@@ -12,6 +12,7 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
+import 'package:jkworlds/data/models/service_pricing_model.dart';
 
 class VehicleDetailController extends GetxController {
   // The vehicle starts as the list-page preview; replaced with full detail after fetch.
@@ -29,6 +30,8 @@ class VehicleDetailController extends GetxController {
   // ── Loading / Error States ──────────────────────────────────────
   final isLoadingDetail = true.obs;
   final detailError = ''.obs;
+
+  final _refreshTrigger = 0.obs;
 
   // ── Reservation Form States ──────────────────────────────────────
   final pickupDate = Rxn<DateTime>();
@@ -153,6 +156,13 @@ class VehicleDetailController extends GetxController {
     vehicle = Get.arguments as VehicleModel;
     vehicleRx.value = vehicle;
 
+    // Set up debounced detail/pricing refresher to consolidate simultaneous updates
+    debounce(
+      _refreshTrigger,
+      (_) => _fetchVehicleDetail(),
+      time: const Duration(milliseconds: 300),
+    );
+
     // Fetch full details from the API
     _fetchVehicleDetail();
 
@@ -207,7 +217,10 @@ class VehicleDetailController extends GetxController {
         dropoffLocationCtrl.text = pickupLocationCtrl.text;
         selectedDropoffPrediction.value = selectedPickupPrediction.value;
       }
+      _refreshTrigger.value++;
     });
+
+    ever(isSelfDrive, (_) => _refreshTrigger.value++);
 
     // Sync drop-off with pickup if "Different Drop-off Location" is toggled off
     ever(isDifferentDropoff, (bool diff) {
@@ -216,6 +229,7 @@ class VehicleDetailController extends GetxController {
         dropoffLocationCtrl.text = pickupLocationCtrl.text;
         selectedDropoffPrediction.value = selectedPickupPrediction.value;
       }
+      _refreshTrigger.value++;
     });
 
     // Also sync if pickup details change while different dropoff is disabled
@@ -230,7 +244,10 @@ class VehicleDetailController extends GetxController {
       if (!isDifferentDropoff.value) {
         selectedDropoffPrediction.value = pred;
       }
+      _refreshTrigger.value++;
     });
+
+    ever(selectedDropoffPrediction, (_) => _refreshTrigger.value++);
 
     // Auto-adjust selectedPriceTab based on date range duration
     ever(pickupDate, (_) => _updatePriceTabAutomatically());
@@ -240,13 +257,54 @@ class VehicleDetailController extends GetxController {
   }
 
   /// Fetches the full vehicle detail from the API endpoint
-  /// GET /api/vehicles/{id}
+  /// GET /api/v2/vehicles/{id}
   Future<void> _fetchVehicleDetail() async {
     isLoadingDetail.value = true;
     detailError.value = '';
 
     try {
-      final result = await _categoryService.fetchVehicleDetail(vehicle.id);
+      double? pickupLat;
+      double? pickupLng;
+      double? dropoffLat;
+      double? dropoffLng;
+
+      if (selectedPickupPrediction.value != null) {
+        try {
+          final details = await _locationService.fetchLocationDetails(selectedPickupPrediction.value!.id);
+          if (details != null) {
+            pickupLat = details.latitude;
+            pickupLng = details.longitude;
+          }
+        } catch (e) {
+          logger.e('[VehicleDetailController] Error resolving pickup coordinates: $e');
+        }
+      }
+
+      if (isDifferentDropoff.value && selectedDropoffPrediction.value != null) {
+        try {
+          final details = await _locationService.fetchLocationDetails(selectedDropoffPrediction.value!.id);
+          if (details != null) {
+            dropoffLat = details.latitude;
+            dropoffLng = details.longitude;
+          }
+        } catch (e) {
+          logger.e('[VehicleDetailController] Error resolving dropoff coordinates: $e');
+        }
+      } else {
+        dropoffLat = pickupLat;
+        dropoffLng = pickupLng;
+      }
+
+      final String sType = isSelfDrive.value ? 'self_drive' : (isAirportTransfer ? 'airport_transfer' : 'chauffeur');
+
+      final result = await _categoryService.fetchVehicleDetail(
+        vehicle.id,
+        serviceType: sType,
+        pickupLatitude: pickupLat,
+        pickupLongitude: pickupLng,
+        dropoffLatitude: dropoffLat,
+        dropoffLongitude: dropoffLng,
+      );
 
       // Update vehicle with full details from API
       vehicle = result.vehicle;
@@ -297,6 +355,16 @@ class VehicleDetailController extends GetxController {
 
   double get displayPrice {
     final v = vehicleRx.value ?? vehicle;
+    if (isAirportTransfer) {
+      final app = v.servicePricing?.applicable;
+      if (app != null) {
+        if (app.estimated != null) {
+          return app.estimated!.amount;
+        } else {
+          return app.perKmRate;
+        }
+      }
+    }
     switch (selectedPriceTab.value) {
       case 1:
         return v.pricePerWeek;
@@ -308,6 +376,13 @@ class VehicleDetailController extends GetxController {
   }
 
   String get priceSuffix {
+    if (isAirportTransfer) {
+      final v = vehicleRx.value ?? vehicle;
+      if (v.servicePricing?.applicable?.estimated != null) {
+        return '/transfer';
+      }
+      return '/km';
+    }
     switch (selectedPriceTab.value) {
       case 1:
         return 'per_week'.tr;
@@ -327,6 +402,12 @@ class VehicleDetailController extends GetxController {
 
   double get subtotal {
     final v = vehicleRx.value ?? vehicle;
+    if (isAirportTransfer) {
+      final est = v.servicePricing?.applicable?.estimated;
+      if (est != null) {
+        return est.amount;
+      }
+    }
     switch (selectedPriceTab.value) {
       case 1:
         return totalDays * (v.pricePerWeek / 7.0);
@@ -414,7 +495,7 @@ class VehicleDetailController extends GetxController {
   double get addonsCost {
     double cost = 0.0;
     if (gpsAddon.value) cost += gpsAddonPrice * totalDays;
-    if (additionalDriverAddon.value) cost += additionalDriverAddonPrice * totalDays;
+    if (additionalDriverAddon.value && !isAirportTransfer) cost += additionalDriverAddonPrice * totalDays;
     if (childSeatAddon.value) cost += childSeatAddonPrice * totalDays;
     if (prepaidFuelAddon.value) cost += prepaidFuelAddonPrice; // Flat/One-time fee
     return cost;

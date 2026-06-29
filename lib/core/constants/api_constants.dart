@@ -25,6 +25,7 @@ class ApiConstants {
   static const String categories = '/api/categories';
   static String categoryVehicles(int categoryId) => '/api/categories/$categoryId/vehicles';
   static const String vehicles = '/api/vehicles';
+  static const String vehiclesV2 = '/api/v2/vehicles';
   static String vehicleDetail(dynamic id) => '/api/v2/vehicles/$id';
   static const String vehicleFilters = '/api/vehicles/filters';
 

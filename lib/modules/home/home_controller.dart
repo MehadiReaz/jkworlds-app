@@ -13,6 +13,8 @@ import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 import 'package:jkworlds/app/currency/currency_service.dart';
+import 'package:jkworlds/data/services/app_data_service.dart';
+import 'package:jkworlds/data/models/slider_model.dart';
 
 class HomeController extends GetxController {
   final featuredVehicles = <VehicleModel>[].obs;
@@ -34,6 +36,9 @@ class HomeController extends GetxController {
 
   CategoryService get _categoryService => Get.find<CategoryService>();
   BookingService  get _bookingService  => Get.find<BookingService>();
+  AppDataService  get _appDataService  => Get.find<AppDataService>();
+
+  RxList<SliderModel> get sliders => _appDataService.sliders;
 
   RxBool get isLoadingCategories => _categoryService.isLoadingCategories;
 
@@ -148,8 +153,10 @@ class HomeController extends GetxController {
   // ── Promo Carousel ─────────────────────────────────────────────
 
   void _startPromoAutoScroll() {
+    _promoTimer?.cancel();
     _promoTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      currentPromoIndex.value = (currentPromoIndex.value + 1) % 3;
+      final count = sliders.isEmpty ? 3 : sliders.length;
+      currentPromoIndex.value = (currentPromoIndex.value + 1) % count;
     });
   }
 

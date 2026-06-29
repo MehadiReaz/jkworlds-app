@@ -90,7 +90,23 @@ Returns a unified container of application configurations grouped by type.
         "content": "We respect your privacy and protect your personal information in accordance with regional regulations.",
         "order": 3
       }
-    ]
+    ],
+    "sliders": [
+      {
+        "id": 1,
+        "image": "https://api.jkworlds.com/storage/sliders/slide1.png",
+        "order": 1
+      },
+      {
+        "id": 2,
+        "image": "https://api.jkworlds.com/storage/sliders/slide2.png",
+        "order": 2
+      }
+    ],
+    "contact_us": {
+      "email": "support@jkworlds.com",
+      "phone": "+971501234567"
+    }
   }
 }
 ```
@@ -130,3 +146,19 @@ Returns a unified container of application configurations grouped by type.
 | `slug` | string | URL-friendly slug representing the page path. |
 | `content` | string | Plain-text body of the page (HTML tags automatically stripped by the backend). |
 | `order` | integer | Sorting order identifier for footer/menu navigation links. |
+
+### Sliders
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | integer | Unique identifier for the slider record. |
+| `image` | string | Absolute URL to the slider banner image asset. |
+| `order` | integer | Sorting order/position indicator for the carousel presentation. |
+
+### Contact Us
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `email` | string | Support email address configured in settings. |
+| `phone` | string | Contact phone number configured in settings. |
+

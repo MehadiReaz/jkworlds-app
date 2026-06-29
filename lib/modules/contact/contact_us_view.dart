@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/data/services/contact_service.dart';
+import 'package:jkworlds/data/services/app_data_service.dart';
 
 class ContactUsView extends StatefulWidget {
   const ContactUsView({super.key});
@@ -138,66 +139,71 @@ class _ContactUsViewState extends State<ContactUsView> {
 
   // ── Contact Info Card ───────────────────────────────────────────
   Widget _buildContactInfoCard(ThemeData theme, ColorScheme cs) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.2),
+    final appDataService = Get.find<AppDataService>();
+    return Obx(() {
+      final email = appDataService.contactUs.value?.email ?? 'info@jkworldsserviceslimited.com';
+      final phone = appDataService.contactUs.value?.phone ?? '+44 (0) 0000 000000';
+      return Container(
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: cs.outlineVariant.withValues(alpha: 0.2),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Text(
-              'contact_info'.tr,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Text(
+                'contact_info'.tr,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          _buildInfoTile(
-            context: context,
-            icon: Icons.phone_rounded,
-            iconBg: cs.primaryContainer,
-            iconColor: cs.onPrimaryContainer,
-            label: 'contact_phone'.tr,
-            value: '+44 (0) 0000 000000',
-          ),
-          Divider(
-            height: 1,
-            indent: 56,
-            endIndent: 16,
-            color: cs.outlineVariant.withValues(alpha: 0.2),
-          ),
-          _buildInfoTile(
-            context: context,
-            icon: Icons.email_rounded,
-            iconBg: cs.tertiaryContainer,
-            iconColor: cs.onTertiaryContainer,
-            label: 'email'.tr,
-            value: 'info@jkworldsserviceslimited.com',
-          ),
-          Divider(
-            height: 1,
-            indent: 56,
-            endIndent: 16,
-            color: cs.outlineVariant.withValues(alpha: 0.2),
-          ),
-          _buildInfoTile(
-            context: context,
-            icon: Icons.access_time_rounded,
-            iconBg: cs.secondaryContainer,
-            iconColor: cs.onSecondaryContainer,
-            label: 'contact_hours'.tr,
-            value: 'contact_hours_value'.tr,
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
+            _buildInfoTile(
+              context: context,
+              icon: Icons.phone_rounded,
+              iconBg: cs.primaryContainer,
+              iconColor: cs.onPrimaryContainer,
+              label: 'contact_phone'.tr,
+              value: phone,
+            ),
+            Divider(
+              height: 1,
+              indent: 56,
+              endIndent: 16,
+              color: cs.outlineVariant.withValues(alpha: 0.2),
+            ),
+            _buildInfoTile(
+              context: context,
+              icon: Icons.email_rounded,
+              iconBg: cs.tertiaryContainer,
+              iconColor: cs.onTertiaryContainer,
+              label: 'email'.tr,
+              value: email,
+            ),
+            Divider(
+              height: 1,
+              indent: 56,
+              endIndent: 16,
+              color: cs.outlineVariant.withValues(alpha: 0.2),
+            ),
+            _buildInfoTile(
+              context: context,
+              icon: Icons.access_time_rounded,
+              iconBg: cs.secondaryContainer,
+              iconColor: cs.onSecondaryContainer,
+              label: 'contact_hours'.tr,
+              value: 'contact_hours_value'.tr,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildInfoTile({

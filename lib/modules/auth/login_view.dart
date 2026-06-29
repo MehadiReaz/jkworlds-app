@@ -101,7 +101,7 @@ class LoginView extends GetView<AuthController> {
                         Obx(
                           () => TextFormField(
                             controller: controller.passwordCtrl,
-                            obscureText: controller.obscurePassword.value,
+                            obscureText: controller.obscureLoginPassword.value,
                             textInputAction: TextInputAction.done,
                             validator: controller.validatePassword,
                             decoration: buildAuthInputDecoration(
@@ -110,7 +110,7 @@ class LoginView extends GetView<AuthController> {
                               theme: theme,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  controller.obscurePassword.value
+                                  controller.obscureLoginPassword.value
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                   color: cs.onSurfaceVariant.withValues(
@@ -118,7 +118,7 @@ class LoginView extends GetView<AuthController> {
                                   ),
                                 ),
                                 onPressed: () =>
-                                    controller.obscurePassword.toggle(),
+                                    controller.obscureLoginPassword.toggle(),
                               ),
                             ),
                           ),

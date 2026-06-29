@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 import 'package:jkworlds/data/services/app_data_service.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
 
 class SplashController extends GetxController {
   final progress = 0.0.obs;
@@ -50,8 +51,12 @@ class SplashController extends GetxController {
   }
 
   void _navigateToNext() {
-    // Clear navigation stack and transition to the main page
-    Get.offAllNamed(AppRoutes.main);
+    final authService = Get.find<AuthService>();
+    if (authService.isLoggedIn.value && authService.currentUser.value?.onboardingCompleted == false) {
+      Get.offAllNamed(AppRoutes.onboarding);
+    } else {
+      Get.offAllNamed(AppRoutes.main);
+    }
   }
 
   @override

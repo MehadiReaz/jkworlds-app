@@ -26,9 +26,12 @@ class AuthController extends GetxController {
   final resetPasswordFormKey = GlobalKey<FormState>();
 
   // ── State ─────────────────────────────────────────────────────
-  final isLoading              = false.obs;
-  final obscurePassword        = true.obs;
-  final obscureConfirmPassword = true.obs;
+  final isLoading                    = false.obs;
+  final obscureLoginPassword         = true.obs;
+  final obscureSignupPassword        = true.obs;
+  final obscureSignupConfirmPassword = true.obs;
+  final obscureResetPassword         = true.obs;
+  final obscureResetConfirmPassword  = true.obs;
 
   // ── OTP Resend Timer ──────────────────────────────────────────
   Timer? _otpTimer;
@@ -246,6 +249,11 @@ class AuthController extends GetxController {
 
     logger.f(_auth.isLoggedIn.value.toString());
 
+    if (_auth.currentUser.value?.onboardingCompleted == false) {
+      Get.offAllNamed(AppRoutes.onboarding);
+      return;
+    }
+
     final prev = Get.previousRoute;
     if (prev.isNotEmpty && !authRoutes.contains(prev)) {
       if (Navigator.of(Get.context!).canPop()) {
@@ -264,6 +272,11 @@ class AuthController extends GetxController {
     passwordCtrl.clear();
     confirmPasswordCtrl.clear();
     otpCtrl.clear();
+    obscureLoginPassword.value = true;
+    obscureSignupPassword.value = true;
+    obscureSignupConfirmPassword.value = true;
+    obscureResetPassword.value = true;
+    obscureResetConfirmPassword.value = true;
   }
 
   void _showSuccess(String title, [String message = '']) {

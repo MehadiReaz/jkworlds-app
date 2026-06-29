@@ -11,7 +11,8 @@ All endpoints are prefix-grouped under the API namespace.
 | Method | Endpoint | Description | Auth Required |
 |:---|:---|:---|:---|
 | **GET** | `/api/vehicles` | Paginated listing of all active vehicles. Supports searching, filtering, and sorting. | No |
-| **GET** | `/api/vehicles/{id_or_slug}` | Complete details of a specific active vehicle by its ID or slug. | No |
+| **GET** | `/api/vehicles/{id_or_slug}` | Complete details of a specific active vehicle by its ID or slug (V1). | No |
+| **GET** | `/api/v2/vehicles/{id_or_slug}` | Complete details of a specific active vehicle including service-specific dynamic pricing details (V2). | No |
 | **GET** | `/api/vehicles/filters` | Dynamic filter options (categories, fuel types, transmissions, sorting, etc.) to populate frontend UI dropdowns. | No |
 | **GET** | `/api/categories/{id_or_slug}/vehicles` | Paginated listing of active vehicles within a specific category. | No |
 
@@ -429,6 +430,175 @@ Currency: USD
     ],
     "created_at": "2026-05-15T08:30:00Z",
     "updated_at": "2026-06-20T12:00:00Z"
+  }
+}
+```
+
+---
+
+### B.2. Get Vehicle Details (V2)
+`GET /api/v2/vehicles/{id_or_slug}`
+
+Retrieves complete details of an active vehicle (same base data as V1) but includes dynamic service-specific pricing details (`service_pricing`) based on optional coordinates and service types.
+
+#### **Request Headers**
+
+| Header | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `Currency` | `string` | No | Target currency for dynamic price conversion. | `AED` |
+| `Service-Type` | `string` | No | Target service type context (e.g. `self_drive`, `chauffeur`, `airport_transfer`). Falls back to `self_drive` if not specified. | `airport_transfer` |
+
+#### **Query/Body Parameters**
+
+| Parameter | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `service_type` | `string` | No | Alternative parameter to specify service type context. | `airport_transfer` |
+| `pickup_latitude` | `numeric` | No | Latitude coordinates of pickup location (used to calculate estimated airport transfer rates). | `25.2532` |
+| `pickup_longitude` | `numeric` | No | Longitude coordinates of pickup location. | `55.3657` |
+| `dropoff_latitude` | `numeric` | No | Latitude coordinates of dropoff location. Required if `service_type` is `airport_transfer`. | `25.1972` |
+| `dropoff_longitude` | `numeric` | No | Longitude coordinates of dropoff location. Required if `service_type` is `airport_transfer`. | `55.2797` |
+
+#### **Example Request**
+```http
+GET /api/v2/vehicles/toyota-rav4-2024?pickup_latitude=25.2532&pickup_longitude=55.3657&dropoff_latitude=25.1972&dropoff_longitude=55.2797 HTTP/1.1
+Host: api.jkworlds.com
+Accept: application/json
+Currency: USD
+Service-Type: airport_transfer
+```
+
+#### **Example Response**
+Returns the full vehicle schema details (matching `GET /api/vehicles/{id_or_slug}`) along with the following additional top-level keys:
+
+```json
+{
+  "status": true,
+  "message": "Vehicle details fetched successfully.",
+  "data": {
+    "id": 12,
+    "slug": "toyota-rav4-2024",
+    "title": "Toyota RAV4 2024",
+    "brand": "Toyota",
+    "model": "RAV4",
+    "year": 2024,
+    "plate_number": "DXB-7789",
+    "image": "https://api.jkworlds.com/storage/uploads/cars/rav4-front.jpg",
+    "is_featured": true,
+    "service_type": "self_drive",
+    "service_type_label": "Self Drive",
+    "category": {
+      "id": 3,
+      "name": "SUV",
+      "slug": "suv"
+    },
+    "specs": {
+      "seats": 5,
+      "doors": 5,
+      "transmission": "auto",
+      "transmission_label": "Automatic",
+      "fuel_type": "hybrid",
+      "fuel_type_label": "Hybrid",
+      "mileage": 12000
+    },
+    "rating": {
+      "average": 4.8,
+      "count": 1
+    },
+    "pricing": {
+      "daily_rate": 150.00,
+      "daily_rate_formatted": "$150.00",
+      "total_price": 150.00,
+      "total_price_formatted": "$150.00",
+      "currency": "USD"
+    },
+    "features": [
+      {
+        "id": 1,
+        "name": "Bluetooth",
+        "icon": "https://api.jkworlds.com/assets/icons/bluetooth.svg"
+      }
+    ],
+    "description": "The 2024 Toyota RAV4 Hybrid is comfortable, fuel-efficient, and spacious. Ideal for city driving or weekend getaways.",
+    "color": "Gray",
+    "gallery": [
+      "https://api.jkworlds.com/storage/uploads/cars/rav4-front.jpg"
+    ],
+    "pricing_details": {
+      "weekly_rate": 950.00,
+      "weekly_rate_formatted": "$950.00",
+      "monthly_rate": 3500.00,
+      "monthly_rate_formatted": "$3,500.00",
+      "chauffeur_rate_per_day": 50.00,
+      "chauffeur_rate_per_day_formatted": "$50.00",
+      "security_deposit": 500.00,
+      "security_deposit_formatted": "$500.00",
+      "extra_km_charge": 0.50,
+      "extra_km_charge_formatted": "$0.50",
+      "overtime_charge_per_hour": 20.00,
+      "overtime_charge_per_hour_formatted": "$20.00"
+    },
+    "security_deposit": {
+      "amount": 500.00,
+      "amount_formatted": "$500.00",
+      "description": "Refundable security deposit captured upon pick up and returned 14 days after vehicle return."
+    },
+    "cancellation": {
+      "title": "Flexible Cancellation",
+      "description": "Free cancellation up to 48 hours prior to reservation start date."
+    },
+    "additional_driver": {
+      "enabled": true,
+      "price_type": "flat",
+      "price_value": 15.00,
+      "price_value_formatted": "$15.00"
+    },
+    "mileage_policies": [],
+    "rental_requirements": [],
+    "included_items": [],
+    "protection_plans": [],
+    "rental_addons": [],
+    "reviews": [],
+    "unavailable_dates": [],
+    "similar_vehicles": [],
+    "created_at": "2026-05-15T08:30:00Z",
+    "updated_at": "2026-06-20T12:00:00Z",
+    
+    "service_type": "airport_transfer",
+    "service_type_label": "Airport Transfer",
+    "service_pricing": {
+      "service_type": "airport_transfer",
+      "service_type_label": "Airport Transfer",
+      "currency": "USD",
+      "self_drive": {
+        "daily_rate": { "amount": 150, "amount_formatted": "$150.00" },
+        "weekly_rate": { "amount": 950, "amount_formatted": "$950.00" },
+        "monthly_rate": { "amount": 3500, "amount_formatted": "$3,500.00" }
+      },
+      "chauffeur": {
+        "chauffeur_rate_per_day": { "amount": 50, "amount_formatted": "$50.00" }
+      },
+      "airport_transfer": {
+        "available": true,
+        "per_km_rate": { "amount": 10, "amount_formatted": "$10.00" },
+        "min_billable_km": 1,
+        "estimated": {
+          "distance_km": 10.8,
+          "amount": 108.00,
+          "amount_formatted": "$108.00"
+        }
+      },
+      "applicable": {
+        "service_type": "airport_transfer",
+        "available": true,
+        "per_km_rate": { "amount": 10, "amount_formatted": "$10.00" },
+        "min_billable_km": 1,
+        "estimated": {
+          "distance_km": 10.8,
+          "amount": 108.00,
+          "amount_formatted": "$108.00"
+        }
+      }
+    }
   }
 }
 ```

@@ -98,7 +98,7 @@ class ResetPasswordView extends GetView<AuthController> {
                         () => TextFormField(
                           controller: controller.passwordCtrl,
                           obscureText:
-                              controller.obscurePassword.value,
+                              controller.obscureResetPassword.value,
                           textInputAction:
                               TextInputAction.next,
                           validator:
@@ -119,7 +119,7 @@ class ResetPasswordView extends GetView<AuthController> {
 
                             suffixIcon: IconButton(
                               icon: Icon(
-                                controller.obscurePassword.value
+                                controller.obscureResetPassword.value
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
 
@@ -129,7 +129,7 @@ class ResetPasswordView extends GetView<AuthController> {
 
                               onPressed: () =>
                                   controller
-                                      .obscurePassword
+                                      .obscureResetPassword
                                       .toggle(),
                             ),
                           ),
@@ -164,7 +164,7 @@ class ResetPasswordView extends GetView<AuthController> {
 
                           obscureText:
                               controller
-                                  .obscureConfirmPassword
+                                  .obscureResetConfirmPassword
                                   .value,
 
                           textInputAction:
@@ -192,7 +192,7 @@ class ResetPasswordView extends GetView<AuthController> {
                             suffixIcon: IconButton(
                               icon: Icon(
                                 controller
-                                        .obscureConfirmPassword
+                                        .obscureResetConfirmPassword
                                         .value
                                     ? Icons
                                         .visibility_off_outlined
@@ -205,7 +205,7 @@ class ResetPasswordView extends GetView<AuthController> {
 
                               onPressed: () =>
                                   controller
-                                      .obscureConfirmPassword
+                                      .obscureResetConfirmPassword
                                       .toggle(),
                             ),
                           ),

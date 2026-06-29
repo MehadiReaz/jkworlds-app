@@ -24,6 +24,7 @@ class AuthService extends GetxService {
 
   // ── Reactive State ────────────────────────────────────────────
   final isLoggedIn    = false.obs;
+  final currentUser   = Rxn<UserModel>();
   final userName      = ''.obs;
   final userEmail     = ''.obs;
   final userPhone     = ''.obs;
@@ -54,6 +55,7 @@ class AuthService extends GetxService {
         final user = UserModel.fromJson(
           Map<String, dynamic>.from(jsonDecode(userJson) as Map),
         );
+        currentUser.value = user;
         _hydrateState(user);
       } else {
         // Fallback: legacy flat keys
@@ -457,6 +459,7 @@ class AuthService extends GetxService {
 
   /// Copies [UserModel] fields into the reactive observables.
   void _hydrateState(UserModel user) {
+    currentUser.value  = user;
     userName.value     = user.name    ?? '';
     userEmail.value    = user.email   ?? '';
     userPhone.value    = user.phone   ?? '';
@@ -524,6 +527,52 @@ class AuthService extends GetxService {
     }
   }
 
+  /// Updates onboarding preferences via PUT /api/profile JSON call.
+  Future<UserModel> updateOnboardingPreferences({
+    required String preferredCurrency,
+    required String preferredService,
+    required String city,
+    required String country,
+    required String phone,
+    required String countryCode,
+    required String dateOfBirth,
+  }) async {
+    final response = await _api.put(
+      ApiConstants.profile,
+      data: {
+        'preferred_currency': preferredCurrency,
+        'preferred_service': preferredService,
+        'city': city,
+        'country': country,
+        'phone': phone,
+        'country_code': countryCode,
+        'date_of_birth': dateOfBirth,
+        'onboarding_completed': true,
+      },
+    );
+
+    final body = response.data;
+    if (body == null) {
+      throw const ServerException('Empty response from profile update');
+    }
+
+    final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+    if (!success) {
+      final msg = body['message'] as String? ?? 'Failed to update preferences';
+      throw ServerException(msg);
+    }
+
+    final data = body['data'];
+    if (data == null || data is! Map<String, dynamic>) {
+      throw const ServerException('Invalid user detail response');
+    }
+
+    final user = UserModel.fromJson(data);
+    await _persistSession(_prefs.getString(_tokenKey) ?? '', user);
+    _hydrateState(user);
+    return user;
+  }
+
   Future<void> _clearPrefs() async {
     await Future.wait([
       _prefs.remove(_tokenKey),
@@ -537,6 +586,7 @@ class AuthService extends GetxService {
   }
 
   void _clearState() {
+    currentUser.value  = null;
     isLoggedIn.value   = false;
     userName.value     = '';
     userEmail.value    = '';

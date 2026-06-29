@@ -14,6 +14,7 @@ import 'package:jkworlds/modules/home/home_view.dart';
 import 'package:jkworlds/modules/home/home_controller.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_controller.dart';
 import 'package:jkworlds/app/translations/app_translations.dart';
+import 'package:jkworlds/data/services/app_data_service.dart';
 import 'mocks.dart';
 
 void main() {
@@ -43,6 +44,7 @@ void main() {
       Get.put<LocationService>(MockLocationService(), permanent: true);
       Get.put(MainNavController(), permanent: true);
       Get.put(ExploreController(), permanent: true);
+      Get.put(AppDataService(), permanent: true);
       Get.put(HomeController(), permanent: true);
 
       // 2. Pump app — use pump() instead of pumpAndSettle() since the promo

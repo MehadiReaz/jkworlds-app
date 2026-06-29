@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import 'orders_controller.dart';
-import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
@@ -14,7 +13,6 @@ class OrdersView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<OrdersController>();
-    final currencyService = Get.find<CurrencyService>();
     final auth = Get.find<AuthService>();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -306,7 +304,7 @@ class OrdersView extends StatelessWidget {
                                     Expanded(
                                       flex: 2,
                                       child: Text(
-                                        booking.totalAmountFormatted ?? currencyService.formatPrice(booking.totalPrice),
+                                        booking.totalAmountFormatted ?? '',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w900,

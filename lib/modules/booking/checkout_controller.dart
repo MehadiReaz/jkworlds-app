@@ -28,6 +28,8 @@ class CheckoutController extends GetxController {
   // Expose the duration (rental days) as base to match the view's requirements
   int get base => checkoutPricing.value?.rentalDays ?? totalDays;
 
+  bool get isDifferentDropoff => args['isDifferentDropoff'] as bool? ?? false;
+
   // Serialized values passed from details configurator
   late final VehicleModel vehicle;
   late final DateTime pickupDate;
@@ -444,12 +446,71 @@ class CheckoutController extends GetxController {
     return basicInfoOk;
   }
 
+  String get serviceTypeContext {
+    if (isSelfDrive) return 'self_drive';
+    if (vehicle.serviceType == 'airport_transfer') return 'airport_transfer';
+    return 'chauffeur';
+  }
+
   // ── Checkout Action ──────────────────────────────────────────────
   Future<void> confirmAndPay() async {
     logger.i('[CheckoutController] confirmAndPay started');
     if (!canPay) {
       logger.w('[CheckoutController] confirmAndPay validation failed');
       SnackbarHelper.showWarning("Please fill in all required fields and upload your driver's license.");
+      return;
+    }
+
+    isLoading.value = true;
+
+    try {
+      // 1. Perform Coverage Validation
+      final pickupCoverage = await Get.find<LocationService>().checkCoverage(
+        lat: resolvedPickupLat,
+        lng: resolvedPickupLng,
+        serviceType: serviceTypeContext,
+      );
+      if (!pickupCoverage.covered) {
+        SnackbarHelper.showError('Pickup location is outside of our active service area.');
+        isLoading.value = false;
+        return;
+      }
+
+      if (isDifferentDropoff || serviceTypeContext == 'airport_transfer' || serviceTypeContext == 'chauffeur') {
+        final dropoffCoverage = await Get.find<LocationService>().checkCoverage(
+          lat: resolvedDropoffLat,
+          lng: resolvedDropoffLng,
+          serviceType: serviceTypeContext,
+        );
+        if (!dropoffCoverage.covered) {
+          SnackbarHelper.showError('Drop-off location is outside of our active service area.');
+          isLoading.value = false;
+          return;
+        }
+      }
+
+      // 2. Perform Airport Transfer Distance & Reachability check
+      if (serviceTypeContext == 'airport_transfer') {
+        try {
+          final distancePreview = await Get.find<BookingService>().fetchAirportTransferDistance(
+            pickupLatitude: resolvedPickupLat,
+            pickupLongitude: resolvedPickupLng,
+            dropoffLatitude: resolvedDropoffLat,
+            dropoffLongitude: resolvedDropoffLng,
+            vehicleId: int.tryParse(vehicle.id),
+          );
+          logger.i('[CheckoutController] Distance preview calculated successfully: ${distancePreview.distance.billableKm} km');
+        } catch (e) {
+          logger.e('[CheckoutController] Distance calculation validation failed: $e');
+          SnackbarHelper.showError('Distance check failed: ${e.toString()}');
+          isLoading.value = false;
+          return;
+        }
+      }
+    } catch (e) {
+      logger.e('[CheckoutController] Geocoding coverage check failed: $e');
+      SnackbarHelper.showError('Location coverage check failed: ${e.toString()}');
+      isLoading.value = false;
       return;
     }
 

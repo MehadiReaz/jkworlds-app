@@ -544,7 +544,7 @@ class ExploreView extends StatelessWidget {
                           Text(
                             vehicle.dailyRateFormatted.isNotEmpty
                                 ? vehicle.dailyRateFormatted
-                                : currencyService.formatPrice(vehicle.pricePerDay),
+                                : '',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,

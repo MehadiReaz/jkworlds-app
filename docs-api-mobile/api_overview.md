@@ -4,7 +4,7 @@ Base URL: `https://<your-domain>/api`
 
 All request/response bodies are JSON unless otherwise noted. Endpoints under **Authenticated Endpoints** require a Bearer token obtained from `/login` or `/register`.
 
-> **Note on response shape:** The exact JSON envelope is produced by an `ApiResponse` helper not shown in the provided code. Examples below assume the common Laravel pattern of `{ "success": bool, "message": string, "data": ... }`. Confirm the real shape against `App\Helpers\ApiResponse` and adjust if it differs.
+> **Note on response shape:** The exact JSON envelope is produced by the `App\Helpers\ApiResponse` helper class: `{ "status": bool, "message": string, "data": ... }`.
 
 ---
 
@@ -13,18 +13,20 @@ All request/response bodies are JSON unless otherwise noted. Endpoints under **A
 1. [Authentication](#authentication)
    - [Register](#1-register)
    - [Login](#2-login)
-   - [Logout](#3-logout)
-   - [Get Current User](#4-get-current-user-me)
-   - [Refresh Token](#5-refresh-token)
-   - [Forgot Password](#6-forgot-password)
-   - [Verify OTP](#7-verify-otp)
-   - [Reset Password](#8-reset-password)
+   - [Firebase Login](#3-firebase-login)
+   - [Logout](#4-logout)
+   - [Get Current User](#5-get-current-user-me)
+   - [Refresh Token](#6-refresh-token)
+   - [Forgot Password](#7-forgot-password)
+   - [Verify OTP](#8-verify-otp)
+   - [Reset Password](#9-reset-password)
 2. [Profile](#profile)
    - [Update Profile](#1-update-profile)
    - [Update Password](#2-update-password)
 3. [Vehicles](#vehicles)
    - [List Vehicles by Category](#1-list-vehicles-by-category)
 4. [Error Format](#error-format)
+
 
 ---
 
@@ -64,7 +66,7 @@ Create a new user account and receive an auth token immediately.
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "User registered successfully.",
   "data": {
     "token": "1|abcdef123456...",
@@ -116,7 +118,7 @@ Authenticate with email and password. Any existing tokens for the user are revok
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Login successful.",
   "data": {
     "token": "2|xyz987...",
@@ -129,7 +131,7 @@ Authenticate with email and password. Any existing tokens for the user are revok
 
 ```json
 {
-  "success": false,
+  "status": false,
   "message": "The provided credentials are incorrect."
 }
 ```
@@ -140,7 +142,55 @@ Authenticate with email and password. Any existing tokens for the user are revok
 
 ---
 
-### 3. Logout
+### 3. Firebase Login
+
+Authenticate using a Firebase ID token. If the user doesn't exist, they are registered first.
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/auth/firebase-login` |
+| **Auth required** | No |
+
+**Request Body**
+
+| Field | Type | Rules |
+|---|---|---|
+| `firebase_token` | string | required |
+| `name` | string | optional |
+
+```json
+{
+  "firebase_token": "eyJhbGciOiJSUzI1NiIs...",
+  "name": "Jane Smith"
+}
+```
+
+**Success Response — `200 OK`**
+
+```json
+{
+  "status": true,
+  "message": "Login successful.",
+  "data": {
+    "token": "2|xyz987...",
+    "user": { "...": "UserResource fields" }
+  }
+}
+```
+
+**Error Response — `401 Unauthorized` or `500`**
+
+```json
+{
+  "status": false,
+  "message": "Firebase ID token has expired."
+}
+```
+
+---
+
+### 4. Logout
 
 Revoke all tokens for the currently authenticated user.
 
@@ -160,7 +210,7 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Logged out successfully.",
   "data": null
 }
@@ -168,7 +218,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 4. Get Current User (`/me`)
+### 5. Get Current User (`/me`)
 
 Returns the authenticated user's profile.
 
@@ -184,7 +234,7 @@ Returns the authenticated user's profile.
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Profile fetched successfully.",
   "data": { "...": "UserResource fields" }
 }
@@ -192,7 +242,7 @@ Returns the authenticated user's profile.
 
 ---
 
-### 5. Refresh Token
+### 6. Refresh Token
 
 Revokes the current token(s) and issues a new one.
 
@@ -206,7 +256,7 @@ Revokes the current token(s) and issues a new one.
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Token refreshed successfully.",
   "data": {
     "token": "3|newtoken..."
@@ -220,7 +270,7 @@ Revokes the current token(s) and issues a new one.
 
 ---
 
-### 6. Forgot Password
+### 7. Forgot Password
 
 Sends a 6-digit OTP to the user's email to begin password reset.
 
@@ -244,19 +294,19 @@ Sends a 6-digit OTP to the user's email to begin password reset.
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Password reset OTP sent to your email.",
   "data": null
 }
 ```
 
-**Validation Error — email not found**
+**Validation Error — email not found (422 Unprocessable Content)**
 
 ```json
 {
-  "success": false,
+  "status": false,
   "message": "Validation failed.",
-  "errors": {
+  "data": {
     "email": ["The selected email is invalid."]
   }
 }
@@ -271,7 +321,7 @@ Sends a 6-digit OTP to the user's email to begin password reset.
 
 ---
 
-### 7. Verify OTP
+### 8. Verify OTP
 
 Checks whether a submitted OTP is valid for the given email, and marks it as "verified" if so.
 
@@ -296,7 +346,7 @@ Checks whether a submitted OTP is valid for the given email, and marks it as "ve
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "OTP verified successfully.",
   "data": { "verified": true }
 }
@@ -306,7 +356,7 @@ Checks whether a submitted OTP is valid for the given email, and marks it as "ve
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Invalid or expired OTP.",
   "data": { "verified": false }
 }
@@ -320,9 +370,9 @@ Checks whether a submitted OTP is valid for the given email, and marks it as "ve
 
 ---
 
-### 8. Reset Password
+### 9. Reset Password
 
-Sets a new password. Requires that the email has either a still-valid OTP or a previously-verified OTP session (from step 7) within the last 10 minutes.
+Sets a new password. Requires that the email has either a still-valid OTP or a previously-verified OTP session (from step 8) within the last 10 minutes.
 
 | | |
 |---|---|
@@ -350,19 +400,19 @@ Sets a new password. Requires that the email has either a still-valid OTP or a p
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Password reset successfully.",
   "data": null
 }
 ```
 
-**Error Response — invalid/expired OTP**
+**Error Response — invalid/expired OTP (422 Unprocessable Content)**
 
 ```json
 {
-  "success": false,
+  "status": false,
   "message": "Invalid or expired OTP. Please verify OTP before resetting password.",
-  "errors": { "verified": false }
+  "data": { "verified": false }
 }
 ```
 
@@ -405,17 +455,16 @@ Partially updates the authenticated user's profile fields, including an optional
 | `address` | string | max 255 |
 | `city` | string | max 80 |
 | `country` | string | max 80 — stored uppercased |
-| `date_of_birth` | date | — |
+| `date_of_birth` | date | YYYY-MM-DD |
 | `license_number` | string | max 80 |
-| `license_expiry` | date | — |
-| `preferred_language` | string | max 8 |
-| `preferred_country` | string | max 2 — stored uppercased |
+| `license_expiry` | date | YYYY-MM-DD |
 | `preferred_currency` | string | max 8 — stored uppercased |
-| `preferred_timezone` | string | max 80 |
-| `preferred_service` | string | max 40 |
-| `location_latitude` | numeric | — |
-| `location_longitude` | numeric | — |
+| `preferred_service` | string | max 40 (one of: `traveler`, `business`, `chauffeur`) |
 | `image` | file | image, mimes: jpeg/png/jpg/gif/webp, **max 2048 KB (2 MB)** |
+
+> [!NOTE]
+> - `preferred_language` is hardcoded to `'en'` on the backend profile update API and cannot be set directly.
+> - Programmatic timezone (`preferred_timezone`), country code mapping (`preferred_country`), and coordinates (`location_latitude`, `location_longitude`) are not validated or updatable via this API and are managed internally or omitted.
 
 **Example (`multipart/form-data`)**
 
@@ -435,7 +484,7 @@ image=@profile.jpg
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Profile updated successfully.",
   "data": { "...": "UserResource fields, refreshed" }
 }
@@ -491,19 +540,19 @@ Changes the authenticated user's password, requiring the current password for co
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Password updated successfully.",
   "data": null
 }
 ```
 
-**Error Response — wrong current password**
+**Error Response — wrong current password (422 Unprocessable Content)**
 
 ```json
 {
-  "success": false,
+  "status": false,
   "message": "Validation failed.",
-  "errors": {
+  "data": {
     "current_password": ["The current password is incorrect."]
   }
 }
@@ -548,29 +597,34 @@ GET /api/categories/4/vehicles?per_page=20
 
 ```json
 {
-  "success": true,
+  "status": true,
   "message": "Vehicles fetched successfully.",
-  "data": {
-    "items": [
-      { "...": "VehicleResource fields" }
-    ],
-    "pagination": {
-      "current_page": 1,
-      "per_page": 20,
-      "total": 57,
-      "last_page": 3
-    }
+  "data": [
+    { "...": "VehicleResource fields" }
+  ],
+  "links": {
+    "first": "https://api.jkworlds.com/api/categories/4/vehicles?page=1",
+    "last": "https://api.jkworlds.com/api/categories/4/vehicles?page=3",
+    "prev": null,
+    "next": "https://api.jkworlds.com/api/categories/4/vehicles?page=2"
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 3,
+    "path": "https://api.jkworlds.com/api/categories/4/vehicles",
+    "per_page": 20,
+    "to": 20,
+    "total": 57
   }
 }
 ```
-
-> The exact pagination envelope depends on `ApiResponse::paginated()`, which isn't included in the provided files — confirm field names against that helper.
 
 **Error Response — category not found or inactive — `404`**
 
 ```json
 {
-  "success": false,
+  "status": false,
   "message": "Category not found."
 }
 ```
@@ -588,18 +642,9 @@ Based on the patterns used across these controllers, expect roughly:
 | Scenario | HTTP Status | Shape |
 |---|---|---|
 | Validation failure (Laravel default) | `422` | `{ "message": "...", "errors": { "field": ["msg"] } }` |
-| Validation failure (via `ApiResponse::validation()`) | likely `422` or `200` (varies by call site — `verifyOtp` returns `200` even when invalid) | `{ "success": false, "message": "...", "errors": {...} }` |
-| Unauthorized / bad credentials | `401` | `{ "success": false, "message": "..." }` |
-| Not found | `404` | `{ "success": false, "message": "..." }` |
-| Server error | `500` | `{ "success": false, "message": "...", "error": "..." }` |
+| Validation failure (via `ApiResponse::validation()`) | `422` | `{ "status": false, "message": "...", "data": { "field": ["msg"] } }` |
+| Unauthorized / bad credentials | `401` | `{ "status": false, "message": "..." }` |
+| Not found | `404` | `{ "status": false, "message": "..." }` |
+| Server error | `500` | `{ "status": false, "message": "...", "data": ... }` |
 
-> Since `App\Helpers\ApiResponse` wasn't included in the provided files, treat the exact field names (`success`, `data`, `errors`, etc.) above as a best-guess based on conventional usage in the controllers. Pull up that helper class to confirm the literal response contract before building a client against it.
-
----
-
-## Open Questions / Things to Verify Against Your Codebase
-
-- Exact JSON shape of `ApiResponse::success()`, `::error()`, `::validation()`, `::unauthorized()`, `::notFound()`, `::paginated()`.
-- Full field list returned by `UserResource` and `VehicleResource`.
-- Full filter set supported by `VehicleListingService::filtersFromRequest()` for the vehicle listing endpoint.
-- Whether `GET /me` and `GET /user` are intentionally both present, or if one should be removed.
+> Note: `ApiResponse::validation()` wraps validation errors inside the `data` envelope key at HTTP Status 422.

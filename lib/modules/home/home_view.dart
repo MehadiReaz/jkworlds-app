@@ -1223,170 +1223,224 @@ class HomeView extends StatelessWidget {
       }
     });
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 160,
-          child: PageView.builder(
-            controller: pageController,
-            itemCount: promos.length,
-            onPageChanged: (index) => ctrl.setPromoIndex(index),
-            itemBuilder: (context, index) {
-              final promo = promos[index];
-              return GestureDetector(
-                onTap: ctrl.navigateToExplore,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: promo.gradient,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: promo.gradient[0].withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      // Background decorative circles
-                      Positioned(
-                        right: -20,
-                        top: -20,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.08),
+    return Obx(() {
+      final hasDynamicSliders = ctrl.sliders.isNotEmpty;
+      final promoCount = hasDynamicSliders ? ctrl.sliders.length : promos.length;
+
+      return Column(
+        children: [
+          SizedBox(
+            height: 160,
+            child: PageView.builder(
+              controller: pageController,
+              itemCount: promoCount,
+              onPageChanged: (index) => ctrl.setPromoIndex(index),
+              itemBuilder: (context, index) {
+                if (hasDynamicSliders) {
+                  final slider = ctrl.sliders[index];
+                  return GestureDetector(
+                    onTap: ctrl.navigateToExplore,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
                           ),
-                        ),
+                        ],
                       ),
-                      Positioned(
-                        right: 30,
-                        bottom: -30,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.05),
-                          ),
-                        ),
-                      ),
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    promo.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    promo.subtitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.85),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'book_now_short'.tr,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              width: 52,
-                              height: 52,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Icon(
-                                promo.icon,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          slider.image,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Shimmer.fromColors(
+                              baseColor: isLight ? Colors.grey.shade300 : Colors.grey.shade800,
+                              highlightColor: isLight ? Colors.grey.shade100 : Colors.grey.shade700,
+                              child: Container(
                                 color: Colors.white,
-                                size: 28,
+                                width: double.infinity,
+                                height: double.infinity,
                               ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: isLight ? Colors.grey.shade200 : Colors.grey.shade900,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                              size: 32,
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  );
+                } else {
+                  final promo = promos[index];
+                  return GestureDetector(
+                    onTap: ctrl.navigateToExplore,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: promo.gradient,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: promo.gradient[0].withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          // Background decorative circles
+                          Positioned(
+                            right: -20,
+                            top: -20,
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 30,
+                            bottom: -30,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.05),
+                              ),
+                            ),
+                          ),
+                          // Content
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        promo.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        promo.subtitle,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.85),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'book_now_short'.tr,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    promo.icon,
+                                    color: Colors.white,
+                                    size: 28,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        // Dot Indicators
-        Obx(() => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                promos.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: ctrl.currentPromoIndex.value == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: ctrl.currentPromoIndex.value == index
-                        ? cs.primary
-                        : cs.onSurfaceVariant.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+          const SizedBox(height: 10),
+          // Dot Indicators
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              promoCount,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: ctrl.currentPromoIndex.value == index ? 24 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: ctrl.currentPromoIndex.value == index
+                      ? cs.primary
+                      : cs.onSurfaceVariant.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-            )),
-        const SizedBox(height: 16),
-      ],
-    );
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      );
+    });
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -2083,7 +2137,7 @@ class HomeView extends StatelessWidget {
                             Text(
                               vehicle.dailyRateFormatted.isNotEmpty
                                   ? vehicle.dailyRateFormatted
-                                  : currencyService.formatPrice(vehicle.pricePerDay),
+                                  : '',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w900,
@@ -2281,7 +2335,7 @@ class HomeView extends StatelessWidget {
                   Text(
                     vehicle.dailyRateFormatted.isNotEmpty
                         ? vehicle.dailyRateFormatted
-                        : currencyService.formatPrice(vehicle.pricePerDay),
+                        : '',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w900,

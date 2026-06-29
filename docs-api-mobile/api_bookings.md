@@ -89,19 +89,19 @@ Tracks the driver's real-time journey lifecycle.
 
 ### Flow Overview
 For creating and confirming a booking:
-1. **(Optional)** `/api/v2/airport-transfer/distance` -> Check distance and estimate transfer fare.
-2. `/api/v2/checkout` -> Retrieve full pricing breakdown and available payment gateway configs.
-3. `/api/v2/bookings` -> Initiate a booking, upload the driver's license (for `self_drive`), and create a pending payment.
+1. **(Optional)** `/api/airport-transfer/distance` -> Check distance and estimate transfer fare.
+2. `/api/checkout` -> Retrieve full pricing breakdown and available payment gateway configs.
+3. `/api/bookings` -> Initiate a booking, upload the driver's license (for `self_drive`), and create a pending payment.
 4. Client processes the in-app payment via the Stripe/PayPal/Flutterwave SDK using the credentials returned from step 3.
-5. `/api/v2/payments/{gateway}/success` or `/api/v2/payments/{gateway}/cancel` -> Verify payment and finalize or cancel the booking.
+5. `/api/payments/{gateway}/success` or `/api/payments/{gateway}/cancel` -> Verify payment and finalize or cancel the booking.
 
 ---
 
-### v2 Booking & Checkout Flow Endpoints
+### Booking & Checkout Flow Endpoints
 
 #### 1. Airport Transfer Distance & Fare Preview
 Retrieve distance calculation and a fare preview for an airport transfer. Uses a straight-line great-circle (haversine) formula, floored to a 1 km billable minimum.
-* **URL:** `/api/v2/airport-transfer/distance`
+* **URL:** `/api/airport-transfer/distance`
 * **Method:** `POST`
 * **Headers:**
   - `Accept: application/json`
@@ -170,7 +170,7 @@ Retrieve distance calculation and a fare preview for an airport transfer. Uses a
 
 #### 2. Checkout Pricing Breakdown
 Calculate a full pricing breakdown and get available payment methods without persisting any data.
-* **URL:** `/api/v2/checkout`
+* **URL:** `/api/checkout`
 * **Method:** `POST`
 * **Headers:**
   - `Accept: application/json`
@@ -302,7 +302,7 @@ Calculate a full pricing breakdown and get available payment methods without per
 
 #### 3. Initiate Booking
 Create a pending payment record and obtain payment gateway config details for the mobile SDK client. Accepts same body parameters as `/checkout` plus client information.
-* **URL:** `/api/v2/bookings`
+* **URL:** `/api/bookings`
 * **Method:** `POST`
 * **Headers:**
   - `Accept: application/json`
@@ -356,7 +356,7 @@ Create a pending payment record and obtain payment gateway config details for th
 
 #### 4. Confirm Payment (Finalize Booking)
 Verify the transaction server-side and create the confirmed booking.
-* **URL:** `/api/v2/payments/{gateway}/success`
+* **URL:** `/api/payments/{gateway}/success`
 * **Method:** `POST`
 * **Path Parameters:**
   - `gateway` (string, required) - `stripe`, `paypal`, or `flutterwave`.
@@ -420,7 +420,7 @@ Verify the transaction server-side and create the confirmed booking.
 
 #### 5. Cancel Payment
 Mark the pending payment as cancelled. No booking is created.
-* **URL:** `/api/v2/payments/{gateway}/cancel`
+* **URL:** `/api/payments/{gateway}/cancel`
 * **Method:** `POST`
 * **Path Parameters:**
   - `gateway` (string, required) - `stripe`, `paypal`, or `flutterwave`.

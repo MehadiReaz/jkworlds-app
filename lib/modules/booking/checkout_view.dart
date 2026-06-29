@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/core/constants/image_assets.dart';
 import 'checkout_controller.dart';
 
@@ -11,7 +10,6 @@ class CheckoutView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<CheckoutController>();
-    final currencyService = Get.find<CurrencyService>();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
@@ -154,7 +152,7 @@ class CheckoutView extends StatelessWidget {
                             ? Padding(
                                 padding: const EdgeInsets.only(top: 8),
                                 child: Text(
-                                  'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : currencyService.formatPrice(ctrl.calculatedDiscount.value)}',
+                                  'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : ''}',
                                   style: TextStyle(color: Colors.green.shade600, fontSize: 12, fontWeight: FontWeight.bold),
                                 ),
                               )
@@ -236,12 +234,12 @@ class CheckoutView extends StatelessWidget {
                         Obx(() {
                           final dailyRateText = ctrl.vehicle.dailyRateFormatted.isNotEmpty
                               ? ctrl.vehicle.dailyRateFormatted
-                              : currencyService.formatPrice(ctrl.vehicle.pricePerDay);
+                              : '';
                           return _buildSummaryRow(
                             'Base (${ctrl.base}d x $dailyRateText)',
                             ctrl.calculatedSubtotalFormatted.value.isNotEmpty
                                 ? ctrl.calculatedSubtotalFormatted.value
-                                : currencyService.formatPrice(ctrl.calculatedSubtotal.value),
+                                : '',
                             cs,
                           );
                         }),
@@ -256,7 +254,7 @@ class CheckoutView extends StatelessWidget {
                               'Protection Amount',
                               ctrl.calculatedProtectionFormatted.value.isNotEmpty
                                   ? ctrl.calculatedProtectionFormatted.value
-                                  : currencyService.formatPrice(ctrl.calculatedProtectionCost.value),
+                                  : '',
                               cs,
                             )),
                         _buildSummaryRow('Service Type', ctrl.isSelfDrive ? 'Self Drive' : 'Chauffeur', cs),
@@ -312,27 +310,27 @@ class CheckoutView extends StatelessWidget {
                             ...ctrl.calculatedAddons.map((addon) {
                               return _buildSummaryRow(
                                 addon['title']?.toString() ?? '',
-                                '+${addon['amount_formatted']?.toString() ?? currencyService.formatPrice(double.tryParse(addon['amount']?.toString() ?? '') ?? 0.0)}',
+                                '+${addon['amount_formatted']?.toString() ?? ''}',
                                 cs,
                                 isAddon: true,
                               );
                             })
                           else ...[
                             if (ctrl.gpsAddon)
-                              _buildSummaryRow('GPS Navigation', '+${currencyService.formatPrice(ctrl.gpsAddonPrice)}', cs, isAddon: true),
+                              _buildSummaryRow('GPS Navigation', '+${ctrl.gpsAddonPrice}', cs, isAddon: true),
                             if (ctrl.additionalDriverAddon)
-                              _buildSummaryRow('Additional Driver', '+${currencyService.formatPrice(ctrl.additionalDriverAddonPrice)}', cs, isAddon: true),
+                              _buildSummaryRow('Additional Driver', '+${ctrl.additionalDriverAddonPrice}', cs, isAddon: true),
                             if (ctrl.childSeatAddon)
-                              _buildSummaryRow('Child Seat', '+${currencyService.formatPrice(ctrl.childSeatAddonPrice)}', cs, isAddon: true),
+                              _buildSummaryRow('Child Seat', '+${ctrl.childSeatAddonPrice}', cs, isAddon: true),
                             if (ctrl.prepaidFuelAddon)
-                              _buildSummaryRow('Prepaid Fuel', '+${currencyService.formatPrice(ctrl.prepaidFuelAddonPrice)}', cs, isAddon: true),
+                              _buildSummaryRow('Prepaid Fuel', '+${ctrl.prepaidFuelAddonPrice}', cs, isAddon: true),
                           ],
                           const SizedBox(height: 12),
                           _buildSummaryRow(
                             'Add-ons Total',
                             ctrl.calculatedAddonsFormatted.value.isNotEmpty
                                 ? ctrl.calculatedAddonsFormatted.value
-                                : currencyService.formatPrice(ctrl.calculatedAddonsCost.value),
+                                : '',
                             cs,
                             isBoldValue: true,
                           ),
@@ -373,7 +371,7 @@ class CheckoutView extends StatelessWidget {
                             ...ctrl.calculatedFees.map((fee) {
                               return _buildSummaryRow(
                                 fee['title']?.toString() ?? '',
-                                '+${fee['amount_formatted']?.toString() ?? currencyService.formatPrice(double.tryParse(fee['amount']?.toString() ?? '') ?? 0.0)}',
+                                '+${fee['amount_formatted']?.toString() ?? ''}',
                                 cs,
                                 isAddon: true,
                               );
@@ -381,7 +379,7 @@ class CheckoutView extends StatelessWidget {
                           else ...[
                             _buildSummaryRow(
                               'VAT',
-                              '+${ctrl.calculatedServiceFeeFormatted.value.isNotEmpty ? ctrl.calculatedServiceFeeFormatted.value : currencyService.formatPrice(ctrl.calculatedServiceFee.value)}',
+                              '+${ctrl.calculatedServiceFeeFormatted.value.isNotEmpty ? ctrl.calculatedServiceFeeFormatted.value : ''}',
                               cs,
                               isAddon: true,
                             ),
@@ -391,7 +389,7 @@ class CheckoutView extends StatelessWidget {
                             'Taxes & Fees Total',
                             ctrl.calculatedServiceFeeFormatted.value.isNotEmpty
                                 ? ctrl.calculatedServiceFeeFormatted.value
-                                : currencyService.formatPrice(ctrl.calculatedServiceFee.value),
+                                : '',
                               cs,
                               isBoldValue: true,
                             ),

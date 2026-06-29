@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 
@@ -79,41 +78,41 @@ class CurrencyService extends GetxService {
 
   /// Format [amountInNgn] into the selected currency string.
   /// e.g. `₦150,000.00`, `$93.75`
-  String formatPrice(double amountInNgn) {
-    final cur = selectedCurrency.value;
+  // String formatPrice(double amountInNgn) {
+  //   final cur = selectedCurrency.value;
     
-    // Find base currency (rate == 1.0)
-    final baseCurrency = currencies.firstWhere(
-      (c) => c.exchangeRate == 1.0,
-      orElse: () => currencies.first,
-    );
+  //   // Find base currency (rate == 1.0)
+  //   final baseCurrency = currencies.firstWhere(
+  //     (c) => c.exchangeRate == 1.0,
+  //     orElse: () => currencies.first,
+  //   );
 
-    double converted;
-    if (baseCurrency.code.toUpperCase() == 'USD') {
-      // Backend prices are in USD, which were scaled up to NGN by 1600.0 in parsing
-      final priceInUsd = amountInNgn / 1600.0;
-      converted = priceInUsd * cur.exchangeRate;
-    } else {
-      // Default to NGN as base
-      converted = amountInNgn * cur.exchangeRate;
-    }
+  //   double converted;
+  //   if (baseCurrency.code.toUpperCase() == 'USD') {
+  //     // Backend prices are in USD, which were scaled up to NGN by 1600.0 in parsing
+  //     final priceInUsd = amountInNgn / 1600.0;
+  //     converted = priceInUsd * cur.exchangeRate;
+  //   } else {
+  //     // Default to NGN as base
+  //     converted = amountInNgn * cur.exchangeRate;
+  //   }
 
-    final digits = cur.code.toUpperCase() == 'NGN' ? 0 : 2;
+  //   final digits = cur.code.toUpperCase() == 'NGN' ? 0 : 2;
 
-    if (cur.symbolPosition == 'right') {
-      final numberFormatter = NumberFormat.decimalPattern();
-      numberFormatter.minimumFractionDigits = digits;
-      numberFormatter.maximumFractionDigits = digits;
-      final formattedNum = numberFormatter.format(converted);
-      return '$formattedNum ${cur.symbol}';
-    } else {
-      final formatter = NumberFormat.currency(
-        symbol: cur.symbol,
-        decimalDigits: digits,
-      );
-      return formatter.format(converted);
-    }
-  }
+  //   if (cur.symbolPosition == 'right') {
+  //     final numberFormatter = NumberFormat.decimalPattern();
+  //     numberFormatter.minimumFractionDigits = digits;
+  //     numberFormatter.maximumFractionDigits = digits;
+  //     final formattedNum = numberFormatter.format(converted);
+  //     return '$formattedNum ${cur.symbol}';
+  //   } else {
+  //     final formatter = NumberFormat.currency(
+  //       symbol: cur.symbol,
+  //       decimalDigits: digits,
+  //     );
+  //     return formatter.format(converted);
+  //   }
+  // }
 
   CurrencyModel _findByCode(String code) {
     return currencies.firstWhere(

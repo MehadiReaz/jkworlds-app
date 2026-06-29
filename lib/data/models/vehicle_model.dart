@@ -3,8 +3,10 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'protection_plan_model.dart';
 import 'rental_addon_model.dart';
 import 'unavailable_date_model.dart';
+import 'service_pricing_model.dart';
 
 export 'protection_plan_model.dart';
+export 'service_pricing_model.dart';
 export 'rental_addon_model.dart';
 export 'unavailable_date_model.dart';
 
@@ -60,6 +62,7 @@ class VehicleModel {
   final List<ProtectionPlanModel> protectionPlans;
   final List<RentalAddonModel> rentalAddons;
   final List<UnavailableDateModel> unavailableDates;
+  final ServicePricingModel? servicePricing;
 
   // Additional fields from response data
   final String slug;
@@ -128,6 +131,7 @@ class VehicleModel {
     this.protectionPlans = const [],
     this.rentalAddons = const [],
     this.unavailableDates = const [],
+    this.servicePricing,
     this.slug = '',
     this.model = '',
     this.categoryName = '',
@@ -414,6 +418,13 @@ class VehicleModel {
       }
     }
 
+    final servicePricingMap = json['service_pricing'] is Map<String, dynamic>
+        ? json['service_pricing'] as Map<String, dynamic>
+        : null;
+    final servicePricing = servicePricingMap != null
+        ? ServicePricingModel.fromJson(servicePricingMap)
+        : null;
+
     return VehicleModel(
       id: (json['id'] ?? '').toString(),
       name: json['title'] as String?           // Real API uses 'title'
@@ -461,6 +472,7 @@ class VehicleModel {
       protectionPlans: protectionPlans,
       rentalAddons: rentalAddons,
       unavailableDates: unavailableDates,
+      servicePricing: servicePricing,
       currency: currency,
       dailyRateFormatted: dailyRateFormatted,
       totalPrice: totalPrice,

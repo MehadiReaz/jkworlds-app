@@ -8,6 +8,7 @@ import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/models/location_coverage_model.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
+import 'package:jkworlds/data/models/airport_transfer_distance_model.dart';
 
 class MockCategoryService extends CategoryService {
   MockCategoryService() {
@@ -34,6 +35,10 @@ class MockCategoryService extends CategoryService {
     String? sort,
     int? page,
     int? perPage,
+    double? pickupLatitude,
+    double? pickupLongitude,
+    double? dropoffLatitude,
+    double? dropoffLongitude,
   }) async {
     var results = List<VehicleModel>.from(mockVehicles);
     
@@ -93,6 +98,10 @@ class MockCategoryService extends CategoryService {
     String? sort,
     int? page,
     int? perPage,
+    double? pickupLatitude,
+    double? pickupLongitude,
+    double? dropoffLatitude,
+    double? dropoffLongitude,
   }) async {
     final catName = categoryId == 1
         ? 'Sedan'
@@ -245,6 +254,25 @@ class MockBookingService extends BookingService {
     return mockBookings.firstWhere(
       (b) => b.id.contains(id.toString()) || int.tryParse(b.id) == id,
       orElse: () => mockBookings.first,
+    );
+  }
+
+  @override
+  Future<AirportTransferDistanceModel> fetchAirportTransferDistance({
+    required double pickupLatitude,
+    required double pickupLongitude,
+    required double dropoffLatitude,
+    required double dropoffLongitude,
+    int? vehicleId,
+  }) async {
+    return const AirportTransferDistanceModel(
+      currency: 'USD',
+      distance: DistanceDetails(
+        method: 'haversine',
+        rawKm: 10.8,
+        billableKm: 10.8,
+        minBillableKm: 1,
+      ),
     );
   }
 }
