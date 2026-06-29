@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "991208627135",
+    "project_id": "jk-world-service",
+    "storage_bucket": "jk-world-service.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:991208627135:android:8b3234a192001a67db9f0a",
+        "android_client_info": {
+          "package_name": "com.jkworlds.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "991208627135-qvqrup47bdphvm3tf1v4hudqrep940gb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBljA60m4cTUVLlpHG1c8TUIeUF8mxAhPg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "991208627135-qvqrup47bdphvm3tf1v4hudqrep940gb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

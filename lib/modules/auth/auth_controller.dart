@@ -214,11 +214,20 @@ class AuthController extends GetxController {
   // ── Social Auth ───────────────────────────────────────────────
 
   Future<void> signInWithGoogle() async {
-    final success = await _auth.signInWithGoogle();
-    if (success) {
-      _clearFields();
-      _navigateAfterSuccess();
-      _showSuccess('login_success'.tr);
+    isLoading.value = true;
+    try {
+      final success = await _auth.signInWithGoogle();
+      if (success) {
+        _clearFields();
+        _navigateAfterSuccess();
+        _showSuccess('login_success'.tr);
+      }
+    } on AppException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('An unexpected error occurred.');
+    } finally {
+      isLoading.value = false;
     }
   }
 

@@ -2,14 +2,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/utils/logger.dart';
+import 'package:jkworlds/firebase_options.dart';
+import 'package:jkworlds/core/constants/api_constants.dart';
+import 'package:jkworlds/data/providers/api_provider.dart';
+import 'package:jkworlds/data/services/auth_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     logger.i('[NotificationService] Handling background message: ${message.messageId}');
   } catch (e) {
     logger.w('[NotificationService] Background message handler Firebase initialization failed (non-fatal): $e');
@@ -57,7 +64,9 @@ class NotificationService extends GetxService {
   /// Initializes Firebase and configures messaging listeners.
   Future<void> initialize() async {
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       final fcm = FirebaseMessaging.instance;
 
       // Request permission
@@ -66,11 +75,18 @@ class NotificationService extends GetxService {
       // Get FCM token
       deviceToken.value = await fcm.getToken() ?? '';
       logger.i('[NotificationService] FCM Device Token: ${deviceToken.value}');
+      debugPrint('======================================================');
+      debugPrint('🔥 FCM DEVICE TOKEN: ${deviceToken.value}');
+      debugPrint('======================================================');
 
       // Listen for token updates
       fcm.onTokenRefresh.listen((t) {
         deviceToken.value = t;
         logger.i('[NotificationService] FCM Token Refreshed: $t');
+        debugPrint('======================================================');
+        debugPrint('🔥 FCM TOKEN REFRESHED: $t');
+        debugPrint('======================================================');
+        uploadDeviceToken();
       });
 
       // Handle background messages
@@ -81,6 +97,9 @@ class NotificationService extends GetxService {
 
       // Handle message clicks when app is in background/terminated
       _setupMessageTaps();
+
+      // Upload to server if logged in
+      await uploadDeviceToken();
 
     } catch (e, st) {
       logger.e('[NotificationService] Firebase failed to initialize. Make sure google-services.json / GoogleService-Info.plist is configured.', error: e, stackTrace: st);
@@ -222,5 +241,44 @@ class NotificationService extends GetxService {
   /// Handle a notification tap (when user taps a notification).
   void onNotificationTap(Map<String, dynamic> data) {
     logger.i('[NotificationService] Notification tapped: $data');
+  }
+
+  /// Upload the FCM device token to the backend server.
+  Future<void> uploadDeviceToken() async {
+    try {
+      final token = deviceToken.value;
+      if (token.isEmpty) {
+        logger.w('[NotificationService] Cannot upload empty device token.');
+        return;
+      }
+
+      // Ensure user is logged in
+      final auth = Get.find<AuthService>();
+      if (!auth.isLoggedIn.value) {
+        logger.i('[NotificationService] User not logged in, skipping device token upload.');
+        return;
+      }
+
+      String platformName = 'android';
+      if (GetPlatform.isIOS) {
+        platformName = 'ios';
+      } else if (GetPlatform.isWeb) {
+        platformName = 'web';
+      }
+
+      final formData = dio.FormData.fromMap({
+        'token': token,
+        'platform': platformName,
+      });
+
+      final response = await Get.find<ApiProvider>().postFormData(
+        ApiConstants.deviceTokens,
+        formData,
+      );
+
+      logger.i('[NotificationService] Device token registered on backend: ${response.data}');
+    } catch (e) {
+      logger.e('[NotificationService] Failed to register device token on backend: $e');
+    }
   }
 }

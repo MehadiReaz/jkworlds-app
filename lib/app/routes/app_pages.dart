@@ -32,6 +32,8 @@ import 'package:jkworlds/modules/support_tickets/create_support_ticket_view.dart
 import 'package:jkworlds/modules/support_tickets/support_ticket_chat_view.dart';
 import 'package:jkworlds/modules/support_tickets/support_tickets_binding.dart';
 import 'package:jkworlds/modules/booking/payment_webview_screen.dart';
+import 'package:jkworlds/modules/booking/payment_status_view.dart';
+import 'package:jkworlds/modules/booking/payment_status_binding.dart';
 import 'package:jkworlds/modules/booking_detail/booking_detail_view.dart';
 import 'package:jkworlds/modules/booking_detail/booking_detail_binding.dart';
 import 'package:jkworlds/modules/onboarding/onboarding_wizard_view.dart';
@@ -154,6 +156,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.paymentWebView,
       page: () => const PaymentWebViewScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.paymentStatus,
+      page: () => const PaymentStatusView(),
+      binding: PaymentStatusBinding(),
     ),
     GetPage(
       name: AppRoutes.bookingDetail,

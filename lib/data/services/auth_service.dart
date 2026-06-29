@@ -3,14 +3,19 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/providers/api_provider.dart';
 import 'package:jkworlds/data/models/user_model.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
+import 'package:jkworlds/firebase_options.dart';
+import 'package:jkworlds/data/services/notification_service.dart';
 
 class AuthService extends GetxService {
   // ── Prefs Keys ────────────────────────────────────────────────
@@ -31,6 +36,7 @@ class AuthService extends GetxService {
   final userAddress   = ''.obs;
   final userPhotoUrl  = ''.obs;
   final isSocialLoading = false.obs;
+  bool _isGoogleSignInInitialized = false;
 
   SharedPreferences get _prefs => Get.find<SharedPreferences>();
   ApiProvider       get _api   => Get.find<ApiProvider>();
@@ -95,6 +101,7 @@ class AuthService extends GetxService {
     await _persistSession(token, user);
     _hydrateState(user);
     isLoggedIn.value = true;
+    Get.find<NotificationService>().uploadDeviceToken();
   }
 
   /// Register a new account.
@@ -126,6 +133,7 @@ class AuthService extends GetxService {
     await _persistSession(token, user);
     _hydrateState(user);
     isLoggedIn.value = true;
+    Get.find<NotificationService>().uploadDeviceToken();
   }
 
   /// Forgot password — returns the server's success message (e.g. "OTP sent").
@@ -371,13 +379,82 @@ class AuthService extends GetxService {
     }
   }
 
-  // ── Social Auth (mocked) ──────────────────────────────────────
+  // ── Social Auth ──────────────────────────────────────────────
 
-  Future<bool> signInWithGoogle() => _mockSocialLogin(
-        name: 'John Doe',
-        email: 'john.doe@gmail.com',
-        tokenPrefix: 'google_token',
+  Future<bool> signInWithGoogle() async {
+    isSocialLoading.value = true;
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      if (!_isGoogleSignInInitialized) {
+        await googleSignIn.initialize(
+          clientId: kIsWeb || Platform.isIOS ? DefaultFirebaseOptions.ios.iosClientId : null,
+        );
+        _isGoogleSignInInitialized = true;
+      }
+
+      final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
+
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
       );
+
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        throw const ServerException('Failed to get Firebase User details.');
+      }
+
+      final String? idToken = await firebaseUser.getIdToken();
+      if (idToken == null) {
+        throw const ServerException('Failed to retrieve Firebase ID token.');
+      }
+
+      // POST to /api/auth/firebase-login
+      final response = await _api.post(
+        '/api/auth/firebase-login',
+        data: {
+          'firebase_token': idToken,
+          'name': firebaseUser.displayName,
+        },
+      );
+
+      final data = _requireSuccess(response, fallbackMessage: 'Google login failed');
+      final token = data['token'] as String?;
+      final userMap = data['user'] as Map<String, dynamic>?;
+
+      if (token == null || userMap == null) {
+        throw const ServerException('Malformed response from server.');
+      }
+
+      final user = UserModel.fromJson(userMap);
+      await _persistSession(token, user);
+      _hydrateState(user);
+      isLoggedIn.value = true;
+      Get.find<NotificationService>().uploadDeviceToken();
+      return true;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        logger.i('[AuthService] Google Sign-In cancelled by user.');
+        return false;
+      }
+      logger.e('[AuthService] Google Sign-In exception: $e');
+      throw UnknownException(e.description ?? 'Google Sign-In failed.');
+    } on FirebaseAuthException catch (e) {
+      logger.e('[AuthService] Firebase Auth error: ${e.message}', error: e);
+      throw UnknownException(e.message ?? 'Firebase authentication failed.');
+    } catch (e) {
+      logger.e('[AuthService] Google Sign-In error: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw UnknownException(e.toString());
+    } finally {
+      isSocialLoading.value = false;
+    }
+  }
 
   Future<bool> signInWithApple() => _mockSocialLogin(
         name: 'John Doe (Apple)',

@@ -140,7 +140,59 @@ class BookingModel {
     final customerMap = json['customer'] is Map<String, dynamic> ? json['customer'] as Map<String, dynamic> : null;
     final driverMap = json['driver'] is Map<String, dynamic> ? json['driver'] as Map<String, dynamic> : null;
 
-    final subtotal = _parseDouble(pricingMap?['base_amount'] ?? json['subtotal'] ?? json['sub_total']);
+    Map<String, dynamic>? baseMap;
+    final baseVal = pricingMap?['base'];
+    if (baseVal is Map<String, dynamic>) {
+      baseMap = baseVal;
+    }
+
+    Map<String, dynamic>? depositMap;
+    final depositVal = pricingMap?['deposit'];
+    if (depositVal is Map<String, dynamic>) {
+      depositMap = depositVal;
+    }
+
+    Map<String, dynamic>? payableMap;
+    final payableVal = pricingMap?['payable'];
+    if (payableVal is Map<String, dynamic>) {
+      payableMap = payableVal;
+    }
+
+    Map<String, dynamic>? totalMap;
+    final totalVal = pricingMap?['total'];
+    if (totalVal is Map<String, dynamic>) {
+      totalMap = totalVal;
+    }
+
+    Map<String, dynamic>? addonsTotalMap;
+    final addonsTotalVal = pricingMap?['addons_total'];
+    if (addonsTotalVal is Map<String, dynamic>) {
+      addonsTotalMap = addonsTotalVal;
+    }
+
+    Map<String, dynamic>? discountMap;
+    final discountVal = pricingMap?['discount'];
+    if (discountVal is Map<String, dynamic>) {
+      discountMap = discountVal;
+    }
+
+    Map<String, dynamic>? protectionAmountMap;
+    final protectionVal = pricingMap?['protection_amount'];
+    if (protectionVal is Map<String, dynamic>) {
+      protectionAmountMap = protectionVal;
+    } else {
+      final protectionPlanVal = pricingMap?['protection'];
+      if (protectionPlanVal is Map<String, dynamic>) {
+        protectionAmountMap = protectionPlanVal;
+      }
+    }
+
+    final subtotal = _parseDouble(
+      baseMap?['amount'] ?? 
+      pricingMap?['base_amount'] ?? 
+      json['subtotal'] ?? 
+      json['sub_total']
+    );
 
     final statusMap = json['status'] is Map<String, dynamic> ? json['status'] as Map<String, dynamic> : null;
     final statusLabel = statusMap?['label']?.toString() ?? json['status_label']?.toString() ?? '';
@@ -156,13 +208,13 @@ class BookingModel {
     final driverPhone = driverMap?['phone']?.toString() ?? json['driver_phone']?.toString();
     final driverImage = driverMap?['image']?.toString() ?? json['driver_image']?.toString();
 
-    final baseAmountFormatted = pricingMap?['base_amount_formatted']?.toString();
-    final addonsTotalFormatted = pricingMap?['addons_total_formatted']?.toString();
-    final protectionPlanAmountFormatted = pricingMap?['protection_plan_amount_formatted']?.toString();
-    final discountAmountFormatted = pricingMap?['discount_amount_formatted']?.toString();
-    final depositAmountFormatted = pricingMap?['deposit_amount_formatted']?.toString();
-    final totalAmountFormatted = pricingMap?['total_amount_formatted']?.toString();
-    final payableAmountFormatted = pricingMap?['payable_amount_formatted']?.toString();
+    final baseAmountFormatted = baseMap?['amount_formatted']?.toString() ?? pricingMap?['base_amount_formatted']?.toString();
+    final addonsTotalFormatted = addonsTotalMap?['amount_formatted']?.toString() ?? pricingMap?['addons_total_formatted']?.toString();
+    final protectionPlanAmountFormatted = protectionAmountMap?['amount_formatted']?.toString() ?? pricingMap?['protection_plan_amount_formatted']?.toString();
+    final discountAmountFormatted = discountMap?['amount_formatted']?.toString() ?? pricingMap?['discount_amount_formatted']?.toString();
+    final depositAmountFormatted = depositMap?['amount_formatted']?.toString() ?? pricingMap?['deposit_amount_formatted']?.toString();
+    final totalAmountFormatted = totalMap?['amount_formatted']?.toString() ?? pricingMap?['total_amount_formatted']?.toString();
+    final payableAmountFormatted = payableMap?['amount_formatted']?.toString() ?? pricingMap?['payable_amount_formatted']?.toString();
     final currency = pricingMap?['currency']?.toString() ?? json['currency']?.toString();
 
     return BookingModel(
@@ -180,8 +232,16 @@ class BookingModel {
       rentalType: _parseRentalType(json['rental_type'] ?? json['service_type']),
       subtotal: subtotal,
       serviceFee: _parseDouble(json['service_fee'] ?? (subtotal * 0.05)),
-      securityDeposit: _parseDouble(pricingMap?['deposit_amount'] ?? json['security_deposit']),
-      totalPrice: _parseDouble(pricingMap?['total_amount'] ?? pricingMap?['payable_amount'] ?? json['total'] ?? json['total_price'] ?? json['amount']),
+      securityDeposit: _parseDouble(depositMap?['amount'] ?? pricingMap?['deposit_amount'] ?? json['security_deposit']),
+      totalPrice: _parseDouble(
+        payableMap?['amount'] ?? 
+        totalMap?['amount'] ?? 
+        pricingMap?['total_amount'] ?? 
+        pricingMap?['payable_amount'] ?? 
+        (json['total'] is num ? json['total'] : null) ?? 
+        json['total_price'] ?? 
+        json['amount']
+      ),
       createdAt: _parseDate(json['created_at']),
       paymentStatus: (paymentMap?['status'] ?? json['payment_status'])?.toString(),
       statusLabel: statusLabel,

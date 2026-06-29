@@ -92,17 +92,27 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
       final status = data['status']?.toString().toLowerCase();
 
       if (status == 'success') {
-        Get.back(result: true);
+        Get.back(result: {
+          'success': true,
+          'transactionId': data['transactionId']?.toString(),
+          'orderId': data['orderId']?.toString(),
+        });
       } else if (status == 'cancel') {
-        Get.back(result: false);
+        Get.back(result: {
+          'success': false,
+        });
       } else if (status == 'error') {
         final errorMsg = data['message']?.toString() ?? 'An unknown error occurred during payment.';
         SnackbarHelper.showError(errorMsg);
-        Get.back(result: false);
+        Get.back(result: {
+          'success': false,
+        });
       }
     } catch (e, st) {
       logger.e('[PaymentWebView] Failed to parse JS message: $messageJson', error: e, stackTrace: st);
-      Get.back(result: false);
+      Get.back(result: {
+        'success': false,
+      });
     }
   }
 

@@ -1277,8 +1277,7 @@ class VehicleDetailView extends StatelessWidget {
                               ),
                             if (ctrl.addonsCost > 0)
                               _buildBreakdownRow('Add-ons', 'GPS/Driver/Seat config', ctrl.formatPrice(ctrl.addonsCost), cs),
-                            _buildBreakdownRow('Service Fee', '5%', ctrl.formatPrice(ctrl.serviceFee), cs),
-                            _buildBreakdownRow('Security Deposit', 'Refundable', ctrl.formatPrice(ctrl.securityDeposit), cs),
+                            _buildBreakdownRow('Taxes & Fees', 'Taxes & Fees', ctrl.serviceFee.toString(), cs),
                             const Divider(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,

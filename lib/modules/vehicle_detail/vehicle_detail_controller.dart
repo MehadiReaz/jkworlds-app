@@ -608,7 +608,7 @@ void _showLocationNotAvailableDialog() {
     return cost;
   }
 
-  double get serviceFee => subtotal * 0.05;
+  double get serviceFee => 4;
 
   double get securityDeposit {
     final v = vehicleRx.value ?? vehicle;

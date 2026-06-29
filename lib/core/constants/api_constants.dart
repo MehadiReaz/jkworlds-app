@@ -60,5 +60,6 @@ class ApiConstants {
   static const String account = '/api/account';
   static const String ratings = '/api/ratings';
   static const String damageReports = '/api/damage-reports';
+  static const String deviceTokens = '/api/device-tokens';
   static String damageReportDetail(dynamic id) => '/api/damage-reports/$id';
 }

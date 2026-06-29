@@ -807,6 +807,7 @@ class CheckoutView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
+            flex: 1,
             child: Text(
               title,
               maxLines: 2,
@@ -818,15 +819,18 @@ class CheckoutView extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
+          Expanded(
+            flex: 1,
+            child: Text(
             value,
             style: TextStyle(
               fontWeight: (isAddon || isBoldValue) ? FontWeight.bold : FontWeight.normal,
               fontSize: 14,
               color: cs.onSurface,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
+            textAlign: TextAlign.right,
+          ),),
         ],
       ),
     );

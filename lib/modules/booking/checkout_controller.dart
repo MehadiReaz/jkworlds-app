@@ -12,7 +12,6 @@ import 'package:jkworlds/data/models/location_model.dart';
 import 'package:jkworlds/data/models/initiate_booking_response_model.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
-import 'package:jkworlds/modules/orders/orders_controller.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/core/utils/image_picker_helper.dart';
 import 'package:jkworlds/core/utils/logger.dart';
@@ -581,7 +580,10 @@ class CheckoutController extends GetxController {
       logger.i('[CheckoutController] reference: $reference, gateway: $gateway');
 
       // Navigate to PaymentWebView page and wait for result
-      final bool? payResult;
+      final bool payResult;
+      String? callbackTransactionId;
+      String? callbackOrderId;
+
       if (Platform.environment.containsKey('FLUTTER_TEST')) {
         payResult = true;
       } else {
@@ -596,36 +598,52 @@ class CheckoutController extends GetxController {
             'phone': phoneController.text.trim(),
           },
         );
-        payResult = result == true;
+        if (result is Map) {
+          payResult = result['success'] == true;
+          callbackTransactionId = result['transactionId'] as String?;
+          callbackOrderId = result['orderId'] as String?;
+        } else {
+          payResult = result == true;
+        }
       }
-      logger.i('[CheckoutController] payResult: $payResult');
+      logger.i('[CheckoutController] payResult: $payResult, transactionId: $callbackTransactionId, orderId: $callbackOrderId');
 
       if (payResult == true) {
         // Confirm payment success on API
         // Stripe/PayPal verify via saved gateway references, transaction_id is optional/null
-        final String? transactionId = (gateway == 'stripe' || gateway == 'paypal') ? null : 'tx_${DateTime.now().millisecondsSinceEpoch}';
-        logger.i('[CheckoutController] calling confirmPayment...');
-        final confirmedBooking = await Get.find<BookingService>().confirmPayment(
-          gateway,
-          reference: reference,
-          transactionId: transactionId,
-        );
-        logger.i('[CheckoutController] confirmedBooking ID: ${confirmedBooking.id}');
-
-        // Update local database & refresh active Orders lists
-        mockBookings.insert(0, confirmedBooking);
-        if (Get.isRegistered<OrdersController>()) {
-          Get.find<OrdersController>().allBookings.insert(0, confirmedBooking);
-        }
-
-        // Return to listings safely
-        if (Get.context != null && Navigator.canPop(Get.context!)) {
-          Get.back();
-          if (Navigator.canPop(Get.context!)) {
-            Get.back();
+        // Flutterwave requires the actual transaction ID from the client SDK callback
+        String? transactionId;
+        if (gateway == 'flutterwave') {
+          transactionId = callbackTransactionId;
+          if (transactionId == null) {
+            logger.w('[CheckoutController] Flutterwave transactionId is null, falling back to generated tx ref');
+            transactionId = 'tx_${DateTime.now().millisecondsSinceEpoch}';
           }
+        } else if (gateway == 'paypal') {
+          transactionId = callbackOrderId;
+        } else {
+          transactionId = null;
         }
-        SnackbarHelper.showSuccess('Your booking for ${vehicle.brand} ${vehicle.name} has been processed successfully.');
+
+        if (Platform.environment.containsKey('FLUTTER_TEST')) {
+          final confirmedBooking = await Get.find<BookingService>().confirmPayment(
+            gateway,
+            reference: reference,
+            transactionId: transactionId,
+          );
+          mockBookings.insert(0, confirmedBooking);
+        } else {
+          // Navigate to payment status view to verify payment and show success/failure screen
+          Get.toNamed(
+            AppRoutes.paymentStatus,
+            arguments: {
+              'gateway': gateway,
+              'reference': reference,
+              'transactionId': transactionId,
+              'vehicle': vehicle,
+            },
+          );
+        }
       } else {
         // Register cancellation on API
         logger.i('[CheckoutController] calling cancelPayment...');
