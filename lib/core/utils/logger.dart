@@ -8,5 +8,7 @@ final logger = Logger(
     colors: true,
     printEmojis: true,
     dateTimeFormat: DateTimeFormat.dateAndTime,
+    stackTraceBeginIndex: 0,
+    
   ),
 );

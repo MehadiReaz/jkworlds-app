@@ -39,7 +39,7 @@ class SnackbarHelper {
     required Color color,
     required IconData icon,
   }) {
-    if (Get.key.currentState == null || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (Get.context == null || Platform.environment.containsKey('FLUTTER_TEST')) {
       debugPrint('[SnackbarHelper] $title: $message');
       return;
     }

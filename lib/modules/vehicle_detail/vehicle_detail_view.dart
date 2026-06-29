@@ -566,14 +566,14 @@ class VehicleDetailView extends StatelessWidget {
                                     ? vehicle.servicePricing!.applicable!.estimated!.amountFormatted
                                     : (vehicle.servicePricing?.applicable != null
                                         ? '${vehicle.servicePricing!.applicable!.perKmRateFormatted}/km'
-                                        : '${currencyService.formatPrice(ctrl.displayPrice)}/km'))
+                                        : '${ctrl.formatPrice(ctrl.displayPrice)}/km'))
                                 : ctrl.selectedPriceTab.value == 0
                                     ? (vehicle.dailyRateFormatted.isNotEmpty
                                         ? vehicle.dailyRateFormatted
-                                        : currencyService.formatPrice(vehicle.pricePerDay))
+                                        : ctrl.formatPrice(vehicle.pricePerDay))
                                     : ctrl.selectedPriceTab.value == 1
-                                        ? currencyService.formatPrice(vehicle.pricePerWeek)
-                                        : currencyService.formatPrice(vehicle.pricePerMonth);
+                                        ? ctrl.formatPrice(vehicle.pricePerWeek)
+                                        : ctrl.formatPrice(vehicle.pricePerMonth);
 
                             final suffixText = ctrl.isAirportTransfer
                                 ? (vehicle.servicePricing?.applicable?.estimated != null ? '/transfer' : 'distance rate')
@@ -1105,7 +1105,7 @@ class VehicleDetailView extends StatelessWidget {
                           if (plan.priceType == 'percentage' && plan.priceValue != null) {
                             badge = '+${plan.priceValue!.toStringAsFixed(0)}%';
                           } else if (plan.priceType == 'fixed' && plan.priceValue != null) {
-                            badge = '+${currencyService.formatPrice(plan.priceValue!)}';
+                            badge = '+${ctrl.formatPrice(plan.priceValue!)}';
                           } else {
                             badge = plan.priceLabel.isNotEmpty ? plan.priceLabel : 'Included';
                           }
@@ -1261,31 +1261,31 @@ class VehicleDetailView extends StatelessWidget {
                                       ? '${vehicle.servicePricing!.applicable!.estimated!.distanceKm.toStringAsFixed(1)} km at ${vehicle.servicePricing!.applicable!.perKmRateFormatted}/km'
                                       : 'Distance-based transfer rate')
                                   : ctrl.selectedPriceTab.value == 0
-                                      ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : currencyService.formatPrice(vehicle.pricePerDay)} x $days days'
+                                      ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : ctrl.formatPrice(vehicle.pricePerDay)} x $days days'
                                       : ctrl.selectedPriceTab.value == 1
-                                          ? '${currencyService.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
-                                          : '${currencyService.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
-                              currencyService.formatPrice(ctrl.subtotal),
+                                          ? '${ctrl.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
+                                          : '${ctrl.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
+                              ctrl.formatPrice(ctrl.subtotal),
                               cs,
                             ),
                             if (ctrl.selectedProtection.value != 'Basic')
                               _buildBreakdownRow(
                                 '${ctrl.selectedProtection.value} Protection',
                                 ctrl.selectedProtection.value == 'Premium' ? '+15%' : '+25%',
-                                currencyService.formatPrice(ctrl.protectionCost),
+                                ctrl.formatPrice(ctrl.protectionCost),
                                 cs,
                               ),
                             if (ctrl.addonsCost > 0)
-                              _buildBreakdownRow('Add-ons', 'GPS/Driver/Seat config', currencyService.formatPrice(ctrl.addonsCost), cs),
-                            _buildBreakdownRow('Service Fee', '5%', currencyService.formatPrice(ctrl.serviceFee), cs),
-                            _buildBreakdownRow('Security Deposit', 'Refundable', currencyService.formatPrice(ctrl.securityDeposit), cs),
+                              _buildBreakdownRow('Add-ons', 'GPS/Driver/Seat config', ctrl.formatPrice(ctrl.addonsCost), cs),
+                            _buildBreakdownRow('Service Fee', '5%', ctrl.formatPrice(ctrl.serviceFee), cs),
+                            _buildBreakdownRow('Security Deposit', 'Refundable', ctrl.formatPrice(ctrl.securityDeposit), cs),
                             const Divider(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text('Total Price', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                                 Text(
-                                  currencyService.formatPrice(ctrl.total),
+                                  ctrl.formatPrice(ctrl.total),
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     color: cs.primary,
@@ -1824,7 +1824,7 @@ class VehicleDetailView extends StatelessWidget {
                           Text(
                             vehicle.dailyRateFormatted.isNotEmpty
                                 ? vehicle.dailyRateFormatted
-                                : currencyService.formatPrice(vehicle.pricePerDay),
+                                : ctrl.formatPrice(vehicle.pricePerDay),
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
                               color: cs.primary,

@@ -228,10 +228,10 @@ class CheckoutController extends GetxController {
     if (pickupPred != null) {
       try {
         final LocationModel? details = await Get.find<LocationService>().fetchLocationDetails(pickupPred.id);
+        resolvedPickupLat = details?.latitude ?? pickupPred.latitude ?? 9.0579;
+        resolvedPickupLng = details?.longitude ?? pickupPred.longitude ?? 7.4951;
+        
         if (details != null) {
-          resolvedPickupLat = details.latitude ?? 9.0579;
-          resolvedPickupLng = details.longitude ?? 7.4951;
-          
           final addr = details.address;
           final nm = details.name;
           if (addr.trim().isNotEmpty) {
@@ -254,10 +254,10 @@ class CheckoutController extends GetxController {
       if (dropoffPred != null) {
         try {
           final LocationModel? details = await Get.find<LocationService>().fetchLocationDetails(dropoffPred.id);
+          resolvedDropoffLat = details?.latitude ?? dropoffPred.latitude ?? 9.0765;
+          resolvedDropoffLng = details?.longitude ?? dropoffPred.longitude ?? 7.3986;
+          
           if (details != null) {
-            resolvedDropoffLat = details.latitude ?? 9.0765;
-            resolvedDropoffLng = details.longitude ?? 7.3986;
-            
             final addr = details.address;
             final nm = details.name;
             if (addr.trim().isNotEmpty) {

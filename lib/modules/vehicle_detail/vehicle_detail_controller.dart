@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -12,9 +13,24 @@ import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
-import 'package:jkworlds/data/models/service_pricing_model.dart';
 
 class VehicleDetailController extends GetxController {
+  final currencyService = Get.find<CurrencyService>();
+
+  String formatPrice(double amount) {
+    final cur = currencyService.selectedCurrency.value;
+    final digits = cur.code.toUpperCase() == 'NGN' ? 0 : 2;
+    final numberFormatter = NumberFormat.decimalPattern();
+    numberFormatter.minimumFractionDigits = digits;
+    numberFormatter.maximumFractionDigits = digits;
+    final formattedNum = numberFormatter.format(amount);
+    if (cur.symbolPosition == 'right') {
+      return '$formattedNum ${cur.symbol}';
+    } else {
+      return '${cur.symbol}$formattedNum';
+    }
+  }
+
   // The vehicle starts as the list-page preview; replaced with full detail after fetch.
   late VehicleModel vehicle;
   final vehicleRx = Rxn<VehicleModel>();
@@ -128,23 +144,111 @@ class VehicleDetailController extends GetxController {
     });
   }
 
-  void selectPickupSuggestion(LocationPrediction suggestion) {
+void _showLocationNotAvailableDialog() {
+    if (Get.context == null ||
+        Platform.environment.containsKey('FLUTTER_TEST')) {
+      debugPrint('[CoverageCheck] Showed Location Not Available Dialog');
+      return;
+    }
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        icon: Icon(
+          Icons.location_off_rounded,
+          color: Get.theme.colorScheme.error,
+          size: 28,
+        ),
+        title: const Text('Location Not Covered'),
+        titleTextStyle: Get.theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        content: const Text(
+          'Sorry, our services are not available in the selected location at this time. Please choose another location.',
+        ),
+        contentTextStyle: Get.theme.textTheme.bodyMedium?.copyWith(
+          color: Get.theme.colorScheme.onSurfaceVariant,
+          height: 1.4,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            style: TextButton.styleFrom(
+              foregroundColor: Get.theme.colorScheme.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'OK',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkCoverage(LocationPrediction? prediction, {required bool isPickup}) async {
+    if (prediction == null) return;
+    logger.f('Check Coverage 1 ${prediction.address}');
+    final controller = isPickup ? pickupLocationCtrl : dropoffLocationCtrl;
+    final locationVal = isPickup ? pickupLocation : dropoffLocation;
+    final predictionVal = isPickup ? selectedPickupPrediction : selectedDropoffPrediction;
+    final loadingVal = isPickup ? isLoadingPickup : isLoadingDropoff;
+
+    loadingVal.value = true;
+    try {
+      logger.f('Check Coverage 2 $prediction');
+      final details = await _locationService.fetchLocationDetails(prediction.id);
+      final double? lat = details?.latitude ?? prediction.latitude;
+      final double? lng = details?.longitude ?? prediction.longitude;
+      logger.f('Check Coverage 21 $lat $lng ${details?.address}');
+      if (lat != null && lng != null) {
+        final sType = isSelfDrive.value ? 'self_drive' : (isAirportTransfer ? 'airport_transfer' : 'chauffeur');
+        final coverage = await _locationService.checkCoverage(
+          lat: lat,
+          lng: lng,
+          serviceType: sType,
+        );
+        logger.f('Check Coverage 3 ${coverage.covered}');
+        if (!coverage.covered) {
+          _showLocationNotAvailableDialog();
+          controller.clear();
+          locationVal.value = '';
+          predictionVal.value = null;
+          if (isPickup && !isDifferentDropoff.value) {
+            dropoffLocationCtrl.clear();
+            dropoffLocation.value = '';
+            selectedDropoffPrediction.value = null;
+          }
+        }
+      }
+    } catch (e) {
+      logger.e('Coverage check failed: $e');
+    } finally {
+      loadingVal.value = false;
+    }
+  }
+
+  void selectPickupSuggestion(LocationPrediction suggestion) async {
+    pickupSuggestions.clear();
     pickupLocationCtrl.text = suggestion.name;
     pickupLocation.value = suggestion.name;
     selectedPickupPrediction.value = suggestion;
-    pickupSuggestions.clear();
     if (!isDifferentDropoff.value) {
       dropoffLocationCtrl.text = suggestion.name;
       dropoffLocation.value = suggestion.name;
       selectedDropoffPrediction.value = suggestion;
     }
+    await _checkCoverage(suggestion, isPickup: true);
+    logger.f('Check Coverage ${selectedPickupPrediction.value}');
   }
 
-  void selectDropoffSuggestion(LocationPrediction suggestion) {
+  void selectDropoffSuggestion(LocationPrediction suggestion) async {
+    dropoffSuggestions.clear();
     dropoffLocationCtrl.text = suggestion.name;
     dropoffLocation.value = suggestion.name;
     selectedDropoffPrediction.value = suggestion;
-    dropoffSuggestions.clear();
+    await _checkCoverage(suggestion, isPickup: false);
   }
 
   CategoryService get _categoryService => Get.find<CategoryService>();
@@ -205,6 +309,13 @@ class VehicleDetailController extends GetxController {
         dropoffLocation.value = pickupLocation.value;
         dropoffLocationCtrl.text = pickupLocationCtrl.text;
         selectedDropoffPrediction.value = selectedPickupPrediction.value;
+      }
+
+      if (selectedPickupPrediction.value != null) {
+        _checkCoverage(selectedPickupPrediction.value, isPickup: true);
+      }
+      if (selectedDropoffPrediction.value != null) {
+        _checkCoverage(selectedDropoffPrediction.value, isPickup: false);
       }
     }
 
@@ -271,10 +382,8 @@ class VehicleDetailController extends GetxController {
       if (selectedPickupPrediction.value != null) {
         try {
           final details = await _locationService.fetchLocationDetails(selectedPickupPrediction.value!.id);
-          if (details != null) {
-            pickupLat = details.latitude;
-            pickupLng = details.longitude;
-          }
+          pickupLat = details?.latitude ?? selectedPickupPrediction.value?.latitude;
+          pickupLng = details?.longitude ?? selectedPickupPrediction.value?.longitude;
         } catch (e) {
           logger.e('[VehicleDetailController] Error resolving pickup coordinates: $e');
         }
@@ -283,10 +392,8 @@ class VehicleDetailController extends GetxController {
       if (isDifferentDropoff.value && selectedDropoffPrediction.value != null) {
         try {
           final details = await _locationService.fetchLocationDetails(selectedDropoffPrediction.value!.id);
-          if (details != null) {
-            dropoffLat = details.latitude;
-            dropoffLng = details.longitude;
-          }
+          dropoffLat = details?.latitude ?? selectedDropoffPrediction.value?.latitude;
+          dropoffLng = details?.longitude ?? selectedDropoffPrediction.value?.longitude;
         } catch (e) {
           logger.e('[VehicleDetailController] Error resolving dropoff coordinates: $e');
         }
@@ -622,7 +729,6 @@ class VehicleDetailController extends GetxController {
   void showRatePlansSheet(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final currencyService = Get.find<CurrencyService>();
     final v = vehicleRx.value ?? vehicle;
 
     showModalBottomSheet(
@@ -689,7 +795,7 @@ class VehicleDetailController extends GetxController {
                       subtitle: 'Standard rate for daily bookings',
                       priceText: v.dailyRateFormatted.isNotEmpty
                           ? '${v.dailyRateFormatted}/day'
-                          : '${currencyService.formatPrice(v.pricePerDay)}/day',
+                          : '${formatPrice(v.pricePerDay)}/day',
                       theme: theme,
                       cs: cs,
                     ),
@@ -700,8 +806,8 @@ class VehicleDetailController extends GetxController {
                         subtitle: 'Best value for 7+ days rentals',
                         priceText: v.weeklyRateFormatted.isNotEmpty
                             ? '${v.weeklyRateFormatted}/week'
-                            : '${currencyService.formatPrice(v.pricePerWeek)}/week',
-                        equivalentText: 'Equivalent to ${currencyService.formatPrice(v.pricePerWeek / 7.0)}/day',
+                            : '${formatPrice(v.pricePerWeek)}/week',
+                        equivalentText: 'Equivalent to ${formatPrice(v.pricePerWeek / 7.0)}/day',
                         badgeText: 'Save 14%',
                         theme: theme,
                         cs: cs,
@@ -714,8 +820,8 @@ class VehicleDetailController extends GetxController {
                         subtitle: 'Super saver for 30+ days rentals',
                         priceText: v.monthlyRateFormatted.isNotEmpty
                             ? '${v.monthlyRateFormatted}/month'
-                            : '${currencyService.formatPrice(v.pricePerMonth)}/month',
-                        equivalentText: 'Equivalent to ${currencyService.formatPrice(v.pricePerMonth / 30.0)}/day',
+                            : '${formatPrice(v.pricePerMonth)}/month',
+                        equivalentText: 'Equivalent to ${formatPrice(v.pricePerMonth / 30.0)}/day',
                         badgeText: 'Save 20%',
                         theme: theme,
                         cs: cs,
