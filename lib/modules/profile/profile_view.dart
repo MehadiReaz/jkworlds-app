@@ -35,20 +35,6 @@ class ProfileView extends StatelessWidget {
           _buildSectionHeader(context, 'general'.tr),
           const SizedBox(height: 8),
           Obx(() => _buildMenuCard(context, [
-            _MenuItem(
-              icon: Icons.local_offer_rounded,
-              iconBg: cs.tertiaryContainer,
-              iconColor: cs.onTertiaryContainer,
-              title: 'promo_codes'.tr,
-              onTap: () => Get.toNamed(AppRoutes.promoCodes),
-            ),
-            _MenuItem(
-              icon: Icons.notifications_outlined,
-              iconBg: cs.secondaryContainer,
-              iconColor: cs.onSecondaryContainer,
-              title: 'notification_settings'.tr,
-              onTap: () => Get.toNamed(AppRoutes.notificationSettings),
-            ),
             if (auth.isLoggedIn.value)
               _MenuItem(
                 icon: Icons.star_outline_rounded,

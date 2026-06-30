@@ -107,32 +107,6 @@ class HomeView extends StatelessWidget {
               ],
             ),
           ),
-          // Notification bell
-          IconButton(
-            onPressed: ctrl.navigateToNotifications,
-            icon: Stack(
-              children: [
-                Icon(
-                  Icons.notifications_outlined,
-                  size: 26,
-                  color: cs.onSurfaceVariant,
-                ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: cs.error,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
           // User avatar
           Obx(() {
             final auth = Get.find<AuthService>();
