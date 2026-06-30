@@ -608,7 +608,91 @@ void _showLocationNotAvailableDialog() {
     return cost;
   }
 
-  double get serviceFee => 4;
+  double get taxesFeesValue {
+    final v = vehicleRx.value ?? vehicle;
+    
+    double scale = 1.0;
+    final currency = v.currency;
+    if (currency.isNotEmpty) {
+      if (Get.isRegistered<CurrencyService>()) {
+        final curService = Get.find<CurrencyService>();
+        final match = curService.currencies.firstWhereOrNull((c) => c.code.toUpperCase() == currency.toUpperCase());
+        if (match != null && match.exchangeRate > 0) {
+          scale = 1.0 / match.exchangeRate;
+        } else if (currency.toUpperCase() == 'USD') {
+          scale = 1600.0;
+        }
+      } else {
+        if (currency.toUpperCase() == 'USD') {
+          scale = 1600.0;
+        }
+      }
+    }
+
+    final pricing = v.servicePricing;
+    if (pricing != null) {
+      if (isAirportTransfer) {
+        final app = pricing.applicable;
+        if (app != null) {
+          if (app.serviceType == 'self_drive') {
+            switch (selectedPriceTab.value) {
+              case 1:
+                if (app.weeklyRate?.taxesFees != null) {
+                  return app.weeklyRate!.taxesFees!.amount * scale;
+                }
+                break;
+              case 2:
+                if (app.monthlyRate?.taxesFees != null) {
+                  return app.monthlyRate!.taxesFees!.amount * scale;
+                }
+                break;
+              default:
+                if (app.dailyRate?.taxesFees != null) {
+                  return app.dailyRate!.taxesFees!.amount * scale;
+                }
+                break;
+            }
+          }
+        }
+      } else if (isSelfDrive.value) {
+        final sd = pricing.selfDrive;
+        if (sd != null) {
+          switch (selectedPriceTab.value) {
+            case 1:
+              if (sd.weekly?.taxesFees != null) {
+                return sd.weekly!.taxesFees!.amount * scale;
+              }
+              break;
+            case 2:
+              if (sd.monthly?.taxesFees != null) {
+                return sd.monthly!.taxesFees!.amount * scale;
+              }
+              break;
+            default:
+              if (sd.daily?.taxesFees != null) {
+                return sd.daily!.taxesFees!.amount * scale;
+              }
+              break;
+          }
+        }
+      } else {
+        final ch = pricing.chauffeur;
+        if (ch != null && ch.rate?.taxesFees != null) {
+          return ch.rate!.taxesFees!.amount * scale;
+        }
+      }
+    }
+
+    if (v.taxesFees != null) {
+      return v.taxesFees!;
+    }
+
+    return 4.0;
+  }
+
+  double get serviceFee => taxesFeesValue;
+
+  String get taxes_fees => formatPrice(taxesFeesValue);
 
   double get securityDeposit {
     final v = vehicleRx.value ?? vehicle;

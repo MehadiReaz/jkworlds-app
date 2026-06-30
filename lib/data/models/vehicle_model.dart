@@ -40,6 +40,8 @@ class VehicleModel {
   final String dailyRateFormatted;
   final double totalPrice;
   final String totalPriceFormatted;
+  final double? taxesFees;
+  final String? taxesFeesFormatted;
 
   // Dynamic details fields from new API
   final String? plateNumber;
@@ -111,6 +113,8 @@ class VehicleModel {
     this.dailyRateFormatted = '',
     this.totalPrice = 0.0,
     this.totalPriceFormatted = '',
+    this.taxesFees,
+    this.taxesFeesFormatted,
     this.plateNumber,
     this.mileage,
     this.color,
@@ -276,6 +280,10 @@ class VehicleModel {
         ?? pricingDetailsMap?['total_price_formatted'] as String?
         ?? json['total_price_formatted'] as String?
         ?? '';
+    final taxesFees = pricingMap != null && pricingMap['taxes_fees'] != null
+        ? _parseDouble(pricingMap['taxes_fees']) * scale
+        : null;
+    final taxesFeesFormatted = pricingMap?['taxes_fees_formatted'] as String?;
     final pricePerWeek = _parseDouble(
         pricingDetailsMap?['weekly_rate'] ?? pricingMap?['weekly_rate'] ?? json['weekly_rate'] ?? json['price_per_week']) * scale;
     final pricePerMonth = _parseDouble(
@@ -477,6 +485,8 @@ class VehicleModel {
       dailyRateFormatted: dailyRateFormatted,
       totalPrice: totalPrice,
       totalPriceFormatted: totalPriceFormatted,
+      taxesFees: taxesFees,
+      taxesFeesFormatted: taxesFeesFormatted,
       slug: slug,
       model: model,
       categoryName: categoryName,
@@ -525,6 +535,8 @@ class VehicleModel {
         'daily_rate_formatted': dailyRateFormatted,
         'total_price': totalPrice,
         'total_price_formatted': totalPriceFormatted,
+        'taxes_fees': taxesFees,
+        'taxes_fees_formatted': taxesFeesFormatted,
         'plate_number': plateNumber,
         'mileage': mileage,
         'color': color,
