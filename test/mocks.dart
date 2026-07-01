@@ -9,6 +9,7 @@ import 'package:jkworlds/data/models/location_coverage_model.dart';
 import 'package:jkworlds/data/mock/mock_vehicles.dart';
 import 'package:jkworlds/data/mock/mock_bookings.dart';
 import 'package:jkworlds/data/models/airport_transfer_distance_model.dart';
+import 'package:jkworlds/data/models/checkout_pricing_model.dart';
 
 class MockCategoryService extends CategoryService {
   MockCategoryService() {
@@ -273,6 +274,26 @@ class MockBookingService extends BookingService {
         billableKm: 10.8,
         minBillableKm: 1,
       ),
+    );
+  }
+
+  @override
+  Future<CheckoutPricingModel> calculateCheckoutPricing(Map<String, dynamic> data) async {
+    return const CheckoutPricingModel(
+      currency: 'NGN',
+      serviceType: 'self_drive',
+      rentalDays: 2,
+      base: CheckoutPricingItem(amount: 110000.0, amountFormatted: '₦110,000'),
+      addonsTotal: CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
+      protection: CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
+      feesTotal: CheckoutPricingItem(amount: 5500.0, amountFormatted: '₦5,500'),
+      discount: CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
+      total: CheckoutPricingItem(amount: 215500.0, amountFormatted: '₦215,500'),
+      payableTotal: CheckoutPricingItem(amount: 215500.0, amountFormatted: '₦215,500'),
+      deposit: CheckoutPricingItem(amount: 100000.0, amountFormatted: '₦100,000'),
+      addons: [],
+      fees: [],
+      paymentMethods: [],
     );
   }
 }

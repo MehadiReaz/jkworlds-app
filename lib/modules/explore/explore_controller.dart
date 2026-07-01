@@ -8,7 +8,6 @@ import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/core/utils/logger.dart';
-import 'package:jkworlds/modules/home/home_controller.dart';
 
 class ExploreController extends GetxController {
   // ── Search Form States ──────────────────────────────────────────

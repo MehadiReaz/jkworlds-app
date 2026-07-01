@@ -11,6 +11,7 @@ import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_controller.dart';
 import 'package:jkworlds/modules/vehicle_detail/vehicle_detail_binding.dart';
 import 'package:jkworlds/modules/booking/checkout_view.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/data/services/category_service.dart';
 import 'mocks.dart';
 
@@ -34,6 +35,7 @@ void main() {
       Get.put(CurrencyService(), permanent: true);
       Get.put(AuthService(), permanent: true);
       Get.put<CategoryService>(MockCategoryService(), permanent: true);
+      Get.put<BookingService>(MockBookingService(), permanent: true);
 
       // 3. Pump the GetMaterialApp registering AppPages.pages
       await tester.pumpWidget(
@@ -146,6 +148,7 @@ void main() {
       ); // 2 days duration
       controller.pickupTime.value = '10:00';
       controller.returnTime.value = '12:00';
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
       // Confirm that the breakdown is shown and the placeholder prompt is hidden
@@ -154,7 +157,7 @@ void main() {
         findsNothing,
       );
       expect(find.text('Rental Rate'), findsOneWidget);
-      expect(find.text('Service Fee'), findsOneWidget);
+      expect(find.text('Taxes & Fees'), findsWidgets);
       expect(find.text('Total Price'), findsOneWidget);
 
       // Initial breakdown calculations for RAV4 (₦55,000 per day for 2 days):

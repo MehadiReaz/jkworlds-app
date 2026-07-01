@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-import '../../data/services/category_service.dart';
 import 'explore_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
-import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
+import 'package:jkworlds/core/constants/app_constants.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 class ExploreView extends StatelessWidget {
   const ExploreView({super.key});
@@ -190,51 +190,7 @@ class ExploreView extends StatelessWidget {
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
     
-    final categories = {
-      'Early Morning': [
-        const TimeOfDay(hour: 6, minute: 0),
-        const TimeOfDay(hour: 6, minute: 30),
-        const TimeOfDay(hour: 7, minute: 0),
-        const TimeOfDay(hour: 7, minute: 30),
-      ],
-      'Morning - afternoon': [
-        const TimeOfDay(hour: 8, minute: 0),
-        const TimeOfDay(hour: 8, minute: 30),
-        const TimeOfDay(hour: 9, minute: 0),
-        const TimeOfDay(hour: 9, minute: 30),
-        const TimeOfDay(hour: 10, minute: 0),
-        const TimeOfDay(hour: 10, minute: 30),
-        const TimeOfDay(hour: 11, minute: 0),
-        const TimeOfDay(hour: 11, minute: 30),
-        const TimeOfDay(hour: 12, minute: 0),
-        const TimeOfDay(hour: 12, minute: 30),
-        const TimeOfDay(hour: 13, minute: 0),
-        const TimeOfDay(hour: 13, minute: 30),
-        const TimeOfDay(hour: 14, minute: 0),
-        const TimeOfDay(hour: 14, minute: 30),
-        const TimeOfDay(hour: 15, minute: 0),
-        const TimeOfDay(hour: 15, minute: 30),
-        const TimeOfDay(hour: 16, minute: 0),
-        const TimeOfDay(hour: 16, minute: 30),
-      ],
-      'Evening - Night': [
-        const TimeOfDay(hour: 17, minute: 0),
-        const TimeOfDay(hour: 17, minute: 30),
-        const TimeOfDay(hour: 18, minute: 0),
-        const TimeOfDay(hour: 18, minute: 30),
-        const TimeOfDay(hour: 19, minute: 0),
-        const TimeOfDay(hour: 19, minute: 30),
-        const TimeOfDay(hour: 20, minute: 0),
-        const TimeOfDay(hour: 20, minute: 30),
-        const TimeOfDay(hour: 21, minute: 0),
-        const TimeOfDay(hour: 21, minute: 30),
-        const TimeOfDay(hour: 22, minute: 0),
-        const TimeOfDay(hour: 22, minute: 30),
-        const TimeOfDay(hour: 23, minute: 0),
-        const TimeOfDay(hour: 23, minute: 30),
-        const TimeOfDay(hour: 0, minute: 0),
-      ],
-    };
+    final categories = AppConstants.bookingTimeSlots;
 
     String formatTimeOfDay(TimeOfDay time) {
       final hour = time.hour;
@@ -627,109 +583,6 @@ class ExploreView extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTripSummaryCard(
-    BuildContext context,
-    ExploreController ctrl,
-    ThemeData theme,
-    ColorScheme cs,
-  ) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.5),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: theme.brightness == Brightness.light ? 0.04 : 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Search Icon
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Icon(Icons.search_rounded, color: cs.primary, size: 24),
-              ),
-              // Search Summary Info
-              Expanded(
-                child: InkWell(
-                  onTap: () => _showTripDetailsBottomSheet(context, ctrl),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Obx(() {
-                          String locText = ctrl.pickupLocation.value.isNotEmpty
-                              ? ctrl.pickupLocation.value
-                              : 'Select Location';
-                          if (ctrl.isDifferentDropoff.value && ctrl.dropoffLocation.value.isNotEmpty) {
-                            locText = '${ctrl.pickupLocation.value} ➔ ${ctrl.dropoffLocation.value}';
-                          }
-                          return Text(
-                            locText,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          );
-                        }),
-                        const SizedBox(height: 2),
-                        Obx(() {
-                          String dateText = 'Select Dates';
-                          if (ctrl.pickupDateTime.value != null && ctrl.dropoffDateTime.value != null) {
-                            final start = ctrl.pickupDateTime.value!;
-                            final end = ctrl.dropoffDateTime.value!;
-                            final startStr = DateFormat('MMM d, h:mm a').format(start);
-                            final endStr = DateFormat('MMM d, h:mm a').format(end);
-                            dateText = '$startStr - $endStr';
-                          }
-                          return Text(
-                            dateText,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                              fontSize: 11,
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              // Vertical Divider
-              VerticalDivider(
-                width: 1,
-                indent: 12,
-                endIndent: 12,
-                color: cs.outlineVariant.withValues(alpha: 0.6),
-              ),
-              // Tune/Filter Button
-              IconButton(
-                icon: Icon(Icons.tune_rounded, color: cs.primary, size: 22),
-                onPressed: () => _showFiltersBottomSheet(context, ctrl),
-                tooltip: 'Filters & Sorting',
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

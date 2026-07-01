@@ -73,6 +73,7 @@ void main() {
     }
     expect(detailCtrl.returnDate.value, isNull);
 
+    await tester.pump(const Duration(milliseconds: 350));
     Get.reset();
   });
 }

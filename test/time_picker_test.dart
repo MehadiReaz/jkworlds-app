@@ -136,11 +136,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap the Trip Summary Card to open the Trip Details bottom sheet
-    await tester.tap(find.text('Select Location'));
+    await tester.tap(find.text('Enter pick-up location'));
     await tester.pumpAndSettle();
 
-    // 1. Tap PICK-UP DATE & TIME button
-    final pickupBtn = find.text('PICK-UP DATE & TIME');
+    // 1. Tap PICK-UP DATE box containing the formatted date
+    final pickupDateStr = DateFormat('MMM d, yyyy').format(ctrl.pickupDateTime.value!);
+    final pickupBtn = find.text(pickupDateStr);
     expect(pickupBtn, findsOneWidget);
     await tester.tap(pickupBtn);
     await tester.pumpAndSettle();

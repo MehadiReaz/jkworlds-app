@@ -10,8 +10,9 @@ import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/services/auth_service.dart';
 import 'package:jkworlds/core/constants/api_constants.dart';
 import 'package:jkworlds/modules/explore/explore_controller.dart';
-import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
+import 'package:jkworlds/core/constants/app_constants.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -977,51 +978,7 @@ class HomeView extends StatelessWidget {
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
     
-    final categories = {
-      'Early Morning': [
-        const TimeOfDay(hour: 6, minute: 0),
-        const TimeOfDay(hour: 6, minute: 30),
-        const TimeOfDay(hour: 7, minute: 0),
-        const TimeOfDay(hour: 7, minute: 30),
-      ],
-      'Morning - afternoon': [
-        const TimeOfDay(hour: 8, minute: 0),
-        const TimeOfDay(hour: 8, minute: 30),
-        const TimeOfDay(hour: 9, minute: 0),
-        const TimeOfDay(hour: 9, minute: 30),
-        const TimeOfDay(hour: 10, minute: 0),
-        const TimeOfDay(hour: 10, minute: 30),
-        const TimeOfDay(hour: 11, minute: 0),
-        const TimeOfDay(hour: 11, minute: 30),
-        const TimeOfDay(hour: 12, minute: 0),
-        const TimeOfDay(hour: 12, minute: 30),
-        const TimeOfDay(hour: 13, minute: 0),
-        const TimeOfDay(hour: 13, minute: 30),
-        const TimeOfDay(hour: 14, minute: 0),
-        const TimeOfDay(hour: 14, minute: 30),
-        const TimeOfDay(hour: 15, minute: 0),
-        const TimeOfDay(hour: 15, minute: 30),
-        const TimeOfDay(hour: 16, minute: 0),
-        const TimeOfDay(hour: 16, minute: 30),
-      ],
-      'Evening - Night': [
-        const TimeOfDay(hour: 17, minute: 0),
-        const TimeOfDay(hour: 17, minute: 30),
-        const TimeOfDay(hour: 18, minute: 0),
-        const TimeOfDay(hour: 18, minute: 30),
-        const TimeOfDay(hour: 19, minute: 0),
-        const TimeOfDay(hour: 19, minute: 30),
-        const TimeOfDay(hour: 20, minute: 0),
-        const TimeOfDay(hour: 20, minute: 30),
-        const TimeOfDay(hour: 21, minute: 0),
-        const TimeOfDay(hour: 21, minute: 30),
-        const TimeOfDay(hour: 22, minute: 0),
-        const TimeOfDay(hour: 22, minute: 30),
-        const TimeOfDay(hour: 23, minute: 0),
-        const TimeOfDay(hour: 23, minute: 30),
-        const TimeOfDay(hour: 0, minute: 0),
-      ],
-    };
+    final categories = AppConstants.bookingTimeSlots;
 
     String formatTimeOfDay(TimeOfDay time) {
       final hour = time.hour;
