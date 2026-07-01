@@ -78,25 +78,6 @@ class BookingController extends GetxController {
     isLoading.value = true;
     await Future.delayed(const Duration(milliseconds: 800));
 
-    // Add to mock bookings
-    // mockBookings.insert(
-    //   0,
-    //   BookingModel(
-    //     id: 'BK-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-    //     vehicle: vehicle,
-    //     pickupDate: pickupDate.value!,
-    //     returnDate: returnDate.value!,
-    //     pickupLocation: pickupLocation.value,
-    //     status: BookingStatus.upcoming,
-    //     rentalType: isSelfDrive.value ? RentalType.selfDrive : RentalType.chauffeur,
-    //     subtotal: subtotal,
-    //     serviceFee: serviceFee,
-    //     securityDeposit: securityDeposit,
-    //     totalPrice: total,
-    //     createdAt: DateTime.now(),
-    //   ),
-    // );
-
     isLoading.value = false;
 
     Get.back(); // Return to vehicle detail

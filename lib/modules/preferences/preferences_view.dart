@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:jkworlds/modules/profile/profile_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 
 class PreferencesView extends StatelessWidget {
@@ -10,8 +9,6 @@ class PreferencesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final expansibleCurrencyCtrl = ExpansibleController();
-    final expansibleLanguageCtrl = ExpansibleController();
-    final profileCtrl = Get.find<ProfileController>();
     final currencyService = Get.find<CurrencyService>();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -269,16 +266,5 @@ class PreferencesView extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _currentLanguageName(ProfileController ctrl) {
-    final currentCode = Get.locale?.languageCode ?? 'en';
-    for (final item in ctrl.locales) {
-      final locale = item['locale'] as Locale;
-      if (locale.languageCode == currentCode) {
-        return item['name'] as String;
-      }
-    }
-    return 'English';
   }
 }

@@ -4,18 +4,14 @@ import 'package:jkworlds/modules/splash/splash_view.dart';
 import 'package:jkworlds/modules/splash/splash_binding.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_view.dart';
 import 'package:jkworlds/modules/main_nav/main_nav_binding.dart';
-
 import 'package:jkworlds/modules/auth/login_view.dart';
 import 'package:jkworlds/modules/auth/signup_view.dart';
 import 'package:jkworlds/modules/auth/forgot_password_view.dart';
 import 'package:jkworlds/modules/auth/verify_otp_view.dart';
 import 'package:jkworlds/modules/auth/reset_password_view.dart';
 import 'package:jkworlds/modules/auth/auth_binding.dart';
-
 import 'package:jkworlds/modules/preferences/preferences_view.dart';
-import 'package:jkworlds/modules/notifications/notification_settings_view.dart';
 import 'package:jkworlds/modules/contact/contact_us_view.dart';
-import 'package:jkworlds/modules/promo/promo_codes_view.dart';
 import 'package:jkworlds/modules/profile/profile_binding.dart';
 import 'package:jkworlds/modules/profile/edit_profile_view.dart';
 import 'package:jkworlds/modules/profile/post_rating_view.dart';
@@ -93,16 +89,8 @@ class AppPages {
       page: () => const PreferencesView(),
     ),
     GetPage(
-      name: AppRoutes.notificationSettings,
-      page: () => const NotificationSettingsView(),
-    ),
-    GetPage(
       name: AppRoutes.contactUs,
       page: () => const ContactUsView(),
-    ),
-    GetPage(
-      name: AppRoutes.promoCodes,
-      page: () => const PromoCodesView(),
     ),
     GetPage(
       name: AppRoutes.editProfile,

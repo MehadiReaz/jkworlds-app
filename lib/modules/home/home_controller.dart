@@ -195,10 +195,6 @@ class HomeController extends GetxController {
     }
   }
 
-  void navigateToNotifications() {
-    Get.toNamed(AppRoutes.notificationSettings);
-  }
-
   void navigateToProfile() {
     try {
       final navCtrl = Get.find<MainNavController>();

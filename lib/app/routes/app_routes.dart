@@ -15,9 +15,7 @@ abstract class AppRoutes {
   static const resetPassword   = '/reset-password';
   static const onboarding      = '/onboarding';
   static const preferences     = '/preferences';
-  static const notificationSettings = '/notification-settings';
   static const contactUs       = '/contact-us';
-  static const promoCodes      = '/promo-codes';
   static const editProfile     = '/edit-profile';
   static const postRating      = '/post-rating';
   static const reportDamage    = '/report-damage';
