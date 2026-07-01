@@ -8,6 +8,7 @@ import 'package:jkworlds/data/services/location_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/core/utils/logger.dart';
+import 'package:jkworlds/modules/home/home_controller.dart';
 
 class ExploreController extends GetxController {
   // ── Search Form States ──────────────────────────────────────────
@@ -496,11 +497,13 @@ class ExploreController extends GetxController {
       final double? lat = details?.latitude ?? prediction.latitude;
       final double? lng = details?.longitude ?? prediction.longitude;
       if (lat != null && lng != null) {
-        final sType = selectedServiceType.value == 'Self-Drive'
-            ? 'self_drive'
-            : (selectedServiceType.value == 'Chauffeur'
-                  ? 'chauffeur'
-                  : 'self_drive');
+        final bool isAirportTab = Get.isRegistered<HomeController>() &&
+            Get.find<HomeController>().selectedBookingTab.value == 'Airport Transfer';
+        final sType = isAirportTab
+            ? 'chauffeur'
+            : (selectedServiceType.value == 'Self-Drive'
+                ? 'self_drive'
+                : (selectedServiceType.value == 'Chauffeur' ? 'chauffeur' : 'self_drive'));
         final coverage = await _locationService.checkCoverage(
           lat: lat,
           lng: lng,

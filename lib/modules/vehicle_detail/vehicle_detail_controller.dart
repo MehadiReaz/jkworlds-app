@@ -8,7 +8,9 @@ import 'package:jkworlds/core/utils/logger.dart';
 
 import 'package:jkworlds/data/models/vehicle_model.dart';
 import 'package:jkworlds/data/models/review_model.dart';
+import 'package:jkworlds/data/models/checkout_pricing_model.dart';
 import 'package:jkworlds/data/services/category_service.dart';
+import 'package:jkworlds/data/services/booking_service.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/location_prediction.dart';
 import 'package:jkworlds/data/services/location_service.dart';
@@ -48,6 +50,12 @@ class VehicleDetailController extends GetxController {
   final detailError = ''.obs;
 
   final _refreshTrigger = 0.obs;
+
+  // ── Pricing States ──────────────────────────────────────────────
+  final _pricingRefreshTrigger = 0.obs;
+  final checkoutPricing = Rxn<CheckoutPricingModel>();
+  final isLoadingPricing = false.obs;
+  final pricingError = ''.obs;
 
   // ── Reservation Form States ──────────────────────────────────────
   final pickupDate = Rxn<DateTime>();
@@ -203,7 +211,7 @@ void _showLocationNotAvailableDialog() {
       final double? lng = details?.longitude ?? prediction.longitude;
       logger.f('Check Coverage 21 $lat $lng ${details?.address}');
       if (lat != null && lng != null) {
-        final sType = isSelfDrive.value ? 'self_drive' : (isAirportTransfer ? 'airport_transfer' : 'chauffeur');
+        final sType = isSelfDrive.value ? 'self_drive' : 'chauffeur';
         final coverage = await _locationService.checkCoverage(
           lat: lat,
           lng: lng,
@@ -364,6 +372,38 @@ void _showLocationNotAvailableDialog() {
     ever(pickupDate, (_) => _updatePriceTabAutomatically());
     ever(returnDate, (_) => _updatePriceTabAutomatically());
 
+    // Watch all pricing-relevant variables to fetch pricing from the backend
+    final List<RxInterface> bookingParams = [
+      pickupDate,
+      returnDate,
+      pickupTime,
+      returnTime,
+      pickupLocation,
+      dropoffLocation,
+      selectedPickupPrediction,
+      selectedDropoffPrediction,
+      selectedProtection,
+      gpsAddon,
+      additionalDriverAddon,
+      childSeatAddon,
+      prepaidFuelAddon,
+      isSelfDrive,
+      isDifferentDropoff,
+    ];
+
+    for (final param in bookingParams) {
+      ever(param, (_) => _pricingRefreshTrigger.value++);
+    }
+
+    debounce(
+      _pricingRefreshTrigger,
+      (_) => _fetchCheckoutPricing(),
+      time: const Duration(milliseconds: 300),
+    );
+
+    // Initial pricing refresh trigger
+    _pricingRefreshTrigger.value++;
+
     _updatePriceTabAutomatically();
   }
 
@@ -402,7 +442,7 @@ void _showLocationNotAvailableDialog() {
         dropoffLng = pickupLng;
       }
 
-      final String sType = isSelfDrive.value ? 'self_drive' : (isAirportTransfer ? 'airport_transfer' : 'chauffeur');
+      final String sType = isSelfDrive.value ? 'self_drive' : 'chauffeur';
 
       final result = await _categoryService.fetchVehicleDetail(
         vehicle.id,
@@ -433,6 +473,143 @@ void _showLocationNotAvailableDialog() {
 
   /// Retry fetching vehicle details (e.g. after a network error)
   Future<void> retryFetchDetail() => _fetchVehicleDetail();
+
+  bool get canCalculatePricing {
+    final needsPickupSelection = pickupLocation.value.trim().isEmpty;
+    final needsDropoffSelection = isDifferentDropoff.value && dropoffLocation.value.trim().isEmpty;
+
+    return pickupDate.value != null &&
+        returnDate.value != null &&
+        pickupTime.value.isNotEmpty &&
+        returnTime.value.isNotEmpty &&
+        !needsPickupSelection &&
+        !needsDropoffSelection;
+  }
+
+  Future<void> _fetchCheckoutPricing() async {
+    if (!canCalculatePricing) {
+      checkoutPricing.value = null;
+      return;
+    }
+
+    isLoadingPricing.value = true;
+    pricingError.value = '';
+
+    try {
+      final currentVehicle = vehicleRx.value ?? vehicle;
+
+      // Resolve Protection Plan ID
+      final protectionPlan = currentVehicle.protectionPlans.firstWhereOrNull(
+        (p) => p.title.toLowerCase().contains(selectedProtection.value.toLowerCase()),
+      );
+      final protectionPlanId = protectionPlan?.id;
+
+      // Resolve Addon IDs
+      final addonIds = <int>[];
+      if (gpsAddon.value) {
+        final addon = currentVehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('gps'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+      if (additionalDriverAddon.value) {
+        final addon = currentVehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('driver') || a.title.toLowerCase().contains('chauffeur'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+      if (childSeatAddon.value) {
+        final addon = currentVehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('seat') || a.title.toLowerCase().contains('child'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+      if (prepaidFuelAddon.value) {
+        final addon = currentVehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('fuel') || a.title.toLowerCase().contains('prepaid'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+
+      final pickupDateStr = DateFormat('yyyy-MM-dd').format(pickupDate.value!);
+      final returnDateStr = DateFormat('yyyy-MM-dd').format(returnDate.value!);
+
+      // Resolve Locations coordinates
+      double resolvedPickupLat = 9.0579;
+      double resolvedPickupLng = 7.4951;
+      String resolvedPickupAddress = pickupLocation.value;
+
+      if (selectedPickupPrediction.value != null) {
+        try {
+          final details = await _locationService.fetchLocationDetails(selectedPickupPrediction.value!.id);
+          resolvedPickupLat = details?.latitude ?? selectedPickupPrediction.value?.latitude ?? 9.0579;
+          resolvedPickupLng = details?.longitude ?? selectedPickupPrediction.value?.longitude ?? 7.4951;
+          if (details != null) {
+            final addr = details.address;
+            final nm = details.name;
+            if (addr.trim().isNotEmpty) {
+              resolvedPickupAddress = addr;
+            } else if (nm.trim().isNotEmpty) {
+              resolvedPickupAddress = nm;
+            }
+          }
+        } catch (e) {
+          logger.e('[VehicleDetailController] Error resolving checkout pickup details: $e');
+        }
+      }
+
+      double resolvedDropoffLat = resolvedPickupLat;
+      double resolvedDropoffLng = resolvedPickupLng;
+      String resolvedDropoffAddress = resolvedPickupAddress;
+
+      if (isDifferentDropoff.value && selectedDropoffPrediction.value != null) {
+        try {
+          final details = await _locationService.fetchLocationDetails(selectedDropoffPrediction.value!.id);
+          resolvedDropoffLat = details?.latitude ?? selectedDropoffPrediction.value?.latitude ?? 9.0765;
+          resolvedDropoffLng = details?.longitude ?? selectedDropoffPrediction.value?.longitude ?? 7.3986;
+          if (details != null) {
+            final addr = details.address;
+            final nm = details.name;
+            if (addr.trim().isNotEmpty) {
+              resolvedDropoffAddress = addr;
+            } else if (nm.trim().isNotEmpty) {
+              resolvedDropoffAddress = nm;
+            }
+          }
+        } catch (e) {
+          logger.e('[VehicleDetailController] Error resolving checkout dropoff details: $e');
+        }
+      }
+
+      final payload = {
+        'vehicle_id': int.tryParse(currentVehicle.id) ?? 0,
+        'service_type': isSelfDrive.value ? 'self_drive' : 'chauffeur',
+        'pickup_date': pickupDateStr,
+        'pickup_time': pickupTime.value,
+        'return_date': returnDateStr,
+        'return_time': returnTime.value,
+        'pickup_latitude': resolvedPickupLat,
+        'pickup_longitude': resolvedPickupLng,
+        'dropoff_latitude': resolvedDropoffLat,
+        'dropoff_longitude': resolvedDropoffLng,
+        'dropoff_location_name': resolvedDropoffAddress,
+        'dropoff_address': resolvedDropoffAddress,
+        'pickup_location_name': resolvedPickupAddress,
+        'pickup_address': resolvedPickupAddress,
+        if (protectionPlanId != null) 'protection_plan_id': protectionPlanId,
+        if (addonIds.isNotEmpty) 'addon_ids': addonIds,
+      };
+
+      final model = await Get.find<BookingService>().calculateCheckoutPricing(payload);
+      checkoutPricing.value = model;
+    } catch (e) {
+      logger.e('[VehicleDetailController] Error calculating checkout pricing: $e');
+      pricingError.value = e.toString();
+      checkoutPricing.value = null;
+    } finally {
+      isLoadingPricing.value = false;
+    }
+  }
 
   void selectPriceTab(int tab) {
     selectedPriceTab.value = tab;
@@ -508,44 +685,11 @@ void _showLocationNotAvailableDialog() {
   }
 
   double get subtotal {
-    final v = vehicleRx.value ?? vehicle;
-    if (isAirportTransfer) {
-      final est = v.servicePricing?.applicable?.estimated;
-      if (est != null) {
-        return est.amount;
-      }
-    }
-    switch (selectedPriceTab.value) {
-      case 1:
-        return totalDays * (v.pricePerWeek / 7.0);
-      case 2:
-        return totalDays * (v.pricePerMonth / 30.0);
-      default:
-        return totalDays * v.pricePerDay;
-    }
+    return checkoutPricing.value?.base.amount ?? 0.0;
   }
 
   double get protectionCost {
-    final v = vehicleRx.value ?? vehicle;
-    if (v.protectionPlans.isNotEmpty) {
-      final plans = v.protectionPlans.where((p) => p.title.toLowerCase().contains(selectedProtection.value.toLowerCase()));
-      if (plans.isNotEmpty) {
-        final plan = plans.first;
-        if (plan.priceType == 'percentage' && plan.priceValue != null) {
-          return subtotal * (plan.priceValue! / 100.0);
-        } else if (plan.priceType == 'fixed' && plan.priceValue != null) {
-          return plan.priceValue! * totalDays;
-        }
-      }
-      return 0.0;
-    }
-    // Fallback:
-    if (selectedProtection.value == 'Premium') {
-      return subtotal * 0.15;
-    } else if (selectedProtection.value == 'Full') {
-      return subtotal * 0.25;
-    }
-    return 0.0;
+    return checkoutPricing.value?.protection.amount ?? 0.0;
   }
 
   double get gpsAddonPrice {
@@ -565,9 +709,6 @@ void _showLocationNotAvailableDialog() {
     final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('driver') || a.title.toLowerCase().contains('chauffeur'));
     if (addons.isNotEmpty && addons.first.priceValue != null) {
       final addon = addons.first;
-      if (addon.priceType == 'percentage') {
-        return (subtotal * (addon.priceValue! / 100.0)) / (totalDays > 0 ? totalDays : 1);
-      }
       return addon.priceValue!;
     }
     return 8000.0;
@@ -578,9 +719,6 @@ void _showLocationNotAvailableDialog() {
     final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('seat') || a.title.toLowerCase().contains('child'));
     if (addons.isNotEmpty && addons.first.priceValue != null) {
       final addon = addons.first;
-      if (addon.priceType == 'percentage') {
-        return (subtotal * (addon.priceValue! / 100.0)) / (totalDays > 0 ? totalDays : 1);
-      }
       return addon.priceValue!;
     }
     return 4000.0;
@@ -591,122 +729,36 @@ void _showLocationNotAvailableDialog() {
     final addons = v.rentalAddons.where((a) => a.title.toLowerCase().contains('fuel') || a.title.toLowerCase().contains('prepaid'));
     if (addons.isNotEmpty && addons.first.priceValue != null) {
       final addon = addons.first;
-      if (addon.priceType == 'percentage') {
-        return (subtotal * (addon.priceValue! / 100.0));
-      }
       return addon.priceValue!;
     }
     return 15000.0;
   }
 
   double get addonsCost {
-    double cost = 0.0;
-    if (gpsAddon.value) cost += gpsAddonPrice * totalDays;
-    if (additionalDriverAddon.value && !isAirportTransfer) cost += additionalDriverAddonPrice * totalDays;
-    if (childSeatAddon.value) cost += childSeatAddonPrice * totalDays;
-    if (prepaidFuelAddon.value) cost += prepaidFuelAddonPrice; // Flat/One-time fee
-    return cost;
+    return checkoutPricing.value?.addonsTotal.amount ?? 0.0;
   }
 
   double get taxesFeesValue {
-    final v = vehicleRx.value ?? vehicle;
-    
-    double scale = 1.0;
-    final currency = v.currency;
-    if (currency.isNotEmpty) {
-      if (Get.isRegistered<CurrencyService>()) {
-        final curService = Get.find<CurrencyService>();
-        final match = curService.currencies.firstWhereOrNull((c) => c.code.toUpperCase() == currency.toUpperCase());
-        if (match != null && match.exchangeRate > 0) {
-          scale = 1.0 / match.exchangeRate;
-        } else if (currency.toUpperCase() == 'USD') {
-          scale = 1600.0;
-        }
-      } else {
-        if (currency.toUpperCase() == 'USD') {
-          scale = 1600.0;
-        }
-      }
-    }
-
-    final pricing = v.servicePricing;
-    if (pricing != null) {
-      if (isAirportTransfer) {
-        final app = pricing.applicable;
-        if (app != null) {
-          if (app.serviceType == 'self_drive') {
-            switch (selectedPriceTab.value) {
-              case 1:
-                if (app.weeklyRate?.taxesFees != null) {
-                  return app.weeklyRate!.taxesFees!.amount * scale;
-                }
-                break;
-              case 2:
-                if (app.monthlyRate?.taxesFees != null) {
-                  return app.monthlyRate!.taxesFees!.amount * scale;
-                }
-                break;
-              default:
-                if (app.dailyRate?.taxesFees != null) {
-                  return app.dailyRate!.taxesFees!.amount * scale;
-                }
-                break;
-            }
-          }
-        }
-      } else if (isSelfDrive.value) {
-        final sd = pricing.selfDrive;
-        if (sd != null) {
-          switch (selectedPriceTab.value) {
-            case 1:
-              if (sd.weekly?.taxesFees != null) {
-                return sd.weekly!.taxesFees!.amount * scale;
-              }
-              break;
-            case 2:
-              if (sd.monthly?.taxesFees != null) {
-                return sd.monthly!.taxesFees!.amount * scale;
-              }
-              break;
-            default:
-              if (sd.daily?.taxesFees != null) {
-                return sd.daily!.taxesFees!.amount * scale;
-              }
-              break;
-          }
-        }
-      } else {
-        final ch = pricing.chauffeur;
-        if (ch != null && ch.rate?.taxesFees != null) {
-          return ch.rate!.taxesFees!.amount * scale;
-        }
-      }
-    }
-
-    if (v.taxesFees != null) {
-      return v.taxesFees!;
-    }
-
-    return 4.0;
+    return checkoutPricing.value?.feesTotal.amount ?? 0.0;
   }
 
   double get serviceFee => taxesFeesValue;
 
-  String get taxes_fees => formatPrice(taxesFeesValue);
+  String get taxes_fees {
+    if (checkoutPricing.value != null) {
+      return checkoutPricing.value!.feesTotal.amountFormatted.isNotEmpty
+          ? checkoutPricing.value!.feesTotal.amountFormatted
+          : formatPrice(checkoutPricing.value!.feesTotal.amount);
+    }
+    return formatPrice(0.0);
+  }
 
   double get securityDeposit {
-    final v = vehicleRx.value ?? vehicle;
-    if (v.securityDepositAmount != null) {
-      return v.securityDepositAmount!;
-    }
-    if (v.type == 'Luxury') return 150000.0;
-    if (v.type == 'SUV') return 100000.0;
-    return 50000.0;
+    return checkoutPricing.value?.deposit.amount ?? 0.0;
   }
 
   double get total {
-    if (totalDays == 0) return 0.0;
-    return subtotal + protectionCost + addonsCost + serviceFee + securityDeposit;
+    return checkoutPricing.value?.total.amount ?? 0.0;
   }
 
   bool get canBook {
@@ -719,7 +771,9 @@ void _showLocationNotAvailableDialog() {
         returnTime.value.isNotEmpty &&
         totalDays > 0 &&
         !needsPickupSelection &&
-        !needsDropoffSelection;
+        !needsDropoffSelection &&
+        checkoutPricing.value != null &&
+        !isLoadingPricing.value;
   }
 
   /// Validates if a date is selectable based on unavailable dates

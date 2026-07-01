@@ -1246,6 +1246,63 @@ class VehicleDetailView extends StatelessWidget {
                         );
                       }
 
+                      if (ctrl.isLoadingPricing.value) {
+                        return Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (ctrl.pricingError.value.isNotEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: cs.errorContainer.withValues(alpha: 0.15),
+                            border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline_rounded, color: cs.error),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  ctrl.pricingError.value,
+                                  style: TextStyle(color: cs.onErrorContainer, fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final pricing = ctrl.checkoutPricing.value;
+                      if (pricing == null) {
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Select pickup & return dates to see price breakdown.',
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        );
+                      }
+
                       return Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -1265,26 +1322,37 @@ class VehicleDetailView extends StatelessWidget {
                                       : ctrl.selectedPriceTab.value == 1
                                           ? '${ctrl.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
                                           : '${ctrl.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
-                              ctrl.formatPrice(ctrl.subtotal),
+                              pricing.base.amountFormatted.isNotEmpty ? pricing.base.amountFormatted : ctrl.formatPrice(pricing.base.amount),
                               cs,
                             ),
-                            if (ctrl.selectedProtection.value != 'Basic')
+                            if (pricing.protection.amount > 0)
                               _buildBreakdownRow(
                                 '${ctrl.selectedProtection.value} Protection',
-                                ctrl.selectedProtection.value == 'Premium' ? '+15%' : '+25%',
-                                ctrl.formatPrice(ctrl.protectionCost),
+                                pricing.protection.title ?? '',
+                                pricing.protection.amountFormatted.isNotEmpty ? pricing.protection.amountFormatted : ctrl.formatPrice(pricing.protection.amount),
                                 cs,
                               ),
-                            if (ctrl.addonsCost > 0)
-                              _buildBreakdownRow('Add-ons', 'GPS/Driver/Seat config', ctrl.formatPrice(ctrl.addonsCost), cs),
-                            _buildBreakdownRow('Taxes & Fees', 'Taxes & Fees', ctrl.taxes_fees.toString(), cs),
+                            if (pricing.addonsTotal.amount > 0)
+                              _buildBreakdownRow(
+                                'Add-ons',
+                                'GPS/Driver/Seat config',
+                                pricing.addonsTotal.amountFormatted.isNotEmpty ? pricing.addonsTotal.amountFormatted : ctrl.formatPrice(pricing.addonsTotal.amount),
+                                cs,
+                              ),
+                            if (pricing.feesTotal.amount > 0)
+                              _buildBreakdownRow(
+                                'Taxes & Fees',
+                                'Taxes & Fees',
+                                pricing.feesTotal.amountFormatted.isNotEmpty ? pricing.feesTotal.amountFormatted : ctrl.formatPrice(pricing.feesTotal.amount),
+                                cs,
+                              ),
                             const Divider(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text('Total Price', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                                 Text(
-                                  ctrl.formatPrice(ctrl.total),
+                                  pricing.total.amountFormatted.isNotEmpty ? pricing.total.amountFormatted : ctrl.formatPrice(pricing.total.amount),
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     color: cs.primary,

@@ -25,7 +25,7 @@ class ApiConstants {
   static const String categories = '/api/categories';
   static String categoryVehicles(int categoryId) => '/api/categories/$categoryId/vehicles';
   static const String vehicles = '/api/vehicles';
-  static const String vehiclesV2 = '/api/v2/vehicles';
+  static const String vehiclesV2 = '/api/vehicles';
   static String vehicleDetail(dynamic id) => '/api/v2/vehicles/$id';
   static const String vehicleFilters = '/api/vehicles/filters';
 
@@ -33,6 +33,7 @@ class ApiConstants {
   static const String bookings = '/api/bookings';
   static String bookingDetail(int id) => '/api/bookings/$id';
   static const String checkout = '/api/checkout';
+  static const String applyCoupon = '/api/checkout/coupon';
   static const String bookingsV2 = '/api/bookings';
   static String paymentSuccess(String gateway) => '/api/payments/$gateway/success';
   static String paymentCancel(String gateway) => '/api/payments/$gateway/cancel';
