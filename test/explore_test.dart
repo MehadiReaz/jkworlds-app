@@ -43,41 +43,51 @@ void main() {
     print('DEBUG: filteredVehicles length = ${ctrl.filteredVehicles.length}');
 
     // 4. Verify trip summary card initial state
-    expect(find.text('Select Location'), findsOneWidget);
-    expect(find.text('Select Dates'), findsOneWidget);
+    expect(find.text('Enter pick-up location'), findsOneWidget);
 
     // Tap trip summary card to open details bottom sheet
-    await tester.tap(find.text('Select Location'));
+    await tester.tap(find.text('Enter pick-up location'));
     await tester.pumpAndSettle();
 
     // Verify search options are present in details sheet
-    expect(find.text('Trip Details'), findsOneWidget);
-    expect(find.text('Pick-up Location'), findsOneWidget);
-    expect(find.text('Different Drop-off Location'), findsNothing);
-    expect(find.text('PICK-UP DATE & TIME'), findsOneWidget);
-    expect(find.text('DROP-OFF DATE & TIME'), findsOneWidget);
-    expect(find.text('Require Chauffeur Service'), findsOneWidget);
+    final bottomSheet = find.byType(SingleChildScrollView);
+    expect(find.text('Book Your Ride'), findsOneWidget);
+    expect(find.descendant(of: bottomSheet, matching: find.text('PICK-UP LOCATION')), findsOneWidget);
+    expect(find.descendant(of: bottomSheet, matching: find.text('PICK-UP DATE & TIME')), findsOneWidget);
+    expect(find.descendant(of: bottomSheet, matching: find.text('DROP-OFF DATE & TIME')), findsOneWidget);
 
-    // Toggle Chauffeur Service to show Different Drop-off Location
-    await tester.tap(find.text('Require Chauffeur Service'));
+    // Tap 'Airport Transfer' tab inside the bottom sheet
+    final airportTabInSheet = find.descendant(
+      of: find.byType(SingleChildScrollView),
+      matching: find.text('Airport Transfer'),
+    );
+    expect(airportTabInSheet, findsOneWidget);
+    await tester.tap(airportTabInSheet);
     await tester.pumpAndSettle();
-    expect(find.text('Different Drop-off Location'), findsOneWidget);
 
-    // Toggle Chauffeur Service back to false to restore original state
-    await tester.tap(find.text('Require Chauffeur Service'));
+    // Verify Airport Transfer fields are shown
+    expect(find.text('DESTINATION'), findsOneWidget);
+    expect(find.text('PICKUP DATE'), findsOneWidget);
+
+    // Switch back to 'Cars' tab inside the bottom sheet
+    final carsTabInSheet = find.descendant(
+      of: find.byType(SingleChildScrollView),
+      matching: find.text('Cars'),
+    );
+    expect(carsTabInSheet, findsOneWidget);
+    await tester.tap(carsTabInSheet);
     await tester.pumpAndSettle();
-    expect(find.text('Different Drop-off Location'), findsNothing);
 
     // 5. Test Pick-up Location filtering
-    final pickupField = find.widgetWithText(TextField, 'Pick-up Location');
+    final pickupField = find.widgetWithText(TextField, 'Enter pick-up location');
     expect(pickupField, findsOneWidget);
 
     // Type 'Lekki' to match Lekki vehicles
     await tester.enterText(pickupField, 'Lekki');
     await tester.pumpAndSettle();
 
-    // Tap Apply Details to close the bottom sheet and apply
-    await tester.tap(find.text('Apply Details'));
+    // Tap Show Vehicles to close the bottom sheet and apply
+    await tester.tap(find.text('Show Vehicles'));
     await tester.pumpAndSettle();
 
     // Verify that the list has updated (Toyota Land Cruiser from Victoria Island is filtered out)
@@ -90,12 +100,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Reset location filter
-    final pickupFieldAgain = find.widgetWithText(TextField, 'Pick-up Location');
+    final pickupFieldAgain = find.widgetWithText(TextField, 'Enter pick-up location');
     await tester.enterText(pickupFieldAgain, '');
     await tester.pumpAndSettle();
 
-    // Tap Apply Details
-    await tester.tap(find.text('Apply Details'));
+    // Tap Show Vehicles
+    await tester.tap(find.text('Show Vehicles'));
     await tester.pumpAndSettle();
 
     // Land Cruiser should be back
@@ -105,26 +115,35 @@ void main() {
     expect(find.text('Mercedes-Benz S-Class'), findsOneWidget);
     expect(find.text('RESERVE NOW'), findsWidgets);
 
-    // 7. Test Quick Category selector (All, Sedan, SUV, Luxury, Van horizontal chips)
-    // Tap 'SUV' category card in the quick category bar
-    final suvQuickCard = find.text('SUV');
-    expect(suvQuickCard, findsOneWidget);
-    await tester.tap(suvQuickCard);
+    // 7. Test Quick Service Tab selector (Cars and Airport Transfer tabs)
+    // Tap 'Airport Transfer' tab button in the quick service tab selector
+    final airportTransferTab = find.text('Airport Transfer');
+    expect(airportTransferTab, findsOneWidget);
+    await tester.tap(airportTransferTab);
     await tester.pumpAndSettle();
 
-    // Verify only SUVs are shown
-    expect(find.text('Toyota Land Cruiser V8'), findsOneWidget);
-    expect(find.text('Mercedes-Benz S-Class'), findsNothing);
+    // Verify only vehicles with chauffeur are shown (Toyota Camry XLE has hasChauffeur: false, so it shouldn't show)
+    expect(find.text('Mercedes-Benz S-Class'), findsOneWidget);
+    expect(find.text('Toyota Camry XLE'), findsNothing);
 
-    // Tap 'All' in the quick category bar to reset category filter
-    final allQuickCard = find.text('All');
-    expect(allQuickCard, findsOneWidget);
-    await tester.tap(allQuickCard);
+    // Tap 'Cars' tab to reset service tab filter
+    final carsTab = find.text('Cars');
+    expect(carsTab, findsOneWidget);
+    await tester.tap(carsTab);
     await tester.pumpAndSettle();
 
     // Both should be visible again
     expect(find.text('Mercedes-Benz S-Class'), findsOneWidget);
-    expect(find.text('Toyota Land Cruiser V8'), findsOneWidget);
+
+    // Scroll down to bring Toyota Camry XLE into view
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Toyota Camry XLE'), findsOneWidget);
+
+    // Scroll back up to the top to bring the summary card and tune button back into view
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, 600));
+    await tester.pumpAndSettle();
 
     // 8. Test Filters & Sorting Bottom Sheet
     // Tap the tune/filter button on the summary card

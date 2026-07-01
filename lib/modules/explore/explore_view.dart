@@ -6,6 +6,7 @@ import '../../data/services/category_service.dart';
 import 'explore_controller.dart';
 import 'package:jkworlds/app/currency/currency_service.dart';
 import 'package:jkworlds/data/models/vehicle_model.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 class ExploreView extends StatelessWidget {
@@ -32,8 +33,7 @@ class ExploreView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTripSummaryCard(context, ctrl, theme, cs),
-                  _buildQuickCategorySelector(ctrl, theme, cs),
+                  _buildBookingFormSection(context, ctrl, theme, cs),
                 ],
               ),
             ),
@@ -733,109 +733,193 @@ class ExploreView extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickCategorySelector(
+  Widget _buildBookingFormSection(
+    BuildContext context,
     ExploreController ctrl,
     ThemeData theme,
     ColorScheme cs,
   ) {
-    final Map<String, IconData> categoryIcons = {
-      'All': Icons.grid_view_rounded,
-      'Sedan': Icons.directions_car_rounded,
-      'SUV': Icons.airport_shuttle_rounded,
-      'Luxury': Icons.stars_rounded,
-      'Van': Icons.directions_bus_rounded,
-    };
-
     final isLight = theme.brightness == Brightness.light;
-
-    return Container(
-      height: 48,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Obx(() => ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: ctrl.categories.length,
-        itemBuilder: (context, index) {
-          final cat = ctrl.categories[index];
-          final icon = categoryIcons[cat] ?? Icons.directions_car_rounded;
-          final catModel = Get.find<CategoryService>().categories.firstWhereOrNull((c) => c.name.toLowerCase() == cat.toLowerCase());
-          final imageUrl = catModel?.image;
-
-          return Obx(() {
-            final isSelected = ctrl.selectedCategory.value == cat;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () {
-                  ctrl.selectedCategory.value = cat;
-                  ctrl.applyFilters();
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? cs.primary
-                        : (isLight ? Colors.grey.shade100 : const Color(0xFF161A22)),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? cs.primary
-                          : cs.outlineVariant.withValues(alpha: 0.3),
-                      width: 1,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Obx(() {
+        final activeTab = ctrl.selectedBookingTab.value;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isLight ? Colors.white : const Color(0xFF1A1C22),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: cs.primary.withValues(alpha: 0.8),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isLight ? 0.06 : 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Tab Selectors ──────────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTabButton(
+                      title: 'Cars',
+                      isActive: activeTab == 'Cars',
+                      onTap: () {
+                        ctrl.selectedBookingTab.value = 'Cars';
+                        ctrl.selectedServiceType.value = 'All';
+                        ctrl.isChauffeurRequired.value = false;
+                        ctrl.isDifferentDropoff.value = false;
+                        ctrl.dropoffLocation.value = '';
+                        ctrl.dropoffLocationCtrl.clear();
+                        ctrl.applyFilters();
+                      },
+                      cs: cs,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: cs.primary.withValues(alpha: 0.3),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
-                        : null,
                   ),
-                  child: Row(
-                    children: [
-                      if (imageUrl != null && imageUrl.isNotEmpty)
-                        Image.network(
-                          imageUrl,
-                          width: 16,
-                          height: 16,
-                          fit: BoxFit.contain,
-                          color: isSelected ? Colors.white : cs.onSurfaceVariant,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            icon,
-                            size: 16,
-                            color: isSelected ? Colors.white : cs.onSurfaceVariant,
-                          ),
-                        )
-                      else
-                        Icon(
-                          icon,
-                          size: 16,
-                          color: isSelected ? Colors.white : cs.onSurfaceVariant,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildTabButton(
+                      title: 'Airport Transfer',
+                      isActive: activeTab == 'Airport Transfer',
+                      onTap: () {
+                        ctrl.selectedBookingTab.value = 'Airport Transfer';
+                        ctrl.selectedServiceType.value = 'Chauffeur';
+                        ctrl.isChauffeurRequired.value = true;
+                        ctrl.isDifferentDropoff.value = true;
+                        ctrl.dropoffLocation.value = ctrl.dropoffLocationCtrl.text;
+                        ctrl.applyFilters();
+                      },
+                      cs: cs,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── COMPACT PICK-UP LOCATION BUTTON WITH FILTER ────────────────────
+              _buildInputLabel(
+                activeTab == 'Cars' ? 'PICK-UP LOCATION' : 'PICKUP LOCATION',
+                cs,
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _showTripDetailsBottomSheet(context, ctrl),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                         ),
-                      const SizedBox(width: 8),
-                      Text(
-                        cat,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : cs.onSurface,
+                        child: Row(
+                          children: [
+                            Icon(
+                              activeTab == 'Cars' ? Icons.location_on_rounded : Icons.flight_takeoff_rounded,
+                              color: cs.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Obx(() => Text(
+                                    ctrl.pickupLocation.value.isEmpty
+                                        ? (activeTab == 'Cars' ? 'Enter pick-up location' : 'Enter pickup location')
+                                        : ctrl.pickupLocation.value,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: ctrl.pickupLocation.value.isEmpty
+                                          ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                          : cs.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.tune_rounded, color: cs.primary, size: 20),
+                      onPressed: () => _showFiltersBottomSheet(context, ctrl),
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      tooltip: 'Filters & Sorting',
+                    ),
+                  ),
+                ],
               ),
-            );
-          });
-        },
-      )),
+            ],
+          ),
+        );
+      }),
     );
   }
 
-  void _showTripDetailsBottomSheet(BuildContext context, ExploreController ctrl) {
+  Widget _buildInputLabel(String text, ColorScheme cs) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildTabButton({
+    required String title,
+    required bool isActive,
+    required VoidCallback onTap,
+    required ColorScheme cs,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? cs.primary : (Get.isDarkMode ? const Color(0xFF161A22) : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.white : (Get.isDarkMode ? Colors.white70 : Colors.black87),
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTripDetailsBottomSheet(
+    BuildContext context,
+    ExploreController ctrl,
+  ) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
@@ -843,393 +927,588 @@ class ExploreView extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
+        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+        final screenHeight = MediaQuery.of(context).size.height;
+        final sheetHeight = screenHeight * 0.88 - keyboardHeight;
+        return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: keyboardHeight,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+          child: Container(
+            height: sheetHeight.clamp(200.0, screenHeight * 0.88),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
-              // Header Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Text(
-                      'Trip Details',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
                 ),
-              ),
-              Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
-              
-              // Scrollable content
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── HEADER WITH CLOSE BUTTON ──────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Pick-up Location Input
-                      TextField(
-                        controller: ctrl.pickupLocationCtrl,
-                        onChanged: (val) {
-                          ctrl.updatePickupLocation(val);
-                        },
-                        decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.location_on_rounded, color: cs.primary),
-                          labelText: 'Pick-up Location',
-                          hintText: 'Enter city or neighborhood',
-                          filled: true,
-                          fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                          ),
-                          suffixIcon: Obx(() => ctrl.isLoadingPickup.value
-                              ? const Padding(
-                                  padding: EdgeInsets.all(12.0),
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                )
-                              : const SizedBox.shrink()),
+                      Text(
+                        'Book Your Ride',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
                         ),
                       ),
-                      Obx(() {
-                        if (ctrl.pickupSuggestions.isEmpty) return const SizedBox.shrink();
-                        return Container(
-                          margin: const EdgeInsets.only(top: 4, bottom: 8),
-                          decoration: BoxDecoration(
-                            color: theme.cardColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                          ),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: ctrl.pickupSuggestions.length,
-                            itemBuilder: (context, index) {
-                              final suggestion = ctrl.pickupSuggestions[index];
-                              return ListTile(
-                                leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
-                                title: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      suggestion.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    if (suggestion.typeLabel.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        suggestion.typeLabel,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: cs.secondary,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
-                                    if (suggestion.address.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        suggestion.address,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                dense: true,
-                                onTap: () => ctrl.selectPickupSuggestion(suggestion),
-                              );
-                            },
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 12),
-
-                      // Different Drop-off Toggle (Only visible for Chauffeur/Airport Transfer)
-                      Obx(() {
-                        final isChauffeur = ctrl.selectedServiceType.value == 'Chauffeur' || ctrl.isChauffeurRequired.value;
-                        if (!isChauffeur) {
-                          return const SizedBox.shrink();
-                        }
-                        return SwitchListTile.adaptive(
-                          value: ctrl.isDifferentDropoff.value,
-                          onChanged: (val) {
-                            ctrl.isDifferentDropoff.value = val;
-                            if (!val) {
-                              ctrl.dropoffLocation.value = '';
-                            }
-                            ctrl.applyFilters();
-                          },
-                          title: const Text(
-                            'Different Drop-off Location',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                          activeColor: cs.primary,
-                          contentPadding: EdgeInsets.zero,
-                        );
-                      }),
-
-                      // Drop-off Location Input (Conditional)
-                      Obx(() => ctrl.isDifferentDropoff.value
-                          ? Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  TextField(
-                                    controller: ctrl.dropoffLocationCtrl,
-                                    onChanged: (val) {
-                                      ctrl.updateDropoffLocation(val);
-                                    },
-                                    decoration: InputDecoration(
-                                      prefixIcon: Icon(Icons.location_off_rounded, color: cs.primary),
-                                      labelText: 'Drop-off Location',
-                                      hintText: 'Enter drop-off city',
-                                      filled: true,
-                                      fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                      ),
-                                      suffixIcon: Obx(() => ctrl.isLoadingDropoff.value
-                                          ? const Padding(
-                                              padding: EdgeInsets.all(12.0),
-                                              child: SizedBox(
-                                                width: 16,
-                                                height: 16,
-                                                child: CircularProgressIndicator(strokeWidth: 2),
-                                              ),
-                                            )
-                                          : const SizedBox.shrink()),
-                                    ),
-                                  ),
-                                  Obx(() {
-                                    if (ctrl.dropoffSuggestions.isEmpty) return const SizedBox.shrink();
-                                    return Container(
-                                      margin: const EdgeInsets.only(top: 4, bottom: 8),
-                                      decoration: BoxDecoration(
-                                        color: theme.cardColor,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                      ),
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        itemCount: ctrl.dropoffSuggestions.length,
-                                        itemBuilder: (context, index) {
-                                          final suggestion = ctrl.dropoffSuggestions[index];
-                                          return ListTile(
-                                            leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 20),
-                                            title: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  suggestion.name,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                                if (suggestion.typeLabel.isNotEmpty) ...[
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    suggestion.typeLabel,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: theme.textTheme.bodySmall?.copyWith(
-                                                      color: cs.secondary,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontSize: 11,
-                                                    ),
-                                                  ),
-                                                ],
-                                                if (suggestion.address.isNotEmpty) ...[
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    suggestion.address,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: theme.textTheme.bodySmall?.copyWith(
-                                                      color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                            dense: true,
-                                            onTap: () => ctrl.selectDropoffSuggestion(suggestion),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            )
-                          : const SizedBox.shrink()),
-                      const SizedBox(height: 8),
-
-                      // Pick-up and Drop-off Date/Time buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                await _selectDateRange(context, ctrl, true);
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('PICK-UP DATE & TIME', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
-                                    const SizedBox(height: 4),
-                                    Obx(() => Text(
-                                          ctrl.pickupDateTime.value == null
-                                              ? 'Select Date & Time'
-                                              : DateFormat('MMM d, h:mm a').format(ctrl.pickupDateTime.value!),
-                                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                                        )),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                await _selectDateRange(context, ctrl, false);
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('DROP-OFF DATE & TIME', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
-                                    const SizedBox(height: 4),
-                                    Obx(() => Text(
-                                          ctrl.dropoffDateTime.value == null
-                                              ? 'Select Date & Time'
-                                              : DateFormat('MMM d, h:mm a').format(ctrl.dropoffDateTime.value!),
-                                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                                        )),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Chauffeur availability switch
-                      Obx(() => SwitchListTile.adaptive(
-                            value: ctrl.isChauffeurRequired.value,
-                            onChanged: (val) {
-                              ctrl.isChauffeurRequired.value = val;
-                              ctrl.applyFilters();
-                            },
-                            title: const Text(
-                              'Require Chauffeur Service',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                            ),
-                            activeColor: cs.primary,
-                            contentPadding: EdgeInsets.zero,
-                          )),
-                      const SizedBox(height: 24),
-
-                      // Apply Button
-                      FilledButton(
-                        onPressed: () {
-                          ctrl.applyFilters();
-                          Navigator.pop(context);
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: cs.primary,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Apply Details',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      IconButton(
+                        onPressed: () => Get.back(),
+                        icon: const Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                Divider(
+                  height: 1,
+                  color: cs.outlineVariant.withValues(alpha: 0.4),
+                ),
+                
+                // ── SCROLLABLE CONTAINER FOR THE FORM ─────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    child: Obx(() {
+                      final activeTab = ctrl.selectedBookingTab.value;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTabButton(
+                                  title: 'Cars',
+                                  isActive: activeTab == 'Cars',
+                                  onTap: () {
+                                    ctrl.selectedBookingTab.value = 'Cars';
+                                  },
+                                  cs: cs,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildTabButton(
+                                  title: 'Airport Transfer',
+                                  isActive: activeTab == 'Airport Transfer',
+                                  onTap: () {
+                                    ctrl.selectedBookingTab.value = 'Airport Transfer';
+                                  },
+                                  cs: cs,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          if (activeTab == 'Cars') ...[
+                            // ── CARS FORM ────────────────────────────────
+                            _buildInputLabel('PICK-UP LOCATION', cs),
+                            const SizedBox(height: 6),
+                            _buildLocationField(
+                              controller: ctrl.pickupLocationCtrl,
+                              hint: 'Enter pick-up location',
+                              icon: Icons.location_on_rounded,
+                              onChanged: (val) {
+                                ctrl.updatePickupLocation(val);
+                              },
+                              isLoading: ctrl.isLoadingPickup.value,
+                              cs: cs,
+                              isLight: isLight,
+                            ),
+                            _buildSuggestionsList(
+                              suggestions: ctrl.pickupSuggestions,
+                              onSelect: (val) => ctrl.selectPickupSuggestion(val),
+                              theme: theme,
+                              cs: cs,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildDateTimeRow(
+                              label: 'PICK-UP DATE & TIME',
+                              dateTimeRx: ctrl.pickupDateTime,
+                              exploreCtrl: ctrl,
+                              theme: theme,
+                              cs: cs,
+                              isLight: isLight,
+                              context: context,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildDateTimeRow(
+                              label: 'DROP-OFF DATE & TIME',
+                              dateTimeRx: ctrl.dropoffDateTime,
+                              exploreCtrl: ctrl,
+                              theme: theme,
+                              cs: cs,
+                              isLight: isLight,
+                              context: context,
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSubmitButton(
+                              title: 'Show Vehicles',
+                              onTap: () {
+                                Get.back(); // Dismiss bottom sheet
+                                ctrl.selectedBookingTab.value = 'Cars';
+                                ctrl.selectedServiceType.value = 'All';
+                                ctrl.isChauffeurRequired.value = false;
+                                ctrl.isDifferentDropoff.value = false;
+                                ctrl.dropoffLocation.value = '';
+                                ctrl.dropoffLocationCtrl.clear();
+                                ctrl.applyFilters();
+                              },
+                              cs: cs,
+                            ),
+                          ] else ...[
+                            // ── AIRPORT TRANSFER FORM ────────────────────
+                            Text(
+                              'Ride your way',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: cs.onSurface,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            _buildInputLabel('PICKUP LOCATION', cs),
+                            const SizedBox(height: 6),
+                            _buildLocationField(
+                              controller: ctrl.pickupLocationCtrl,
+                              hint: 'Enter pickup location',
+                              icon: Icons.flight_takeoff_rounded,
+                              onChanged: (val) {
+                                ctrl.updatePickupLocation(val);
+                              },
+                              isLoading: ctrl.isLoadingPickup.value,
+                              cs: cs,
+                              isLight: isLight,
+                            ),
+                            _buildSuggestionsList(
+                              suggestions: ctrl.pickupSuggestions,
+                              onSelect: (val) => ctrl.selectPickupSuggestion(val),
+                              theme: theme,
+                              cs: cs,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildInputLabel('DESTINATION', cs),
+                            const SizedBox(height: 6),
+                            _buildLocationField(
+                              controller: ctrl.dropoffLocationCtrl,
+                              hint: 'Enter destination',
+                              icon: Icons.flight_land_rounded,
+                              onChanged: (val) {
+                                ctrl.updateDropoffLocation(val);
+                              },
+                              isLoading: ctrl.isLoadingDropoff.value,
+                              cs: cs,
+                              isLight: isLight,
+                            ),
+                            _buildSuggestionsList(
+                              suggestions: ctrl.dropoffSuggestions,
+                              onSelect: (val) => ctrl.selectDropoffSuggestion(val),
+                              theme: theme,
+                              cs: cs,
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildInputLabel('PICKUP DATE', cs),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () => _selectSingleDate(context, ctrl.pickupDateTime, ctrl),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_month_rounded, color: cs.primary, size: 20),
+                                    const SizedBox(width: 10),
+                                    Obx(() => Text(
+                                          ctrl.pickupDateTime.value == null
+                                              ? 'Select date'
+                                              : DateFormat('EEEE, MMMM d, yyyy').format(ctrl.pickupDateTime.value!),
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: ctrl.pickupDateTime.value == null
+                                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                                : cs.onSurface,
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+
+                            _buildInputLabel('PICKUP TIME', cs),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () => _selectTime(context, ctrl.pickupDateTime, ctrl),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.access_time_rounded, color: cs.primary, size: 20),
+                                    const SizedBox(width: 10),
+                                    Obx(() => Text(
+                                          ctrl.pickupDateTime.value == null
+                                              ? 'Select time'
+                                              : DateFormat('h:mm a').format(ctrl.pickupDateTime.value!),
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: ctrl.pickupDateTime.value == null
+                                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                                : cs.onSurface,
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSubmitButton(
+                              title: 'Show Cars',
+                              onTap: () {
+                                Get.back(); // Dismiss bottom sheet
+                                ctrl.selectedBookingTab.value = 'Airport Transfer';
+                                ctrl.selectedServiceType.value = 'Chauffeur';
+                                ctrl.isChauffeurRequired.value = true;
+                                ctrl.isDifferentDropoff.value = true;
+                                ctrl.dropoffLocation.value = ctrl.dropoffLocationCtrl.text;
+                                ctrl.applyFilters();
+                              },
+                              cs: cs,
+                            ),
+                          ],
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  Widget _buildLocationField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required ValueChanged<String> onChanged,
+    required bool isLoading,
+    required ColorScheme cs,
+    required bool isLight,
+  }) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: cs.primary, size: 20),
+        hintText: hint,
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.5), fontSize: 13),
+        filled: true,
+        fillColor: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        suffixIcon: isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(12.0),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+    );
+  }
+
+  Widget _buildSuggestionsList({
+    required List<dynamic> suggestions,
+    required ValueChanged<dynamic> onSelect,
+    required ThemeData theme,
+    required ColorScheme cs,
+  }) {
+    return Obx(() {
+      if (suggestions.isEmpty) return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.only(top: 4, bottom: 4),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: suggestions.length,
+          itemBuilder: (context, index) {
+            final suggestion = suggestions[index];
+            return ListTile(
+              leading: Icon(Icons.location_on_rounded, color: cs.primary, size: 18),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    suggestion.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (suggestion.typeLabel.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      suggestion.typeLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.secondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                  if (suggestion.address.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      suggestion.address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              dense: true,
+              onTap: () => onSelect(suggestion),
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  Widget _buildDateTimeRow({
+    required String label,
+    required Rxn<DateTime> dateTimeRx,
+    required ExploreController exploreCtrl,
+    required ThemeData theme,
+    required ColorScheme cs,
+    required bool isLight,
+    required BuildContext context,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInputLabel(label, cs),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _selectDateRange(context, exploreCtrl, label.contains('PICK-UP')),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Obx(() => Text(
+                        dateTimeRx.value == null
+                            ? 'Select Date'
+                            : DateFormat('MMM d, yyyy').format(dateTimeRx.value!),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: dateTimeRx.value == null
+                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                              : cs.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      )),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: InkWell(
+                onTap: () => _showTimeListBottomSheet(context, dateTimeRx, exploreCtrl),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Obx(() => Text(
+                        dateTimeRx.value == null
+                            ? 'Select Time'
+                            : DateFormat('h:mm a').format(dateTimeRx.value!),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: dateTimeRx.value == null
+                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                              : cs.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      )),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton({
+    required String title,
+    required VoidCallback onTap,
+    required ColorScheme cs,
+  }) {
+    return FilledButton(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+        minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectSingleDate(BuildContext context, Rxn<DateTime> rxDateTime, ExploreController ctrl) async {
+    final isPickup = rxDateTime == ctrl.pickupDateTime;
+    
+    DateTime firstDate = DateTime.now();
+    DateTime lastDate = DateTime.now().add(const Duration(days: 365));
+    
+    if (isPickup) {
+      if (ctrl.dropoffDateTime.value != null) {
+        final maxSelectable = ctrl.dropoffDateTime.value!.subtract(const Duration(days: 1));
+        if (maxSelectable.isAfter(firstDate)) {
+          lastDate = maxSelectable;
+        } else {
+          lastDate = firstDate;
+        }
+      }
+    } else {
+      if (ctrl.pickupDateTime.value == null) {
+        SnackbarHelper.showWarning('Please select a pick-up date first.');
+        return;
+      }
+      firstDate = ctrl.pickupDateTime.value!.add(const Duration(days: 1));
+      if (lastDate.isBefore(firstDate)) {
+        lastDate = firstDate.add(const Duration(days: 365));
+      }
+    }
+
+    final current = rxDateTime.value ?? (isPickup ? DateTime.now() : ctrl.pickupDateTime.value!.add(const Duration(days: 1)));
+    
+    DateTime initialDate = current;
+    if (initialDate.isBefore(firstDate)) {
+      initialDate = firstDate;
+    }
+    if (initialDate.isAfter(lastDate)) {
+      initialDate = lastDate;
+    }
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (date == null) return;
+
+    rxDateTime.value = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      current.hour,
+      current.minute,
+    );
+
+    if (isPickup) {
+      if (ctrl.dropoffDateTime.value != null && !ctrl.dropoffDateTime.value!.isAfter(rxDateTime.value!)) {
+        ctrl.dropoffDateTime.value = null;
+      }
+    }
+
+    ctrl.applyFilters();
+  }
+
+  void _selectTime(BuildContext context, Rxn<DateTime> rxDateTime, ExploreController ctrl) {
+    _showTimeListBottomSheet(context, rxDateTime, ctrl);
   }
 
   void _showFiltersBottomSheet(BuildContext context, ExploreController ctrl) {

@@ -16,6 +16,7 @@ import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/core/utils/image_picker_helper.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/checkout_pricing_model.dart';
+import 'package:jkworlds/data/models/checkout_coupon_model.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 class CheckoutController extends GetxController {
@@ -423,14 +424,101 @@ class CheckoutController extends GetxController {
     final code = promoCodeController.text.trim().toUpperCase();
     if (code.isEmpty) return;
 
-    appliedPromoCode.value = code;
-    await fetchCheckoutPricing();
+    isLoading.value = true;
+    try {
+      final protectionPlan = vehicle.protectionPlans.firstWhereOrNull(
+        (p) => p.title.toLowerCase().contains(selectedProtection.toLowerCase()),
+      );
+      final protectionPlanId = protectionPlan?.id;
 
-    if (calculatedDiscount.value > 0) {
+      final addonIds = <int>[];
+      if (gpsAddon) {
+        final addon = vehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('gps'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+      if (additionalDriverAddon) {
+        final addon = vehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('driver'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+      if (childSeatAddon) {
+        final addon = vehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('seat') || a.title.toLowerCase().contains('child'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+      if (prepaidFuelAddon) {
+        final addon = vehicle.rentalAddons.firstWhereOrNull(
+          (a) => a.title.toLowerCase().contains('fuel') || a.title.toLowerCase().contains('prepaid'),
+        );
+        if (addon != null) addonIds.add(addon.id);
+      }
+
+      final pickupDateStr = DateFormat('yyyy-MM-dd').format(pickupDate);
+      final returnDateStr = DateFormat('yyyy-MM-dd').format(returnDate);
+
+      final payload = {
+        'coupon_code': code,
+        'vehicle_id': int.tryParse(vehicle.id) ?? 0,
+        'service_type': isSelfDrive ? 'self_drive' : 'chauffeur',
+        'pickup_date': pickupDateStr,
+        'pickup_time': pickupTime,
+        'return_date': returnDateStr,
+        'return_time': returnTime,
+        'pickup_latitude': resolvedPickupLat,
+        'pickup_longitude': resolvedPickupLng,
+        'dropoff_latitude': resolvedDropoffLat,
+        'dropoff_longitude': resolvedDropoffLng,
+        'dropoff_location_name': resolvedDropoffAddress,
+        'dropoff_address': resolvedDropoffAddress,
+        'pickup_location_name': resolvedPickupAddress,
+        'pickup_address': resolvedPickupAddress,
+        if (protectionPlanId != null) 'protection_plan_id': protectionPlanId,
+        if (addonIds.isNotEmpty) 'addon_ids': addonIds,
+        'additional_driver': additionalDriverAddon,
+      };
+
+      final couponModel = await Get.find<BookingService>().applyCheckoutCoupon(payload);
+
+      appliedPromoCode.value = couponModel.code;
+      calculatedDiscount.value = couponModel.discount.amount;
+      calculatedDiscountFormatted.value = couponModel.discount.amountFormatted;
+      calculatedTotal.value = couponModel.total.amount;
+      calculatedTotalFormatted.value = couponModel.total.amountFormatted;
+      calculatedPayableTotal.value = couponModel.payableTotal.amount;
+      calculatedPayableTotalFormatted.value = couponModel.payableTotal.amountFormatted;
+      calculatedCurrency.value = couponModel.currency;
+
       SnackbarHelper.showSuccess('Promo code applied successfully!');
-    } else {
+    } catch (e) {
       appliedPromoCode.value = '';
-      SnackbarHelper.showError('This promo code is not valid.');
+      calculatedDiscount.value = 0.0;
+      calculatedDiscountFormatted.value = '';
+      // Recalculate original pricing to restore non-discounted pricing state
+      await fetchCheckoutPricing();
+      SnackbarHelper.showError(e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ── Promo Code Removal Action ────────────────────────────────────
+  Future<void> removePromoCode() async {
+    isLoading.value = true;
+    try {
+      appliedPromoCode.value = '';
+      promoCodeController.clear();
+      calculatedDiscount.value = 0.0;
+      calculatedDiscountFormatted.value = '';
+      await fetchCheckoutPricing();
+      SnackbarHelper.showSuccess('Promo code removed successfully.');
+    } catch (e) {
+      SnackbarHelper.showError('Failed to remove promo code: ${e.toString()}');
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -456,7 +544,9 @@ class CheckoutController extends GetxController {
     logger.i('[CheckoutController] confirmAndPay started');
     if (!canPay) {
       logger.w('[CheckoutController] confirmAndPay validation failed');
-      SnackbarHelper.showWarning("Please fill in all required fields and upload your driver's license.");
+      SnackbarHelper.showWarning(isSelfDrive
+          ? "Please fill in all required fields and upload your driver's license."
+          : "Please fill in all required fields.");
       return;
     }
 
@@ -572,7 +662,7 @@ class CheckoutController extends GetxController {
       logger.i('[CheckoutController] calling initiateBooking...');
       final InitiateBookingResponseModel res = await Get.find<BookingService>().initiateBooking(
         bookingPayload,
-        driverLicensePath: isSelfDrive ? selectedLicensePath.value : null,
+        driverLicensePath: selectedLicensePath.value.isNotEmpty ? selectedLicensePath.value : null,
       );
 
       final reference = res.reference;

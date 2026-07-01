@@ -107,56 +107,71 @@ class CheckoutView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: TextField(
-                                  controller: ctrl.promoCodeController,
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter promo code',
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                    filled: true,
-                                    fillColor: isLight ? Colors.white : const Color(0xFF1E293B),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                        Obx(() {
+                          final isApplied = ctrl.appliedPromoCode.value.isNotEmpty;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 48,
+                                      child: TextField(
+                                        controller: ctrl.promoCodeController,
+                                        enabled: !isApplied,
+                                        decoration: InputDecoration(
+                                          hintText: 'Enter promo code',
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          filled: true,
+                                          fillColor: isLight ? Colors.white : const Color(0xFF1E293B),
+                                          disabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.15)),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    height: 48,
+                                    width: isApplied ? 48 : null,
+                                    child: ElevatedButton(
+                                      onPressed: isApplied ? ctrl.removePromoCode : ctrl.applyPromoCode,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isApplied ? Colors.red.shade600 : const Color(0xFFFF5403),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                        padding: isApplied ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 24),
+                                      ),
+                                      child: isApplied
+                                          ? const Icon(Icons.close, size: 20)
+                                          : const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: ctrl.applyPromoCode,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFF5403),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                              if (isApplied)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : ''}',
+                                    style: TextStyle(color: Colors.green.shade600, fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
                                 ),
-                                child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Obx(() => ctrl.appliedPromoCode.value.isNotEmpty
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  'Code ${ctrl.appliedPromoCode.value} applied successfully! Discount: -${ctrl.calculatedDiscountFormatted.value.isNotEmpty ? ctrl.calculatedDiscountFormatted.value : ''}',
-                                  style: TextStyle(color: Colors.green.shade600, fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              )
-                            : const SizedBox.shrink()),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -488,64 +503,62 @@ class CheckoutView extends StatelessWidget {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: ctrl.isSelfDrive
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                ctrl.isSelfDrive ? 'DRIVER LICENSE *' : 'DRIVER LICENSE (OPTIONAL)',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                    letterSpacing: 0.5),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      'DRIVER LICENSE *',
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                          letterSpacing: 0.5),
+                                    ElevatedButton(
+                                      onPressed: ctrl.chooseLicenseFile,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: cs.primary,
+                                        foregroundColor: cs.onPrimary,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('Choose file', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                     ),
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          ElevatedButton(
-                                            onPressed: ctrl.chooseLicenseFile,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: cs.primary,
-                                              foregroundColor: cs.onPrimary,
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                              elevation: 0,
-                                            ),
-                                            child: const Text('Choose file', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Obx(() {
+                                        final path = ctrl.selectedLicensePath.value;
+                                        final displayPath = path.isEmpty
+                                            ? 'No file chosen'
+                                            : path.split('/').last.split('\\').last;
+                                        return Text(
+                                          displayPath,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: path.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                            color: path.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
                                           ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Obx(() {
-                                              final path = ctrl.selectedLicensePath.value;
-                                              final displayPath = path.isEmpty
-                                                  ? 'No file chosen'
-                                                  : path.split('/').last.split('\\').last;
-                                              return Text(
-                                                displayPath,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: path.isEmpty ? FontWeight.normal : FontWeight.bold,
-                                                  color: path.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
-                                                ),
-                                              );
-                                            }),
-                                          ),
-                                        ],
-                                      ),
+                                        );
+                                      }),
                                     ),
                                   ],
-                                )
-                              : const SizedBox.shrink(),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -573,65 +586,63 @@ class CheckoutView extends StatelessWidget {
                       cs: cs,
                       theme: theme,
                     ),
-                    if (ctrl.isSelfDrive) ...[
-                      const SizedBox(height: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'DRIVER LICENSE *',
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                letterSpacing: 0.5),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          ctrl.isSelfDrive ? 'DRIVER LICENSE *' : 'DRIVER LICENSE (OPTIONAL)',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                              letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
+                            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isLight ? Colors.grey.shade50 : const Color(0xFF161A22),
-                              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                ElevatedButton(
-                                  onPressed: ctrl.chooseLicenseFile,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: cs.primary,
-                                    foregroundColor: cs.onPrimary,
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    elevation: 0,
-                                  ),
-                                  child: const Text('Choose file', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          child: Row(
+                            children: [
+                              ElevatedButton(
+                                onPressed: ctrl.chooseLicenseFile,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: cs.primary,
+                                  foregroundColor: cs.onPrimary,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Obx(() {
-                                    final path = ctrl.selectedLicensePath.value;
-                                    final displayPath = path.isEmpty
-                                        ? 'No file chosen'
-                                        : path.split('/').last.split('\\').last;
-                                    return Text(
-                                      displayPath,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: path.isEmpty ? FontWeight.normal : FontWeight.bold,
-                                        color: path.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
-                                      ),
-                                    );
-                                  }),
-                                ),
-                              ],
-                            ),
+                                child: const Text('Choose file', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Obx(() {
+                                  final path = ctrl.selectedLicensePath.value;
+                                  final displayPath = path.isEmpty
+                                      ? 'No file chosen'
+                                      : path.split('/').last.split('\\').last;
+                                  return Text(
+                                    displayPath,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: path.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                      color: path.isEmpty ? cs.onSurfaceVariant.withValues(alpha: 0.7) : cs.onSurface,
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ],
                   const SizedBox(height: 16),
 

@@ -39,6 +39,7 @@ class ExploreController extends GetxController {
   LocationService get _locationService => Get.find<LocationService>();
 
   // ── Filter & Sort States ────────────────────────────────────────
+  final selectedBookingTab = 'Cars'.obs; // Cars, Airport Transfer
   final selectedServiceType = 'All'.obs; // All, Self-Drive, Chauffeur
   final selectedCategory = 'All'.obs; // All, Sedan, SUV, Luxury, Van
   final selectedTransmission = 'All'.obs; // All, Automatic, Manual
@@ -59,7 +60,7 @@ class ExploreController extends GetxController {
   final scrollController = ScrollController();
 
   // ── Filter Lists ────────────────────────────────────────────────
-  final serviceTypes = const ['All', 'Self-Drive', 'Chauffeur'];
+  final serviceTypes = const ['All', 'Self-Drive', 'Chauffeur', 'Airport Transfer'];
   final categories = <String>[].obs;
   final transmissions = const ['All', 'Automatic', 'Manual'];
   final fuelTypes = const ['All', 'Petrol', 'Diesel', 'Hybrid', 'Electric'];
@@ -210,7 +211,7 @@ class ExploreController extends GetxController {
       // Build query params for the API
       final serviceType = selectedServiceType.value == 'All'
           ? null
-          : selectedServiceType.value.toLowerCase().replaceAll('-', '_');
+          : selectedServiceType.value.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
       final transmission = selectedTransmission.value == 'All'
           ? null
           : selectedTransmission.value;
@@ -497,10 +498,9 @@ class ExploreController extends GetxController {
       final double? lat = details?.latitude ?? prediction.latitude;
       final double? lng = details?.longitude ?? prediction.longitude;
       if (lat != null && lng != null) {
-        final bool isAirportTab = Get.isRegistered<HomeController>() &&
-            Get.find<HomeController>().selectedBookingTab.value == 'Airport Transfer';
-        final sType = isAirportTab
-            ? 'chauffeur'
+        final bool isAirportTab = selectedBookingTab.value == 'Airport Transfer';
+        final sType = isAirportTab || selectedServiceType.value == 'Airport Transfer'
+            ? 'airport_transfer'
             : (selectedServiceType.value == 'Self-Drive'
                 ? 'self_drive'
                 : (selectedServiceType.value == 'Chauffeur' ? 'chauffeur' : 'self_drive'));

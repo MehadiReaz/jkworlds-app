@@ -290,14 +290,18 @@ class HomeView extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+        final screenHeight = MediaQuery.of(context).size.height;
+        final sheetHeight = screenHeight * 0.88 - keyboardHeight;
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: keyboardHeight,
           ),
           child: Container(
-            height: MediaQuery.of(context).size.height * 0.88,
+            height: sheetHeight.clamp(200.0, screenHeight * 0.88),
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
               borderRadius: const BorderRadius.only(
@@ -428,6 +432,7 @@ class HomeView extends StatelessWidget {
                               title: 'Show Vehicles',
                               onTap: () {
                                 Get.back(); // Dismiss bottom sheet
+                                exploreCtrl.selectedBookingTab.value = 'Cars';
                                 exploreCtrl.selectedServiceType.value = 'All';
                                 exploreCtrl.isChauffeurRequired.value = false;
                                 exploreCtrl.isDifferentDropoff.value = false;
@@ -562,6 +567,7 @@ class HomeView extends StatelessWidget {
                               title: 'Show Cars',
                               onTap: () {
                                 Get.back(); // Dismiss bottom sheet
+                                exploreCtrl.selectedBookingTab.value = 'Airport Transfer';
                                 exploreCtrl.selectedServiceType.value = 'Chauffeur';
                                 exploreCtrl.isChauffeurRequired.value = true;
                                 exploreCtrl.isDifferentDropoff.value = true;

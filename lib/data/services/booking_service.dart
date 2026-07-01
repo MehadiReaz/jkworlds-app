@@ -8,6 +8,7 @@ import 'package:jkworlds/core/errors/app_exception.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/booking_model.dart';
 import 'package:jkworlds/data/models/checkout_pricing_model.dart';
+import 'package:jkworlds/data/models/checkout_coupon_model.dart';
 import 'package:jkworlds/data/models/initiate_booking_response_model.dart';
 import 'package:jkworlds/data/models/cancel_payment_response_model.dart';
 import 'package:jkworlds/data/models/airport_transfer_distance_model.dart';
@@ -113,6 +114,39 @@ class BookingService extends GetxService {
       rethrow;
     } catch (e, st) {
       logger.e('[BookingService] calculateCheckoutPricing error', error: e, stackTrace: st);
+      throw UnknownException(e.toString());
+    }
+  }
+
+  /// Apply checkout coupon code.
+  /// POST /api/checkout/coupon
+  Future<CheckoutCouponModel> applyCheckoutCoupon(Map<String, dynamic> data) async {
+    try {
+      final response = await _api.post(
+        ApiConstants.applyCoupon,
+        data: data,
+      );
+      final body = response.data;
+      if (body == null || body is! Map<String, dynamic>) {
+        throw const ServerException('Empty or invalid coupon response');
+      }
+
+      final success = body['success'] as bool? ?? body['status'] as bool? ?? false;
+      if (!success) {
+        final msg = body['message'] as String? ?? 'Failed to apply coupon';
+        throw ServerException(msg);
+      }
+
+      final resData = body['data'];
+      if (resData == null || resData is! Map<String, dynamic>) {
+        throw const ServerException('Coupon response missing "data" node');
+      }
+
+      return CheckoutCouponModel.fromJson(resData);
+    } on AppException {
+      rethrow;
+    } catch (e, st) {
+      logger.e('[BookingService] applyCheckoutCoupon error', error: e, stackTrace: st);
       throw UnknownException(e.toString());
     }
   }
