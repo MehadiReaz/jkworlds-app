@@ -547,17 +547,20 @@ class HomeView extends StatelessWidget {
                                   children: [
                                     Icon(Icons.access_time_rounded, color: cs.primary, size: 20),
                                     const SizedBox(width: 10),
-                                    Obx(() => Text(
-                                          exploreCtrl.pickupDateTime.value == null
-                                              ? 'Select time'
-                                              : DateFormat('h:mm a').format(exploreCtrl.pickupDateTime.value!),
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: exploreCtrl.pickupDateTime.value == null
-                                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
-                                                : cs.onSurface,
-                                          ),
-                                        )),
+                                    Obx(() {
+                                      final showPlaceholder = exploreCtrl.pickupDateTime.value == null || !exploreCtrl.isPickupTimeSelected.value;
+                                      return Text(
+                                        showPlaceholder
+                                            ? 'Select time'
+                                            : DateFormat('h:mm a').format(exploreCtrl.pickupDateTime.value!),
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: showPlaceholder
+                                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                              : cs.onSurface,
+                                        ),
+                                      );
+                                    })
                                   ],
                                 ),
                               ),
@@ -569,7 +572,7 @@ class HomeView extends StatelessWidget {
                               onTap: () {
                                 Get.back(); // Dismiss bottom sheet
                                 exploreCtrl.selectedBookingTab.value = 'Airport Transfer';
-                                exploreCtrl.selectedServiceType.value = 'Chauffeur';
+                                exploreCtrl.selectedServiceType.value = 'Airport Transfer';
                                 exploreCtrl.isChauffeurRequired.value = true;
                                 exploreCtrl.isDifferentDropoff.value = true;
                                 exploreCtrl.dropoffLocation.value = exploreCtrl.dropoffLocationCtrl.text;
@@ -805,19 +808,27 @@ class HomeView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                   ),
-                  child: Obx(() => Text(
-                        dateTimeRx.value == null
-                            ? 'Select Time'
-                            : DateFormat('h:mm a').format(dateTimeRx.value!),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: dateTimeRx.value == null
-                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
-                              : cs.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      )),
+                  child: Obx(() {
+                        final bool isPickup = dateTimeRx == exploreCtrl.pickupDateTime;
+                        final bool isTimeSelected = isPickup 
+                            ? exploreCtrl.isPickupTimeSelected.value 
+                            : exploreCtrl.isDropoffTimeSelected.value;
+                        final showPlaceholder = dateTimeRx.value == null || !isTimeSelected;
+
+                        return Text(
+                          showPlaceholder
+                              ? 'Select Time'
+                              : DateFormat('h:mm a').format(dateTimeRx.value!),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: showPlaceholder
+                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                : cs.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                        );
+                      }),
                 ),
               ),
             ),

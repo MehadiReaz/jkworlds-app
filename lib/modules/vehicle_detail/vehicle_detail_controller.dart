@@ -93,7 +93,7 @@ class VehicleDetailController extends GetxController {
 
   bool get isAirportTransfer {
     final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
-    return exploreCtrl?.selectedServiceType.value == 'Chauffeur';
+    return exploreCtrl?.selectedServiceType.value == 'Airport Transfer';
   }
 
   bool get isFromFeatured {
@@ -198,6 +198,7 @@ void _showLocationNotAvailableDialog() {
 
   Future<void> _checkCoverage(LocationPrediction? prediction, {required bool isPickup}) async {
     if (prediction == null) return;
+    if (isAirportTransfer && !isPickup) return;
     logger.f('Check Coverage 1 ${prediction.address}');
     final controller = isPickup ? pickupLocationCtrl : dropoffLocationCtrl;
     final locationVal = isPickup ? pickupLocation : dropoffLocation;
@@ -212,7 +213,9 @@ void _showLocationNotAvailableDialog() {
       final double? lng = details?.longitude ?? prediction.longitude;
       logger.f('Check Coverage 21 $lat $lng ${details?.address}');
       if (lat != null && lng != null) {
-        final sType = isSelfDrive.value ? 'self_drive' : 'chauffeur';
+        final sType = isAirportTransfer
+            ? 'airport_transfer'
+            : (isSelfDrive.value ? 'self_drive' : 'chauffeur');
         final coverage = await _locationService.checkCoverage(
           lat: lat,
           lng: lng,
@@ -291,6 +294,7 @@ void _showLocationNotAvailableDialog() {
       if (isAirportTransfer) {
         additionalDriverAddon.value = true;
         isSelfDrive.value = false;
+        isDifferentDropoff.value = true;
       }
       
       if (exploreCtrl.pickupLocation.value.isNotEmpty) {
@@ -300,11 +304,15 @@ void _showLocationNotAvailableDialog() {
       }
       if (exploreCtrl.pickupDateTime.value != null) {
         pickupDate.value = exploreCtrl.pickupDateTime.value;
-        pickupTime.value = DateFormat('h:mm a').format(exploreCtrl.pickupDateTime.value!);
+        pickupTime.value = exploreCtrl.isPickupTimeSelected.value
+            ? DateFormat('h:mm a').format(exploreCtrl.pickupDateTime.value!)
+            : '';
       }
       if (exploreCtrl.dropoffDateTime.value != null) {
         returnDate.value = exploreCtrl.dropoffDateTime.value;
-        returnTime.value = DateFormat('h:mm a').format(exploreCtrl.dropoffDateTime.value!);
+        returnTime.value = exploreCtrl.isDropoffTimeSelected.value
+            ? DateFormat('h:mm a').format(exploreCtrl.dropoffDateTime.value!)
+            : '';
       }
       if (additionalDriverAddon.value) {
         if (exploreCtrl.isDifferentDropoff.value && exploreCtrl.dropoffLocation.value.isNotEmpty) {
@@ -443,7 +451,9 @@ void _showLocationNotAvailableDialog() {
         dropoffLng = pickupLng;
       }
 
-      final String sType = isSelfDrive.value ? 'self_drive' : 'chauffeur';
+      final String sType = isAirportTransfer
+          ? 'airport_transfer'
+          : (isSelfDrive.value ? 'self_drive' : 'chauffeur');
 
       final result = await _categoryService.fetchVehicleDetail(
         vehicle.id,
@@ -478,6 +488,13 @@ void _showLocationNotAvailableDialog() {
   bool get canCalculatePricing {
     final needsPickupSelection = pickupLocation.value.trim().isEmpty;
     final needsDropoffSelection = isDifferentDropoff.value && dropoffLocation.value.trim().isEmpty;
+
+    if (isAirportTransfer) {
+      return pickupDate.value != null &&
+          pickupTime.value.isNotEmpty &&
+          !needsPickupSelection &&
+          !needsDropoffSelection;
+    }
 
     return pickupDate.value != null &&
         returnDate.value != null &&
@@ -533,7 +550,7 @@ void _showLocationNotAvailableDialog() {
       }
 
       final pickupDateStr = DateFormat('yyyy-MM-dd').format(pickupDate.value!);
-      final returnDateStr = DateFormat('yyyy-MM-dd').format(returnDate.value!);
+      final returnDateStr = isAirportTransfer ? null : (returnDate.value != null ? DateFormat('yyyy-MM-dd').format(returnDate.value!) : null);
 
       // Resolve Locations coordinates
       double resolvedPickupLat = 9.0579;
@@ -552,6 +569,14 @@ void _showLocationNotAvailableDialog() {
               resolvedPickupAddress = addr;
             } else if (nm.trim().isNotEmpty) {
               resolvedPickupAddress = nm;
+            } else if (selectedPickupPrediction.value!.description.trim().isNotEmpty) {
+              resolvedPickupAddress = selectedPickupPrediction.value!.description;
+            }
+          } else {
+            if (selectedPickupPrediction.value!.description.trim().isNotEmpty) {
+              resolvedPickupAddress = selectedPickupPrediction.value!.description;
+            } else if (selectedPickupPrediction.value!.name.trim().isNotEmpty) {
+              resolvedPickupAddress = selectedPickupPrediction.value!.name;
             }
           }
         } catch (e) {
@@ -559,9 +584,9 @@ void _showLocationNotAvailableDialog() {
         }
       }
 
-      double resolvedDropoffLat = resolvedPickupLat;
-      double resolvedDropoffLng = resolvedPickupLng;
-      String resolvedDropoffAddress = resolvedPickupAddress;
+      double resolvedDropoffLat = isDifferentDropoff.value ? 9.0765 : resolvedPickupLat;
+      double resolvedDropoffLng = isDifferentDropoff.value ? 7.3986 : resolvedPickupLng;
+      String resolvedDropoffAddress = isDifferentDropoff.value ? dropoffLocation.value : resolvedPickupAddress;
 
       if (isDifferentDropoff.value && selectedDropoffPrediction.value != null) {
         try {
@@ -575,6 +600,14 @@ void _showLocationNotAvailableDialog() {
               resolvedDropoffAddress = addr;
             } else if (nm.trim().isNotEmpty) {
               resolvedDropoffAddress = nm;
+            } else if (selectedDropoffPrediction.value!.description.trim().isNotEmpty) {
+              resolvedDropoffAddress = selectedDropoffPrediction.value!.description;
+            }
+          } else {
+            if (selectedDropoffPrediction.value!.description.trim().isNotEmpty) {
+              resolvedDropoffAddress = selectedDropoffPrediction.value!.description;
+            } else if (selectedDropoffPrediction.value!.name.trim().isNotEmpty) {
+              resolvedDropoffAddress = selectedDropoffPrediction.value!.name;
             }
           }
         } catch (e) {
@@ -584,11 +617,13 @@ void _showLocationNotAvailableDialog() {
 
       final payload = {
         'vehicle_id': int.tryParse(currentVehicle.id) ?? 0,
-        'service_type': isSelfDrive.value ? 'self_drive' : 'chauffeur',
+        'service_type': isAirportTransfer
+            ? 'airport_transfer'
+            : (isSelfDrive.value ? 'self_drive' : 'chauffeur'),
         'pickup_date': pickupDateStr,
-        'pickup_time': pickupTime.value,
-        'return_date': returnDateStr,
-        'return_time': returnTime.value,
+        'pickup_time': _formatTo24Hour(pickupTime.value),
+        if (returnDateStr != null) 'return_date': returnDateStr,
+        if (!isAirportTransfer) 'return_time': _formatTo24Hour(returnTime.value),
         'pickup_latitude': resolvedPickupLat,
         'pickup_longitude': resolvedPickupLng,
         'dropoff_latitude': resolvedDropoffLat,
@@ -680,6 +715,7 @@ void _showLocationNotAvailableDialog() {
 
   // ── Pricing Getters & Logic ──────────────────────────────────────
   int get totalDays {
+    if (isAirportTransfer) return 0;
     if (pickupDate.value == null || returnDate.value == null) return 0;
     final diff = returnDate.value!.difference(pickupDate.value!).inDays;
     return diff > 0 ? diff : 0;
@@ -766,6 +802,15 @@ void _showLocationNotAvailableDialog() {
     final needsPickupSelection = pickupLocation.value.trim().isEmpty;
     final needsDropoffSelection = isDifferentDropoff.value && dropoffLocation.value.trim().isEmpty;
 
+    if (isAirportTransfer) {
+      return pickupDate.value != null &&
+          pickupTime.value.isNotEmpty &&
+          !needsPickupSelection &&
+          !needsDropoffSelection &&
+          checkoutPricing.value != null &&
+          !isLoadingPricing.value;
+    }
+
     return pickupDate.value != null &&
         returnDate.value != null &&
         pickupTime.value.isNotEmpty &&
@@ -849,8 +894,30 @@ void _showLocationNotAvailableDialog() {
     }
   }
 
+  Future<void> _selectSinglePickupDate(BuildContext context) async {
+    final DateTime initialDate = pickupDate.value ?? DateTime.now();
+    final DateTime firstDate = DateTime.now();
+    final DateTime lastDate = DateTime.now().add(const Duration(days: 365));
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(firstDate) ? firstDate : initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      selectableDayPredicate: (date) => isDateSelectable(date),
+    );
+
+    if (date != null) {
+      pickupDate.value = date;
+    }
+  }
+
   Future<void> selectPickupDate(BuildContext context) async {
-    await selectDateRange(context);
+    if (isAirportTransfer) {
+      await _selectSinglePickupDate(context);
+    } else {
+      await selectDateRange(context);
+    }
   }
 
   Future<void> selectReturnDate(BuildContext context) async {
@@ -1229,10 +1296,11 @@ void _showLocationNotAvailableDialog() {
     final arguments = {
       'vehicle': currentVehicle,
       'pickupDate': pickupDate.value!,
-      'returnDate': returnDate.value!,
+      'returnDate': isAirportTransfer ? pickupDate.value! : returnDate.value!,
       'pickupTime': pickupTime.value,
-      'returnTime': returnTime.value,
+      'returnTime': isAirportTransfer ? pickupTime.value : returnTime.value,
       'isSelfDrive': isSelfDrive.value,
+      'isAirportTransfer': isAirportTransfer,
       'selectedProtection': selectedProtection.value,
       'gpsAddon': gpsAddon.value,
       'additionalDriverAddon': additionalDriverAddon.value,
@@ -1246,9 +1314,9 @@ void _showLocationNotAvailableDialog() {
       'total': total,
       'pickupLocation': pickupLocation.value,
       'dropoffLocation': isDifferentDropoff.value ? dropoffLocation.value : pickupLocation.value,
+      'isDifferentDropoff': isDifferentDropoff.value,
       'selectedPickupPrediction': selectedPickupPrediction.value,
       'selectedDropoffPrediction': selectedDropoffPrediction.value,
-      'isDifferentDropoff': isDifferentDropoff.value,
       'selectedPriceTab': selectedPriceTab.value,
     };
 
@@ -1299,6 +1367,17 @@ void _showLocationNotAvailableDialog() {
          duration: const Duration(milliseconds: 300),
          curve: Curves.easeOut,
       );
+    }
+  }
+
+  String _formatTo24Hour(String time12h) {
+    if (time12h.isEmpty) return '';
+    try {
+      final format = DateFormat('h:mm a');
+      final date = format.parse(time12h);
+      return DateFormat('HH:mm').format(date);
+    } catch (e) {
+      return time12h;
     }
   }
 }

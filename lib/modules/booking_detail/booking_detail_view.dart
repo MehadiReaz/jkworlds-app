@@ -330,12 +330,12 @@ class BookingDetailsView extends StatelessWidget {
 
             // Dropoff Info Row
             _buildScheduleRow(
-              title: 'Return',
-              dateStr: dateFormat.format(booking.returnDate),
-              timeStr: timeFormat.format(booking.returnDate),
+              title: (booking.serviceType == 'airport_transfer') ? 'Destination' : 'Return',
+              dateStr: (booking.serviceType == 'airport_transfer') ? '' : dateFormat.format(booking.returnDate),
+              timeStr: (booking.serviceType == 'airport_transfer') ? '' : timeFormat.format(booking.returnDate),
               location: booking.dropoffLocation.isNotEmpty ? booking.dropoffLocation : 'Selected Return Location',
-              icon: Icons.logout_rounded,
-              iconColor: Colors.orange.shade700,
+              icon: (booking.serviceType == 'airport_transfer') ? Icons.flight_land_rounded : Icons.logout_rounded,
+              iconColor: (booking.serviceType == 'airport_transfer') ? Colors.blue.shade600 : Colors.orange.shade700,
               cs: cs,
               theme: theme,
             ),
@@ -347,8 +347,8 @@ class BookingDetailsView extends StatelessWidget {
 
   Widget _buildScheduleRow({
     required String title,
-    required String dateStr,
-    required String timeStr,
+    String? dateStr,
+    String? timeStr,
     required String location,
     required IconData icon,
     required Color iconColor,
@@ -372,7 +372,9 @@ class BookingDetailsView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$title — $dateStr at $timeStr',
+                (dateStr != null && dateStr.isNotEmpty && timeStr != null && timeStr.isNotEmpty)
+                    ? '$title — $dateStr at $timeStr'
+                    : title,
                 style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),

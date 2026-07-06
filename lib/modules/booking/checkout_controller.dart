@@ -16,7 +16,6 @@ import 'package:jkworlds/modules/explore/explore_controller.dart';
 import 'package:jkworlds/core/utils/image_picker_helper.dart';
 import 'package:jkworlds/core/utils/logger.dart';
 import 'package:jkworlds/data/models/checkout_pricing_model.dart';
-import 'package:jkworlds/data/models/checkout_coupon_model.dart';
 import 'package:jkworlds/app/routes/app_routes.dart';
 
 class CheckoutController extends GetxController {
@@ -28,7 +27,7 @@ class CheckoutController extends GetxController {
   // Expose the duration (rental days) as base to match the view's requirements
   int get base => checkoutPricing.value?.rentalDays ?? totalDays;
 
-  bool get isDifferentDropoff => args['isDifferentDropoff'] as bool? ?? false;
+  bool get isDifferentDropoff => isAirportTransfer || (args['isDifferentDropoff'] as bool? ?? false);
 
   // Serialized values passed from details configurator
   late final VehicleModel vehicle;
@@ -37,6 +36,7 @@ class CheckoutController extends GetxController {
   late final String pickupTime;
   late final String returnTime;
   late final bool isSelfDrive;
+  late final bool isAirportTransfer;
   late final String selectedProtection;
   late final bool gpsAddon;
   late final bool additionalDriverAddon;
@@ -172,6 +172,7 @@ class CheckoutController extends GetxController {
     pickupTime = args['pickupTime'] as String;
     returnTime = args['returnTime'] as String;
     isSelfDrive = args['isSelfDrive'] as bool;
+    isAirportTransfer = args['isAirportTransfer'] as bool? ?? false;
     selectedProtection = args['selectedProtection'] as String;
     gpsAddon = args['gpsAddon'] as bool;
     additionalDriverAddon = args['additionalDriverAddon'] as bool;
@@ -209,7 +210,7 @@ class CheckoutController extends GetxController {
       resolvedPickupAddress = vehicle.location.isNotEmpty ? vehicle.location : 'Lekki, Lagos';
     }
 
-    final isDifferentDropoff = args['isDifferentDropoff'] as bool? ?? false;
+    final isDifferentDropoff = isAirportTransfer || (args['isDifferentDropoff'] as bool? ?? false);
     if (isDifferentDropoff) {
       resolvedDropoffAddress = args['dropoffLocation'] as String? ?? '';
       if (resolvedDropoffAddress.trim().isEmpty) {
@@ -241,6 +242,12 @@ class CheckoutController extends GetxController {
           } else if (pickupPred.description.trim().isNotEmpty) {
             resolvedPickupAddress = pickupPred.description;
           }
+        } else {
+          if (pickupPred.description.trim().isNotEmpty) {
+            resolvedPickupAddress = pickupPred.description;
+          } else if (pickupPred.name.trim().isNotEmpty) {
+            resolvedPickupAddress = pickupPred.name;
+          }
         }
       } catch (e) {
         logger.e('[CheckoutController] Error fetching pickup details: $e');
@@ -266,6 +273,12 @@ class CheckoutController extends GetxController {
               resolvedDropoffAddress = nm;
             } else if (dropoffPred.description.trim().isNotEmpty) {
               resolvedDropoffAddress = dropoffPred.description;
+            }
+          } else {
+            if (dropoffPred.description.trim().isNotEmpty) {
+              resolvedDropoffAddress = dropoffPred.description;
+            } else if (dropoffPred.name.trim().isNotEmpty) {
+              resolvedDropoffAddress = dropoffPred.name;
             }
           }
         } catch (e) {
@@ -344,11 +357,13 @@ class CheckoutController extends GetxController {
 
       final payload = {
         'vehicle_id': int.tryParse(vehicle.id) ?? 0,
-        'service_type': isSelfDrive ? 'self_drive' : 'chauffeur',
+        'service_type': isAirportTransfer
+            ? 'airport_transfer'
+            : (isSelfDrive ? 'self_drive' : 'chauffeur'),
         'pickup_date': pickupDateStr,
-        'pickup_time': pickupTime,
+        'pickup_time': _formatTo24Hour(pickupTime),
         'return_date': returnDateStr,
-        'return_time': returnTime,
+        'return_time': _formatTo24Hour(returnTime),
         'pickup_latitude': resolvedPickupLat,
         'pickup_longitude': resolvedPickupLng,
         'dropoff_latitude': resolvedDropoffLat,
@@ -463,11 +478,13 @@ class CheckoutController extends GetxController {
       final payload = {
         'coupon_code': code,
         'vehicle_id': int.tryParse(vehicle.id) ?? 0,
-        'service_type': isSelfDrive ? 'self_drive' : 'chauffeur',
+        'service_type': isAirportTransfer
+            ? 'airport_transfer'
+            : (isSelfDrive ? 'self_drive' : 'chauffeur'),
         'pickup_date': pickupDateStr,
-        'pickup_time': pickupTime,
+        'pickup_time': _formatTo24Hour(pickupTime),
         'return_date': returnDateStr,
-        'return_time': returnTime,
+        'return_time': _formatTo24Hour(returnTime),
         'pickup_latitude': resolvedPickupLat,
         'pickup_longitude': resolvedPickupLng,
         'dropoff_latitude': resolvedDropoffLat,
@@ -534,6 +551,7 @@ class CheckoutController extends GetxController {
   }
 
   String get serviceTypeContext {
+    if (isAirportTransfer) return 'airport_transfer';
     if (isSelfDrive) return 'self_drive';
     if (vehicle.serviceType == 'airport_transfer') return 'airport_transfer';
     return 'chauffeur';
@@ -633,11 +651,13 @@ class CheckoutController extends GetxController {
 
     final bookingPayload = {
       'vehicle_id': int.tryParse(vehicle.id) ?? 0,
-      'service_type': isSelfDrive ? 'self_drive' : 'chauffeur',
+      'service_type': isAirportTransfer
+          ? 'airport_transfer'
+          : (isSelfDrive ? 'self_drive' : 'chauffeur'),
       'pickup_date': pickupDateStr,
-      'pickup_time': pickupTime,
+      'pickup_time': _formatTo24Hour(pickupTime),
       'return_date': returnDateStr,
-      'return_time': returnTime,
+      'return_time': _formatTo24Hour(returnTime),
       'pickup_latitude': resolvedPickupLat,
       'pickup_longitude': resolvedPickupLng,
       'dropoff_latitude': resolvedDropoffLat,
@@ -746,6 +766,17 @@ class CheckoutController extends GetxController {
     } finally {
       isLoading.value = false;
       logger.i('[CheckoutController] confirmAndPay finished');
+    }
+  }
+
+  String _formatTo24Hour(String time12h) {
+    if (time12h.isEmpty) return '';
+    try {
+      final format = DateFormat('h:mm a');
+      final date = format.parse(time12h);
+      return DateFormat('HH:mm').format(date);
+    } catch (e) {
+      return time12h;
     }
   }
 }

@@ -272,18 +272,25 @@ class CheckoutView extends StatelessWidget {
                                   : '',
                               cs,
                             )),
-                        _buildSummaryRow('Service Type', ctrl.isSelfDrive ? 'Self Drive' : 'Chauffeur', cs),
+                        _buildSummaryRow('Service Type', ctrl.isAirportTransfer ? 'Airport Transfer' : (ctrl.isSelfDrive ? 'Self Drive' : 'Chauffeur'), cs),
                         _buildSummaryRow('Pickup', ctrl.resolvedPickupAddress, cs),
+                        if (ctrl.isDifferentDropoff)
+                          _buildSummaryRow(
+                            ctrl.isAirportTransfer ? 'Destination' : 'Drop-off Location',
+                            ctrl.resolvedDropoffAddress,
+                            cs,
+                          ),
                         _buildSummaryRow(
                           'Pickup Date',
                           '${DateFormat('MMM d yyyy').format(ctrl.pickupDate)}, ${ctrl.pickupTime}',
                           cs,
                         ),
-                        _buildSummaryRow(
-                          'Return Date',
-                          '${DateFormat('MMM d yyyy').format(ctrl.returnDate)}, ${ctrl.returnTime}',
-                          cs,
-                        ),
+                        if (!ctrl.isAirportTransfer)
+                          _buildSummaryRow(
+                            'Return Date',
+                            '${DateFormat('MMM d yyyy').format(ctrl.returnDate)}, ${ctrl.returnTime}',
+                            cs,
+                          ),
                       ],
                     ),
                   ),

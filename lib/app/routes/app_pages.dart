@@ -34,8 +34,8 @@ import 'package:jkworlds/modules/booking/payment_status_view.dart';
 import 'package:jkworlds/modules/booking/payment_status_binding.dart';
 import 'package:jkworlds/modules/booking_detail/booking_detail_view.dart';
 import 'package:jkworlds/modules/booking_detail/booking_detail_binding.dart';
-import 'package:jkworlds/modules/onboarding/onboarding_wizard_view.dart';
-import 'package:jkworlds/modules/onboarding/onboarding_wizard_binding.dart';
+// import 'package:jkworlds/modules/onboarding/onboarding_wizard_view.dart';
+// import 'package:jkworlds/modules/onboarding/onboarding_wizard_binding.dart';
 
 import 'app_routes.dart';
 
@@ -79,11 +79,11 @@ class AppPages {
       page: () => const ResetPasswordView(),
       binding: AuthBinding(),
     ),
-    GetPage(
-      name: AppRoutes.onboarding,
-      page: () => const OnboardingWizardView(),
-      binding: OnboardingWizardBinding(),
-    ),
+    // GetPage(
+    //   name: AppRoutes.onboarding,
+    //   page: () => const OnboardingWizardView(),
+    //   binding: OnboardingWizardBinding(),
+    // ),
     GetPage(
       name: AppRoutes.preferences,
       page: () => const PreferencesView(),

@@ -258,10 +258,10 @@ class AuthController extends GetxController {
 
     logger.f(_auth.isLoggedIn.value.toString());
 
-    if (_auth.currentUser.value?.onboardingCompleted == false) {
-      Get.offAllNamed(AppRoutes.onboarding);
-      return;
-    }
+    // if (_auth.currentUser.value?.onboardingCompleted == false) {
+    //   Get.offAllNamed(AppRoutes.onboarding);
+    //   return;
+    // }
 
     final prev = Get.previousRoute;
     if (prev.isNotEmpty && !authRoutes.contains(prev)) {

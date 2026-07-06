@@ -50,6 +50,7 @@ class BookingModel {
 
   // New field for payment details
   final String? paymentMethod;
+  final String? serviceType;
 
   const BookingModel({
     required this.id,
@@ -87,6 +88,7 @@ class BookingModel {
     this.driverPhone,
     this.driverImage,
     this.paymentMethod,
+    this.serviceType,
   });
 
   int get totalDays => returnDate.difference(pickupDate).inDays;
@@ -263,6 +265,9 @@ class BookingModel {
       driverPhone: driverPhone,
       driverImage: driverImage,
       paymentMethod: (paymentMap?['method'] ?? json['payment_method'])?.toString(),
+      serviceType: json['service_type'] is Map
+          ? (json['service_type'] as Map)['value']?.toString()
+          : json['service_type']?.toString(),
     );
   }
 
@@ -290,5 +295,6 @@ class BookingModel {
         'driver_phone': driverPhone,
         'driver_image': driverImage,
         'payment_method': paymentMethod,
+        'service_type': serviceType,
       };
 }

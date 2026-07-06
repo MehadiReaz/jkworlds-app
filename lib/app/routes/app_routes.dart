@@ -13,7 +13,7 @@ abstract class AppRoutes {
   static const forgotPassword  = '/forgot-password';
   static const verifyOtp       = '/verify-otp';
   static const resetPassword   = '/reset-password';
-  static const onboarding      = '/onboarding';
+  // static const onboarding      = '/onboarding';
   static const preferences     = '/preferences';
   static const contactUs       = '/contact-us';
   static const editProfile     = '/edit-profile';

@@ -16,6 +16,8 @@ class ExploreController extends GetxController {
   final dropoffLocation = ''.obs;
   final pickupDateTime = Rxn<DateTime>();
   final dropoffDateTime = Rxn<DateTime>();
+  final isPickupTimeSelected = false.obs;
+  final isDropoffTimeSelected = false.obs;
   final isChauffeurRequired = false.obs;
 
   final selectedPickupPrediction = Rxn<LocationPrediction>();
@@ -130,6 +132,8 @@ class ExploreController extends GetxController {
     dropoffLocation.value = '';
     pickupDateTime.value = null;
     dropoffDateTime.value = null;
+    isPickupTimeSelected.value = false;
+    isDropoffTimeSelected.value = false;
     isChauffeurRequired.value = false;
     selectedPickupPrediction.value = null;
     selectedDropoffPrediction.value = null;
@@ -158,7 +162,7 @@ class ExploreController extends GetxController {
     }
     errorMessage.value = '';
 
-    if (selectedServiceType.value != 'Chauffeur') {
+    if (selectedServiceType.value != 'Chauffeur' && selectedServiceType.value != 'Airport Transfer') {
       isDifferentDropoff.value = false;
       dropoffLocation.value = '';
       dropoffLocationCtrl.clear();
@@ -481,6 +485,8 @@ class ExploreController extends GetxController {
     required bool isPickup,
   }) async {
     if (prediction == null) return;
+    final bool isAirport = selectedBookingTab.value == 'Airport Transfer' || selectedServiceType.value == 'Airport Transfer';
+    if (isAirport && !isPickup) return;
 
     final controller = isPickup ? pickupLocationCtrl : dropoffLocationCtrl;
     final locationVal = isPickup ? pickupLocation : dropoffLocation;

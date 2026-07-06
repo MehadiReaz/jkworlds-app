@@ -289,6 +289,11 @@ class ExploreView extends StatelessWidget {
                                       t.hour,
                                       t.minute,
                                     );
+                                    if (rxDateTime == ctrl.pickupDateTime) {
+                                      ctrl.isPickupTimeSelected.value = true;
+                                    } else if (rxDateTime == ctrl.dropoffDateTime) {
+                                      ctrl.isDropoffTimeSelected.value = true;
+                                    }
                                     ctrl.applyFilters();
                                     Get.back(); // Close bottom sheet
                                     if (onConfirm != null) {
@@ -643,7 +648,7 @@ class ExploreView extends StatelessWidget {
                       isActive: activeTab == 'Airport Transfer',
                       onTap: () {
                         ctrl.selectedBookingTab.value = 'Airport Transfer';
-                        ctrl.selectedServiceType.value = 'Chauffeur';
+                        ctrl.selectedServiceType.value = 'Airport Transfer';
                         ctrl.isChauffeurRequired.value = true;
                         ctrl.isDifferentDropoff.value = true;
                         ctrl.dropoffLocation.value = ctrl.dropoffLocationCtrl.text;
@@ -1033,17 +1038,20 @@ class ExploreView extends StatelessWidget {
                                   children: [
                                     Icon(Icons.access_time_rounded, color: cs.primary, size: 20),
                                     const SizedBox(width: 10),
-                                    Obx(() => Text(
-                                          ctrl.pickupDateTime.value == null
-                                              ? 'Select time'
-                                              : DateFormat('h:mm a').format(ctrl.pickupDateTime.value!),
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: ctrl.pickupDateTime.value == null
-                                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
-                                                : cs.onSurface,
-                                          ),
-                                        )),
+                                    Obx(() {
+                                      final showPlaceholder = ctrl.pickupDateTime.value == null || !ctrl.isPickupTimeSelected.value;
+                                      return Text(
+                                        showPlaceholder
+                                            ? 'Select time'
+                                            : DateFormat('h:mm a').format(ctrl.pickupDateTime.value!),
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: showPlaceholder
+                                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                              : cs.onSurface,
+                                        ),
+                                      );
+                                    })
                                   ],
                                 ),
                               ),
@@ -1055,7 +1063,7 @@ class ExploreView extends StatelessWidget {
                               onTap: () {
                                 Get.back(); // Dismiss bottom sheet
                                 ctrl.selectedBookingTab.value = 'Airport Transfer';
-                                ctrl.selectedServiceType.value = 'Chauffeur';
+                                ctrl.selectedServiceType.value = 'Airport Transfer';
                                 ctrl.isChauffeurRequired.value = true;
                                 ctrl.isDifferentDropoff.value = true;
                                 ctrl.dropoffLocation.value = ctrl.dropoffLocationCtrl.text;
@@ -1250,19 +1258,27 @@ class ExploreView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                   ),
-                  child: Obx(() => Text(
-                        dateTimeRx.value == null
-                            ? 'Select Time'
-                            : DateFormat('h:mm a').format(dateTimeRx.value!),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: dateTimeRx.value == null
-                              ? cs.onSurfaceVariant.withValues(alpha: 0.5)
-                              : cs.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      )),
+                  child: Obx(() {
+                        final bool isPickup = dateTimeRx == exploreCtrl.pickupDateTime;
+                        final bool isTimeSelected = isPickup 
+                            ? exploreCtrl.isPickupTimeSelected.value 
+                            : exploreCtrl.isDropoffTimeSelected.value;
+                        final showPlaceholder = dateTimeRx.value == null || !isTimeSelected;
+
+                        return Text(
+                          showPlaceholder
+                              ? 'Select Time'
+                              : DateFormat('h:mm a').format(dateTimeRx.value!),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: showPlaceholder
+                                ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                                : cs.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                        );
+                      }),
                 ),
               ),
             ),
