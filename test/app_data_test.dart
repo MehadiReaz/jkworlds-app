@@ -114,6 +114,36 @@ void main() {
     });
   });
 
+  group('[CurrencyService]', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      Get.put<SharedPreferences>(prefs, permanent: true);
+    });
+
+    tearDown(() {
+      Get.reset();
+    });
+
+    test('changeCurrency updates selectedCurrency and saves to SharedPreferences', () {
+      final currencyService = Get.put(CurrencyService());
+      
+      // Default initial currency is NGN
+      expect(currencyService.selectedCurrency.value.code, 'NGN');
+
+      // Change currency to USD
+      currencyService.changeCurrency('USD');
+
+      // Verify selected currency updated
+      expect(currencyService.selectedCurrency.value.code, 'USD');
+
+      // Verify SharedPreferences updated
+      expect(prefs.getString('selected_currency'), 'USD');
+    });
+  });
+
   group('[AppDataService]', () {
     late SharedPreferences prefs;
 

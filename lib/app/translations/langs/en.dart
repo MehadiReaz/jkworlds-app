@@ -238,6 +238,7 @@ const Map<String, String> en = {
   'settings': 'Settings',
   'language': 'Language',
   'currency': 'Currency',
+  'currency_changed': 'Currency changed to @code',
   'dark_mode': 'Dark Mode',
 
   // ── Reviews ─────────────────────────────────────────────────

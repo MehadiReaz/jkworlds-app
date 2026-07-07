@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jkworlds/core/utils/logger.dart';
+import 'package:jkworlds/core/utils/snackbar_helper.dart';
 
 import 'currency_model.dart';
 
@@ -59,6 +60,10 @@ class CurrencyService extends GetxService {
   void changeCurrency(String code) {
     selectedCurrency.value = _findByCode(code);
     Get.find<SharedPreferences>().setString(_storageKey, code);
+    Get.back();
+    SnackbarHelper.showSuccess(
+      'Currency Changed to ${selectedCurrency.value.name}',
+    );
   }
 
   /// Update the supported currencies list dynamically.

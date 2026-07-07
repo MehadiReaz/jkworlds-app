@@ -19,23 +19,23 @@ class AuthCard extends StatelessWidget {
     final isLight = theme.brightness == Brightness.light;
 
     return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isLight ? 0.03 : 0.2,
-            ),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      // decoration: BoxDecoration(
+      //   color: theme.cardColor,
+      //   borderRadius: BorderRadius.circular(24),
+      //   border: Border.all(
+      //     color: cs.outlineVariant.withValues(alpha: 0.5),
+      //     width: 1,
+      //   ),
+      //   boxShadow: [
+      //     BoxShadow(
+      //       color: Colors.black.withValues(
+      //         alpha: isLight ? 0.03 : 0.2,
+      //       ),
+      //       blurRadius: 20,
+      //       offset: const Offset(0, 8),
+      //     ),
+      //   ],
+      // ),
       padding: const EdgeInsets.symmetric(
         horizontal: 28,
         vertical: 36,
@@ -125,16 +125,16 @@ class SocialSignInSection extends StatelessWidget {
           ),
           label: 'continue_with_google'.tr,
         ),
-        const SizedBox(height: 16),
-        SocialSignInButton(
-          onPressed: isLoading ? null : onApplePressed,
-          icon: Icon(
-            Icons.apple,
-            size: 24,
-            color: cs.onSurface,
-          ),
-          label: 'continue_with_apple'.tr,
-        ),
+        // const SizedBox(height: 16),
+        // SocialSignInButton(
+        //   onPressed: isLoading ? null : onApplePressed,
+        //   icon: Icon(
+        //     Icons.apple,
+        //     size: 24,
+        //     color: cs.onSurface,
+        //   ),
+        //   label: 'continue_with_apple'.tr,
+        // ),
       ],
     );
   }

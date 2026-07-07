@@ -239,6 +239,7 @@ const Map<String, String> ha = {
   'settings': 'Saituna',
   'language': 'Harshe',
   'currency': 'Kuɗi',
+  'currency_changed': 'An canza kuɗi zuwa @code',
   'dark_mode': 'Yanayin Duhu',
 
   // ── Reviews ─────────────────────────────────────────────────

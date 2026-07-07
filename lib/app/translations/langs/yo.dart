@@ -239,6 +239,7 @@ const Map<String, String> yo = {
   'settings': 'Ètò',
   'language': 'Èdè',
   'currency': 'Owó',
+  'currency_changed': 'A ti yí owó padà sí @code',
   'dark_mode': 'Àṣà Dúdú',
 
   // ── Reviews ─────────────────────────────────────────────────

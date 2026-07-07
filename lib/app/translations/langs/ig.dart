@@ -239,6 +239,7 @@ const Map<String, String> ig = {
   'settings': 'Ntọala',
   'language': 'Asụsụ',
   'currency': 'Ego',
+  'currency_changed': 'Agbanwela ego gaa na @code',
   'dark_mode': 'Ụdị Ọchịchịrị',
 
   // ── Reviews ─────────────────────────────────────────────────

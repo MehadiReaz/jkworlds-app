@@ -25,7 +25,7 @@ class VerifyOtpView extends GetView<AuthController> {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: .6),
+          color: cs.primary,
         ),
       ),
     );
@@ -46,11 +46,10 @@ class VerifyOtpView extends GetView<AuthController> {
     );
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: theme.cardColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 450),
               child: AuthCard(
