@@ -72,14 +72,6 @@ class PrivacyPolicyView extends StatelessWidget {
                           fontSize: 22,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Last updated: June 2026',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -144,4 +136,5 @@ class PrivacyPolicyView extends StatelessWidget {
       ),
     );
   }
+
 }
