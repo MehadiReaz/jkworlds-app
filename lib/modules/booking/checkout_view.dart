@@ -250,8 +250,11 @@ class CheckoutView extends StatelessWidget {
                           final dailyRateText = ctrl.vehicle.dailyRateFormatted.isNotEmpty
                               ? ctrl.vehicle.dailyRateFormatted
                               : '';
+                          final label = (ctrl.checkoutPricing.value?.base.label != null && ctrl.checkoutPricing.value!.base.label!.isNotEmpty)
+                              ? ctrl.checkoutPricing.value!.base.label!
+                              : 'Base (${ctrl.base}d x $dailyRateText)';
                           return _buildSummaryRow(
-                            'Base (${ctrl.base}d x $dailyRateText)',
+                            label,
                             ctrl.calculatedSubtotalFormatted.value.isNotEmpty
                                 ? ctrl.calculatedSubtotalFormatted.value
                                 : '',

@@ -93,7 +93,7 @@ class BookingDetailsView extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // 5. Driver Details Card (If Chauffeur drive / Chauffeur Pending)
-                if (booking.rentalType == RentalType.chauffeur) ...[
+                if (booking.rentalType == RentalType.chauffeur || booking.serviceType == 'airport_transfer') ...[
                   _buildDriverCard(booking, cs, theme),
                   const SizedBox(height: 16),
                 ],
@@ -419,7 +419,7 @@ class BookingDetailsView extends StatelessWidget {
             const SizedBox(height: 8),
             _buildDetailRow('Phone', booking.customerPhone ?? 'N/A', cs, theme),
             const SizedBox(height: 8),
-            _buildDetailRow('Service Mode', booking.rentalType == RentalType.chauffeur ? 'Chauffeur Driven' : 'Self Drive', cs, theme),
+            _buildDetailRow('Service Mode', booking.serviceType == 'airport_transfer' ? 'Airport Transfer' : (booking.rentalType == RentalType.chauffeur ? 'Chauffeur Driven' : 'Self Drive'), cs, theme),
           ],
         ),
       ),

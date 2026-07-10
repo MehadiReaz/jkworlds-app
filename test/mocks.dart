@@ -22,7 +22,7 @@ class MockCategoryService extends CategoryService {
   }
 
   @override
-  Future<List<CategoryModel>> fetchCategories() async {
+  Future<List<CategoryModel>> fetchCategories({bool forceRefresh = false}) async {
     return categories;
   }
 
@@ -40,6 +40,7 @@ class MockCategoryService extends CategoryService {
     double? pickupLongitude,
     double? dropoffLatitude,
     double? dropoffLongitude,
+    bool forceRefresh = false,
   }) async {
     var results = List<VehicleModel>.from(mockVehicles);
     
@@ -279,21 +280,64 @@ class MockBookingService extends BookingService {
 
   @override
   Future<CheckoutPricingModel> calculateCheckoutPricing(Map<String, dynamic> data) async {
-    return const CheckoutPricingModel(
+    final int? protectionId = data['protection_plan_id'] as int?;
+    final List<dynamic>? addonIdsRaw = data['addon_ids'] as List<dynamic>?;
+    final List<int> addonIds = addonIdsRaw?.map((e) => int.tryParse(e.toString()) ?? 0).toList() ?? [];
+
+    double subtotal = 110000.0;
+    double protectionCost = 0.0;
+    String protectionTitle = 'Basic Protection';
+
+    if (protectionId == 2) {
+      protectionCost = subtotal * 0.15;
+      protectionTitle = 'Premium Protection';
+    } else if (protectionId == 3) {
+      protectionCost = subtotal * 0.25;
+      protectionTitle = 'Full Protection';
+    }
+
+    double addonsCost = 0.0;
+    if (addonIds.contains(1)) {
+      addonsCost += 5000.0 * 2; // GPS Navigation
+    }
+    if (addonIds.contains(2)) {
+      addonsCost += 8000.0 * 2; // Additional Driver
+    }
+
+    double fees = 5500.0;
+    double deposit = 100000.0;
+    double total = subtotal + protectionCost + addonsCost + fees + deposit;
+
+    String formatPrice(double amount) {
+      if (amount == 0.0) return '₦0';
+      final str = amount.round().toString();
+      if (str.length > 3) {
+        final left = str.substring(0, str.length - 3);
+        final right = str.substring(str.length - 3);
+        return '₦$left,$right';
+      }
+      return '₦$str';
+    }
+
+    return CheckoutPricingModel(
       currency: 'NGN',
       serviceType: 'self_drive',
       rentalDays: 2,
-      base: CheckoutPricingItem(amount: 110000.0, amountFormatted: '₦110,000'),
-      addonsTotal: CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
-      protection: CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
-      feesTotal: CheckoutPricingItem(amount: 5500.0, amountFormatted: '₦5,500'),
-      discount: CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
-      total: CheckoutPricingItem(amount: 215500.0, amountFormatted: '₦215,500'),
-      payableTotal: CheckoutPricingItem(amount: 215500.0, amountFormatted: '₦215,500'),
-      deposit: CheckoutPricingItem(amount: 100000.0, amountFormatted: '₦100,000'),
-      addons: [],
-      fees: [],
-      paymentMethods: [],
+      base: CheckoutPricingItem(amount: subtotal, amountFormatted: formatPrice(subtotal)),
+      addonsTotal: CheckoutPricingItem(amount: addonsCost, amountFormatted: formatPrice(addonsCost)),
+      protection: CheckoutPricingItem(
+        amount: protectionCost,
+        amountFormatted: protectionCost > 0 ? formatPrice(protectionCost) : '₦0',
+        title: protectionCost > 0 ? protectionTitle : null,
+      ),
+      feesTotal: CheckoutPricingItem(amount: fees, amountFormatted: formatPrice(fees)),
+      discount: const CheckoutPricingItem(amount: 0.0, amountFormatted: '₦0'),
+      total: CheckoutPricingItem(amount: total, amountFormatted: formatPrice(total)),
+      payableTotal: CheckoutPricingItem(amount: total, amountFormatted: formatPrice(total)),
+      deposit: CheckoutPricingItem(amount: deposit, amountFormatted: formatPrice(deposit)),
+      addons: const [],
+      fees: const [],
+      paymentMethods: const [],
     );
   }
 }

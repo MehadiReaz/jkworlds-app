@@ -81,7 +81,7 @@ void main() {
     // Verify custom time list bottom sheet is opened
     expect(find.text('Opening Times: 6:00 AM - 12:00 AM'), findsOneWidget);
     expect(find.text('Early Morning'), findsOneWidget);
-    expect(find.text('Morning - afternoon'), findsOneWidget);
+    expect(find.text('Morning - Afternoon'), findsOneWidget);
     expect(find.text('Evening - Night'), findsOneWidget);
 
     // Verify specific slot exists, ensure visible, and tap it

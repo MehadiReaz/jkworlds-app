@@ -62,11 +62,14 @@ class HomeController extends GetxController {
   }
 
   Future<void> _loadData() async {
+    logger.i('[HomeController] _loadData() started');
     isLoading.value = true;
     errorMessage.value = '';
     try {
       // Load categories list
+      logger.i('[HomeController] Fetching categories...');
       final cats = await _categoryService.fetchCategories();
+      logger.i('[HomeController] Fetched ${cats.length} categories');
       final activeCats = cats.where((c) => c.status).toList();
       apiCategories.value = activeCats;
 
@@ -75,17 +78,23 @@ class HomeController extends GetxController {
       }
         
       // Load featured vehicles across all categories (with featured: '1')
+      logger.i('[HomeController] Fetching featured vehicles...');
       final allFeatured = await _categoryService.fetchAllVehicles(featured: '1');
+      logger.i('[HomeController] Fetched ${allFeatured.length} featured vehicles');
       featuredVehicles.value = allFeatured.where((v) => v.isFeatured).toList();
       
       // Load top rated vehicles using global /api/vehicles (show 5 on home)
+      logger.i('[HomeController] Fetching top rated vehicles...');
       final topRatedList = await _categoryService.fetchAllVehicles(sort: 'top_rated');
+      logger.i('[HomeController] Fetched ${topRatedList.length} top rated vehicles');
       topRatedVehicles.value = topRatedList;
       
-    } catch (e) {
+    } catch (e, st) {
+      logger.e('[HomeController] Error in _loadData', error: e, stackTrace: st);
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+      logger.i('[HomeController] _loadData() finished');
     }
 
     // Load active booking (non-critical)
@@ -93,19 +102,29 @@ class HomeController extends GetxController {
   }
 
   Future<void> _loadActiveBooking() async {
+    logger.i('[HomeController] _loadActiveBooking() started');
     final auth = Get.find<AuthService>();
     if (!auth.isLoggedIn.value) {
+      logger.i('[HomeController] User is guest, skipping active booking check');
       activeBooking.value = null;
       return;
     }
     try {
+      logger.i('[HomeController] Fetching bookings for active booking check...');
       final bookings = await _bookingService.fetchBookings();
+      logger.i('[HomeController] Fetched ${bookings.length} total bookings');
       final active = bookings.where(
         (b) => b.status == BookingStatus.active || b.status == BookingStatus.upcoming,
       );
-      if (active.isNotEmpty) activeBooking.value = active.first;
-    } catch (e) {
-      logger.e('Error loading active booking: $e');
+      if (active.isNotEmpty) {
+        logger.i('[HomeController] Found active booking: ${active.first.id}');
+        activeBooking.value = active.first;
+      } else {
+        logger.i('[HomeController] No active or upcoming bookings found');
+        activeBooking.value = null;
+      }
+    } catch (e, st) {
+      logger.e('[HomeController] Error loading active booking', error: e, stackTrace: st);
     }
   }
 

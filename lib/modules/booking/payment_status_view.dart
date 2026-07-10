@@ -212,7 +212,9 @@ class PaymentStatusView extends GetView<PaymentStatusController> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        booking?.rentalType == RentalType.chauffeur ? 'Chauffeur' : 'Self-Drive',
+                        booking?.serviceType == 'airport_transfer'
+                            ? 'Airport Transfer'
+                            : (booking?.rentalType == RentalType.chauffeur ? 'Chauffeur' : 'Self-Drive'),
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: cs.onPrimaryContainer,
                           fontWeight: FontWeight.bold,

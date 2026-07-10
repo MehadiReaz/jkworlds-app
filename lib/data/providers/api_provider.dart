@@ -124,6 +124,24 @@ class ApiProvider {
                 error.requestOptions.path.contains('refresh-token');
             final isLogoutRequest =
                 error.requestOptions.path.contains('logout');
+            final isRetry = error.requestOptions.extra['isRetry'] as bool? ?? false;
+
+            if (isRetry) {
+              logger.w('[ApiProvider] 401 retry failed — logging out');
+              if (Get.isRegistered<AuthService>()) {
+                await Get.find<AuthService>().logout();
+              }
+              Get.offAllNamed(AppRoutes.login);
+              return handler.reject(
+                DioException(
+                  requestOptions: error.requestOptions,
+                  type: DioExceptionType.badResponse,
+                  response: error.response,
+                  message: 'Session expired. Please log in again.',
+                  error: const AuthException(),
+                ),
+              );
+            }
 
             if (oldToken != null && oldToken.isNotEmpty && !isRefreshRequest && !isLogoutRequest) {
               logger.i('[ApiProvider] 401 detected — attempting token refresh');
@@ -136,7 +154,8 @@ class ApiProvider {
                   await prefs.setString('auth_token', newToken);
 
                   final retryOptions = error.requestOptions
-                    ..headers['Authorization'] = 'Bearer $newToken';
+                    ..headers['Authorization'] = 'Bearer $newToken'
+                    ..extra['isRetry'] = true;
 
                   try {
                     final response = await dio.fetch(retryOptions);

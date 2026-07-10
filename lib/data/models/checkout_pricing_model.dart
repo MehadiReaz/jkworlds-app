@@ -3,12 +3,14 @@ class CheckoutPricingItem {
   final String amountFormatted;
   final String? title;
   final String? code;
+  final String? label;
 
   const CheckoutPricingItem({
     required this.amount,
     required this.amountFormatted,
     this.title,
     this.code,
+    this.label,
   });
 
   factory CheckoutPricingItem.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class CheckoutPricingItem {
       amountFormatted: json['amount_formatted']?.toString() ?? '',
       title: json['title']?.toString(),
       code: json['code']?.toString(),
+      label: json['label']?.toString(),
     );
   }
 }

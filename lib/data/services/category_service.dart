@@ -15,11 +15,33 @@ class CategoryService extends GetxService {
   // ── Reactive State ─────────────────────────────────────────────
   final categories = <CategoryModel>[].obs;
   final isLoadingCategories = false.obs;
+  final featuredVehicles = <VehicleModel>[].obs;
+  final topRatedVehicles = <VehicleModel>[].obs;
 
   // ── Categories ─────────────────────────────────────────────────
 
   /// Fetch all categories from GET /api/categories.
-  Future<List<CategoryModel>> fetchCategories() async {
+  Future<List<CategoryModel>> fetchCategories({bool forceRefresh = false}) async {
+    if (categories.isNotEmpty && !forceRefresh) {
+      // Fire-and-forget background fetch to update categories silently
+      _api.get(ApiConstants.categories).then((response) {
+        final body = response.data;
+        if (body != null) {
+          final list = _extractList(body);
+          final result = list
+              .whereType<Map<String, dynamic>>()
+              .map(CategoryModel.fromJson)
+              .where((c) => c.status)
+              .toList();
+          categories.value = result;
+        }
+      }).catchError((e) {
+        logger.w('[CategoryService] Background category refresh failed: $e');
+      });
+
+      return categories;
+    }
+
     isLoadingCategories.value = true;
     try {
       final response = await _api.get(ApiConstants.categories);
@@ -134,6 +156,38 @@ class CategoryService extends GetxService {
     }
   }
 
+  void _fetchFeaturedInBackground() {
+    final queryParams = {'featured': '1'};
+    _api.get(ApiConstants.vehicles, queryParameters: queryParams).then((response) {
+      final body = response.data;
+      if (body != null) {
+        final list = _extractList(body);
+        featuredVehicles.value = list
+            .whereType<Map<String, dynamic>>()
+            .map(VehicleModel.fromJson)
+            .toList();
+      }
+    }).catchError((e) {
+      logger.w('[CategoryService] Background featured vehicles refresh failed: $e');
+    });
+  }
+
+  void _fetchTopRatedInBackground() {
+    final queryParams = {'sort': 'top_rated'};
+    _api.get(ApiConstants.vehicles, queryParameters: queryParams).then((response) {
+      final body = response.data;
+      if (body != null) {
+        final list = _extractList(body);
+        topRatedVehicles.value = list
+            .whereType<Map<String, dynamic>>()
+            .map(VehicleModel.fromJson)
+            .toList();
+      }
+    }).catchError((e) {
+      logger.w('[CategoryService] Background top rated vehicles refresh failed: $e');
+    });
+  }
+
   Future<List<VehicleModel>> fetchAllVehicles({
     String? search,
     String? serviceType,
@@ -147,7 +201,20 @@ class CategoryService extends GetxService {
     double? pickupLongitude,
     double? dropoffLatitude,
     double? dropoffLongitude,
+    bool forceRefresh = false,
   }) async {
+    final isFeaturedQuery = featured == '1' && search == null && serviceType == null && transmission == null && fuelType == null && sort == null;
+    final isTopRatedQuery = sort == 'top_rated' && search == null && serviceType == null && transmission == null && fuelType == null && featured == null;
+
+    if (isFeaturedQuery && featuredVehicles.isNotEmpty && !forceRefresh) {
+      _fetchFeaturedInBackground();
+      return featuredVehicles;
+    }
+    if (isTopRatedQuery && topRatedVehicles.isNotEmpty && !forceRefresh) {
+      _fetchTopRatedInBackground();
+      return topRatedVehicles;
+    }
+
     try {
       final queryParams = <String, dynamic>{};
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
@@ -198,10 +265,18 @@ class CategoryService extends GetxService {
       if (body == null) return [];
 
       final list = _extractList(body);
-      return list
+      final result = list
           .whereType<Map<String, dynamic>>()
           .map(VehicleModel.fromJson)
           .toList();
+
+      if (isFeaturedQuery) {
+        featuredVehicles.value = result;
+      } else if (isTopRatedQuery) {
+        topRatedVehicles.value = result;
+      }
+
+      return result;
     } on AppException {
       rethrow;
     } catch (e, st) {

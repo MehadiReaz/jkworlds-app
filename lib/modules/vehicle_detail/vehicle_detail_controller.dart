@@ -93,7 +93,9 @@ class VehicleDetailController extends GetxController {
 
   bool get isAirportTransfer {
     final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
-    return exploreCtrl?.selectedServiceType.value == 'Airport Transfer';
+    final exploreServiceType = exploreCtrl?.selectedServiceType.value;
+    final vehicleServiceType = (vehicleRx.value ?? vehicle).serviceType;
+    return exploreServiceType == 'Airport Transfer' || vehicleServiceType == 'airport_transfer';
   }
 
   bool get isFromFeatured {
@@ -289,13 +291,14 @@ void _showLocationNotAvailableDialog() {
     }
 
     // Determine booking mode and pre-populate search criteria
+    if (isAirportTransfer) {
+      additionalDriverAddon.value = true;
+      isSelfDrive.value = false;
+      isDifferentDropoff.value = true;
+    }
+
     final exploreCtrl = Get.isRegistered<ExploreController>() ? Get.find<ExploreController>() : null;
     if (exploreCtrl != null) {
-      if (isAirportTransfer) {
-        additionalDriverAddon.value = true;
-        isSelfDrive.value = false;
-        isDifferentDropoff.value = true;
-      }
       
       if (exploreCtrl.pickupLocation.value.isNotEmpty) {
         pickupLocation.value = exploreCtrl.pickupLocation.value;

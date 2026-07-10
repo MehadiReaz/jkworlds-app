@@ -1088,6 +1088,11 @@ class HomeView extends StatelessWidget {
                                       t.hour,
                                       t.minute,
                                     );
+                                    if (rxDateTime == ctrl.pickupDateTime) {
+                                      ctrl.isPickupTimeSelected.value = true;
+                                    } else if (rxDateTime == ctrl.dropoffDateTime) {
+                                      ctrl.isDropoffTimeSelected.value = true;
+                                    }
                                     ctrl.applyFilters();
                                     Get.back(); // Close bottom sheet
                                   },

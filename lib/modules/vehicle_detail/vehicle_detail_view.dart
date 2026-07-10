@@ -385,7 +385,7 @@ class VehicleDetailView extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              vehicle.securityDepositDescription!,
+                              '${vehicle.securityDepositDescription!}${vehicle.securityDepositAmount != null && vehicle.securityDepositAmount! > 0 ? " A security deposit of ${vehicle.securityDepositAmountFormatted.isNotEmpty ? vehicle.securityDepositAmountFormatted : ctrl.formatPrice(vehicle.securityDepositAmount!)} is required." : ""}',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: isLight ? Colors.amber.shade900 : Colors.amber.shade200,
                                 height: 1.4,
@@ -1432,7 +1432,7 @@ class VehicleDetailView extends StatelessWidget {
                         }
                       }
 
-                      if (days == 0) {
+                      if (!ctrl.isAirportTransfer && days == 0) {
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -1498,7 +1498,9 @@ class VehicleDetailView extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Select pickup & return dates to see price breakdown.',
+                              ctrl.isAirportTransfer
+                                  ? 'Select locations, pickup date & time to see price breakdown.'
+                                  : 'Select pickup & return dates to see price breakdown.',
                               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -1515,15 +1517,17 @@ class VehicleDetailView extends StatelessWidget {
                           children: [
                             _buildBreakdownRow(
                               ctrl.isAirportTransfer ? 'Airport Transfer' : 'Rental Rate',
-                              ctrl.isAirportTransfer
-                                  ? (vehicle.servicePricing?.applicable?.estimated != null
-                                      ? '${vehicle.servicePricing!.applicable!.estimated!.distanceKm.toStringAsFixed(1)} km at ${vehicle.servicePricing!.applicable!.perKmRateFormatted}/km'
-                                      : 'Distance-based transfer rate')
-                                  : ctrl.selectedPriceTab.value == 0
-                                      ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : ctrl.formatPrice(vehicle.pricePerDay)} x $days days'
-                                      : ctrl.selectedPriceTab.value == 1
-                                          ? '${ctrl.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
-                                          : '${ctrl.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days',
+                              pricing.base.label != null && pricing.base.label!.isNotEmpty
+                                  ? pricing.base.label!
+                                  : (ctrl.isAirportTransfer
+                                      ? (vehicle.servicePricing?.applicable?.estimated != null
+                                          ? '${vehicle.servicePricing!.applicable!.estimated!.distanceKm.toStringAsFixed(1)} km at ${vehicle.servicePricing!.applicable!.perKmRateFormatted}/km'
+                                          : 'Distance-based transfer rate')
+                                      : ctrl.selectedPriceTab.value == 0
+                                          ? '${vehicle.dailyRateFormatted.isNotEmpty ? vehicle.dailyRateFormatted : ctrl.formatPrice(vehicle.pricePerDay)} x $days days'
+                                          : ctrl.selectedPriceTab.value == 1
+                                              ? '${ctrl.formatPrice(vehicle.pricePerWeek / 7.0)}/day (Weekly) x $days days'
+                                              : '${ctrl.formatPrice(vehicle.pricePerMonth / 30.0)}/day (Monthly) x $days days'),
                               pricing.base.amountFormatted.isNotEmpty ? pricing.base.amountFormatted : ctrl.formatPrice(pricing.base.amount),
                               cs,
                             ),
@@ -1546,6 +1550,13 @@ class VehicleDetailView extends StatelessWidget {
                                 'Taxes & Fees',
                                 'Taxes & Fees',
                                 pricing.feesTotal.amountFormatted.isNotEmpty ? pricing.feesTotal.amountFormatted : ctrl.formatPrice(pricing.feesTotal.amount),
+                                cs,
+                              ),
+                            if (pricing.deposit.amount > 0)
+                              _buildBreakdownRow(
+                                'Security Deposit',
+                                'Refundable deposit',
+                                pricing.deposit.amountFormatted.isNotEmpty ? pricing.deposit.amountFormatted : ctrl.formatPrice(pricing.deposit.amount),
                                 cs,
                               ),
                             const Divider(height: 24),
